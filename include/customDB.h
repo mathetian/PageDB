@@ -14,6 +14,7 @@ public:
 	bool 	put(const string&key,const string&value);
 	string  get(const string&key);
 	bool	replace(const string&key,const string&value);
+	bool 	remove(const string&key);
 	int 	error();
 private:
 	int 	errorStatus;

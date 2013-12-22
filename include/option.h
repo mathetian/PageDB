@@ -7,14 +7,24 @@ typedef struct{
 }FileOption;
 
 typedef struct{
+	FileOption foption;
+}EnvOption;	
 
-};
-class Options{
-public:
-private:
-	int cacheLimit;
-	const string fileName;
-	int flag;
-	int mode;
-};
+typedef struct{
+	int type;
+	int sizeLimit;
+}CacheOption;
+
+typedef struct{
+	int type;
+	int nsync;
+}FactoryOption;
+
+typedef struct{
+	FileOption fileOption;
+	EnvOption envOption;
+	CacheOption CacheOption;
+	FactoryOption factoryOption;
+}Options;
+
 #endif
