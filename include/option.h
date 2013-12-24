@@ -1,5 +1,10 @@
 #ifndef _OPTION_H
 #define _OPTION_H
+
+#define CUSTOMDB_W  0
+#define CUSTOMDB_R  2
+#define CUSTOMDB_C  4
+
 typedef struct{
 	string fileName;
 	int flag;
