@@ -16,24 +16,15 @@ class ExtendibleTable;
 
 class Page{
 public:
-	Page():d(0) {ssMap.clear();}
+	  Page():d(0) {ssMap.clear();}
   ~ Page()      {}
-  	void insert(string key,string value)
+  	
+    void insert(string key,string value)
   	{
-  		cout<<ssMap.size()<<endl;
-  		map <string,string> ::iterator stMap = ssMap.begin();
-  		int i=ssMap.size();
-  		if(i==0) ssMap.clear();
-  		for(;stMap != ssMap.end()&&i>0;stMap++,i--)
-  		{
-  		//	cout<<"1"<<endl;
-  	//		cout<<"("<<stMap->first<<" "<<stMap->second<<")";
-  		}
-  		cout<<endl;
   		if(ssMap.find(key) == ssMap.end())
   			ssMap[key] = value;
-  		/*cout<<key<<" "<<value<<endl;*/
   	}
+
 private:
   	bool full() { return ssMap.size() > PAGESIZE ? 1:0; }
   	int  getD() { return d; }
@@ -57,69 +48,74 @@ public:
 		gd=0;
 	}
  
- /* ~ ExtendibleTable()
+  ~ ExtendibleTable()
  	{
- 		vector<Page*>::iterator itList=pages.begin();
- 		for(;itList < pages.end();itList++)
- 		{
- 			page = *itList;
- 			if(page) 
- 				delete page;
- 			page = NULL;
- 		}	
- 	}*/
-  	
+    return;
+    int index = 0;
+    for(;index < pages.size();index++)
+    {
+      page = pages[index];
+      if(page)
+        delete page;
+      pages[index] = NULL;
+    }
+ 	}
+
   	Page * getPage(string key)
   	{	
-  		cout<<"here?1"<<endl;
-  		int pos = hashFunc(key);cout<<"here?2"<<endl;
+  		int pos = hashFunc(key);
   		curId = pos & ((1 << gd)-1);
-  		cout<<"here?3"<<endl;
   		return pages.at(curId);
   	}
 
   	bool   put(string key,string value)
   	{
   		page = getPage(key);
-  		cout<<key<<endl;
-  		if(!page) cout<<"what?"<<endl;
-  		if(page -> full())
+  		if(page -> full() && page -> d == gd)
   		{
-  			this -> gd++;
-  			int oldSize=pages.size();
-  			pages.resize(2*pages.size());
-  			for(int i = oldSize;i<pages.size();i++)
-  				if(!pages.at(i)) pages[i] = new Page();
-  		}
-  		cout<<key<<endl;
-  		cout<<(page->ssMap).size()<<endl;
-  		page -> insert(key,value);
-  		cout<<key<<endl;
-
-  		if(page -> full())
+  		  this -> gd++;
+  			int oldSize = pages.size();
+  			for(int i = 0;i < oldSize;i++)
+  		      pages.push_back(pages.at(i));
+      }
+  		if(page -> full() && page -> d < gd)
   		{
-  			  		cout<<key<<endl;
-
+        page -> insert(key,value);
   			Page * p1 = new Page();
   			Page * p0 = new Page();
 	  		
 	  		map <string,string>& ssMap = page -> ssMap;
 
 	  		map <string,string>::iterator stMap = ssMap.begin();
-
 	  		for(;stMap != ssMap.end();stMap++)
 	  		{
 	  			int id = hashFunc(stMap -> first);
 	  			string str = stMap -> second;
-	  			if(((id & ((1 << gd) - 1)) >> (page -> d)) == 1)
+          int flag = (id & ((1 << gd) - 1));
+	  			if(((flag >> (page -> d)) & 1) == 1)
 	  				p1->insert(stMap -> first,stMap -> second);
 	  			else
 	  				p0->insert(stMap -> first,stMap -> second);
 	  		}
-	  		pages[curId] = p1;
-	  		pages[curId + (pages.size() >> 1)] = p0;
-	  		p1 -> d = gd; p0 -> d = gd; 
+	  		vector<Page*>::iterator itList = pages.begin();
+        int id;
+        for(id = 0;id < pages.size();id++)
+        {
+            if(pages.at(id) == page)
+            {
+                if(((id >> (page -> d)) & 1) == 1)
+                  pages[id] = p1;
+                else
+                  pages[id] = p0;
+            }
+        }
+	  		p1 -> d = (page -> d) + 1; p0 -> d = (page -> d) + 1; 
+        delete page;
+        page = NULL;
   		}
+      else
+        page -> insert(key,value);
+      return true;
   	}
 
   	string get(string key)
@@ -152,7 +148,6 @@ int func1 (string key)
   return value;
 }
 
-
 #define LEN 10000
 
 int main()
@@ -164,9 +159,9 @@ int main()
 	for(i = 0; i< LEN;i++)
 		testData[i]=rand();
 	cout<<"hello"<<endl;
-	for(i=0;i<LEN;i++)
+	for(i=1;i<LEN;i++)
 		etables.put(convert(i),convert(testData.at(i)));
-	for(i=0;i < LEN;i++)
+	for(i=1;i < LEN;i++)
 		cout<<i<<" "<<etables.get(convert(i))<<endl;
 	return 0;
 }

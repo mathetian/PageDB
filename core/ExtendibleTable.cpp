@@ -127,7 +127,7 @@ int main()
       for(i=0; i < limit; i++)
       {
         if(bucket_table[i]==rrn) break;
-	  }
+	  }we
 	  begin_new = i;
 	  for(;bucket_table[i]==rrn && i < limit; i++) end_new = i;
       begin_new = begin_new + (end_new - begin_new + 1) / 2;
