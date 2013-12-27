@@ -18,10 +18,16 @@ typedef struct{
 	FileOption foption;
 }EnvOption;	
 
+#define FIFO 0
+#define  LRU 1
+
 typedef struct{
 	int cacheType;
 	int sizeLimit;
 }CacheOption;
+
+#define EHASH 0
+#define CHASH 1
 
 typedef struct{
 	int factoryType;

@@ -13,7 +13,7 @@ public:
 public:
 	virtual bool 		   put(const string&key,const string&value);
 	virtual string  	   get(const string&key);
-	virtual void 		   remove(const string&key);
+	virtual bool 		   remove(const string&key);
 	virtual vector<string> keys();
 	virtual void           clear();
 public:

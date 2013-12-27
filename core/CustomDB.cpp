@@ -1,5 +1,7 @@
-#include "../include/customDB.h"
-
+#include "../include/CustomDB.h"
+#include "../include/FIFOLimitedMemoryCache.h"
+#include "../include/EHash.h"
+#include "../include/CHash.h"
 
 CustomDB::CustomDB()
 {
@@ -26,14 +28,14 @@ CustomDB::~CustomDB()
 	}
 }
 
-bool CustomDB::open(Options&option)
+bool CustomDB::open(const Options&option)
 {
 	this -> option = option;
 
 	log = Log::GetInstance();
-	log -> SetLogInfo(option -> logLevel, option -> prefix);
+	log -> SetLogInfo(option.prefix, option.logLevel);
 
-	switch(option -> cacheOption -> cacheType)
+	switch(option.cacheOption.cacheType)
 	{
 	case FIFO: 
 		cache = new FIFOLimitedMemoryCache();
@@ -43,78 +45,82 @@ bool CustomDB::open(Options&option)
 		break;
 	}
 
-	if(!cache)
-		Log::e("CustomDB::open::new cache error\n");
+	if(cache == NULL)
+		log -> _Fatal("CustomDB::open::new cache error\n");
 
-	switch(option -> factoryOption -> factoryType)
+	switch(option.factoryOption.factoryType)
 	{
 	case EHASH:
-		factory = new ExtendibleHash();break;
+		factory = new ExtendibleHash();
+		break;
 	case CHASH:
-		factory = new ChainHash();break;
+		factory = new ChainHash();
+		break;
 	default:
 		log -> _Fatal("CustomDB::open::factory error\n");
 	}
 
-	if(!factory)
+	if(factory == NULL)
 		log -> _Fatal("CustomDB::open::new factory error\n");
 
 	env = new Env(this);
-
+	
 	if(!env)
 		log -> _Fatal("CustomDB::open::new Env error\n");
 
 	if(env -> init() == 0)
-		Log -> _Fatal("CustomDB::open::env open error\n");
+		log -> _Fatal("CustomDB::open::env open error\n");
 }
 
 bool CustomDB::put(const string&key,const string&value)
 {
-	errorStatus = 0;
-	if(cache->get(key))
-		Log.w("CustomDB::put::exist in cache\n");
+	errorStatus = ERROR;
+	if((cache -> get(key)).size() != 0) 
+		log -> _Trace("CustomDB::put::exist in cache\n");
 	else
 	{
 		if(!factory -> put(key,value))
-			Log.w("CustomDB::put::factory put error\n");
+			log -> _Warn("CustomDB::put::factory put error\n");
 		else 
-			errorStatus = 1;
+			errorStatus = SUCCE;
 	}
 	return errorStatus;
 }
 
 string CustomDB::get(const string&key)
 {
-	errorStatus = 0;
+	errorStatus = ERROR;
 	string rs = cache -> get(key);
-	if(rs) errorStatus = 1;
+	if(rs.size() != 0) errorStatus = SUCCE;
 	else
 	{
 		rs = factory -> get(key);
-		if(!rs) 
-			Log::w("CustomDB::get::factor get error\n");
-		else errorStatus = 1;
+		if(rs.size() == 0) 
+			log -> _Warn("CustomDB::get::factor get error\n");
+		else errorStatus = SUCCE;
 	}
 	return rs;
 }
 
 bool CustomDB::remove(const string&key)
 {
-	errorStatus = 1;
+	errorStatus = ERROR;
 	string rs = cache -> get(key);
-	if(rs)
+	if(rs.size() != 0)
 	{
-		int rflag = cache -> remove(key);
-		if(!rflag)
-			Log::e("CustomDB::remove::cache remove error\n");
+		if((cache -> remove(key)) == 0)
+		{
+			log -> _Error("CustomDB::remove::cache remove error\n");
+			return errorStatus;
+		}
 	}
-	int rflag = factory -> remove(key);
-	if(!rflag)
-		Log::e("CustomDB::remove::factory remove error\n");
+	if((factory -> remove(key)) == 0)
+		log -> _Error("CustomDB::remove::factory remove error\n");
+	errorStatus = SUCCE;
 	return errorStatus;
 }
 
-int CustomDB::error()
+bool CustomDB::getError()
 {
 	return errorStatus;
 }
