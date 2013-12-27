@@ -1,5 +1,6 @@
 #ifndef _ENV_H
 #define _ENV_H
+
 class Env{
 public:
 	Env(CustomDB * db);
@@ -13,4 +14,5 @@ private:
 	FILE	 * idxFile;
 	FILE     * datFile;
 };
+
 #endif
