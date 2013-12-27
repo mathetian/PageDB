@@ -42,6 +42,8 @@ public:
 
   Slice& operator+=(const Slice&s1);
 
+  
+
 private:
 	const char * _data;
 	size_t       _size;
@@ -51,9 +53,18 @@ bool operator==(const Slice&s1, const Slice&s2);
 bool operator< (const Slice&s1, const Slice&s2);
 bool operator> (const Slice&s1, const Slice&s2);
 
-inline ostream & operator << (ostream & os, Slice &s1)
+inline ostream & operator << (ostream & os, const Slice & sl)
 {
-	os << s1.toString();
-	return os;
+      os << sl.toString();
+      return os;
 }
+
+inline istream & operator >> (istream & is, Slice&sl)
+{
+    string str;
+    is >> str;
+    sl = Slice(str);
+    return is;
+}
+
 #endif

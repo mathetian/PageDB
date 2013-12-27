@@ -1,4 +1,6 @@
-#include "EHash.h"
+#include "../include/EHash.h"
+#include <stdio.h> 
+#include <sys/stat.h>
 
 Page::Page() : d(0)
 {
@@ -132,8 +134,58 @@ Page * ExtendibleHash::getPage(string key)
 int defaultHashFunc(const string&str)
 {
   int index;
-  int value = 0x238F13AF * key.size();
-  for(index = 0;index < key.size();index++)
-      value = (value + (key.at(index) << (index*5 % 24))) & 0x7FFFFFFF;
+  int value = 0x238F13AF * str.size();
+  for(index = 0;index < str.size();index++)
+      value = (value + (str.at(index) << (index*5 % 24))) & 0x7FFFFFFF;
   return value;
+}
+
+typedef struct{
+    int magicNum;
+    int entryNum;
+    int pageNum;
+    int entryBit;
+}Header;
+
+typedef struct{
+  off_t pagePos;
+}Entry;
+
+typedef struct{
+  int  size;
+  char data[10];
+}Elem;
+
+bool getStat(const std::string& filename, struct stat&buf)
+{
+    if (stat(filename.c_str(), &buf) != -1)
+    {
+        return true;
+    }
+    return false;
+}
+
+bool ExtendibleHash::init(const string&filename)
+{
+  struct stat buf;
+  string idxName = filename + ".idx";
+  string datName = filename +  ".dat";
+
+  if(getStat(idxName, buf) == 0 || buf.st_size == 0)
+  {
+
+  }
+  else
+  {
+    idxFile = fopen(idxName.c_str(),"rw+");
+    datFile = fopen(datName.c_str(),"rw+");
+    Header head;
+    fread(&head,sizeof(Header),1,idxFile);
+    pages  = vector<Page*>(head.entryNum,NULL);
+    dirIdx = vector<int>(head.entryNum,0);
+    int * dirIdx2 = new int[head.entryNum];
+    fread(dirIdx2,sizeof(int),head.entryNum,idxFile);
+    Page * pages2 = new Page[head.pageNum];
+
+  }
 }

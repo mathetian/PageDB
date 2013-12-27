@@ -15,12 +15,6 @@ CustomDB::~CustomDB()
 		factory = NULL;
 	}
 	
-	if(env)
-	{
-		delete env;
-		env = NULL;
-	}
-
 	if(cache)
 	{
 		delete cache;
@@ -63,13 +57,8 @@ bool CustomDB::open(const Options&option)
 	if(factory == NULL)
 		log -> _Fatal("CustomDB::open::new factory error\n");
 
-	env = new Env(this);
-	
-	if(!env)
-		log -> _Fatal("CustomDB::open::new Env error\n");
-
-	if(env -> init() == 0)
-		log -> _Fatal("CustomDB::open::env open error\n");
+	if(init() == 0)
+		log -> _Fatal("CustomDB::open::env open error\n");	
 }
 
 bool CustomDB::put(const string&key,const string&value)
@@ -123,4 +112,9 @@ bool CustomDB::remove(const string&key)
 bool CustomDB::getError()
 {
 	return errorStatus;
+}
+
+bool CustomDB::init()
+{
+	factory -> 
 }

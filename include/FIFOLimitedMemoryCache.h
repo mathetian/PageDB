@@ -6,7 +6,7 @@ using namespace std;
 
 #include "LimitedMemoryCache.h"
 
-class FIFOLimitedMemoryCache:public LimitedMemoryCache{
+class FIFOLimitedMemoryCache : public LimitedMemoryCache{
 public:
 	FIFOLimitedMemoryCache();
 	FIFOLimitedMemoryCache(int sizeLimit);
@@ -18,4 +18,5 @@ public:
 private:
 	queue<string> sQue;
 };
+
 #endif
