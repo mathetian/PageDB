@@ -15,17 +15,17 @@ public:
 public:
 	static void  SetLogMode(int level,String& module);
 	static Log * GetInstance();
-
+private:
+	static Log * _pTheLogs;
 public:
-	void 	_Trace(const char* format,...);
-	void 	_Debug(const char* format,...);
-	void 	_Warn(const char* format,...);
-	void 	_Error(const char* format,...);
-	void 	_Fatal(const char* format,...);
+	void 		_Trace(const char* format,...);
+	void 		_Debug(const char* format,...);
+	void 		_Warn(const char* format,...);
+	void 		_Error(const char* format,...);
+	void 		_Fatal(const char* format,...);
 
 private:
 	Log(void);
-	String GetMutexName();
 	String GetLogFile();
 	char* GetCurrentTm(short tag,char* buf,size_t size);
 	BOOL  GetLogDirectory(String& dir);
@@ -51,11 +51,7 @@ public:
 private:
 	String	m_szModuleName;
 	int		m_logLevel;
-	short	m_runEnv;
 	FILE*	m_pOutFile;
-	HANDLE  m_hMutex;
-	CRITICAL_SECTION m_csLock;
-	static Log* _pTheLogs;
 };
 
 #endif

@@ -15,14 +15,11 @@ Log* Log::_pTheLogs = NULL;
 
 Log::Log(void)
 {
-	m_hMutex = NULL;
-	InitializeCriticalSection(&m_csLock);
-	m_logLevel = 1;
+	m_logLevel = LOG_DEBUG;
 }
 
 Log::~Log(void)
 {
-	DeleteCriticalSection(&m_csLock);
 }
 
 void Log::SetLogMode(int level,String& logFile)
@@ -31,7 +28,8 @@ void Log::SetLogMode(int level,String& logFile)
 		_pTheLogs = new Log;
 	}
 
-	_pTheLogs->SetLogLevel(level);
+	_pTheLogs -> SetLogLevel(level);
+	_pTheLogs -> SetModuleName(logFile);
 }
 
 Log* Log::GetInstance()
@@ -41,13 +39,6 @@ Log* Log::GetInstance()
 	}
 
 	return _pTheLogs;
-}
-
-String Log::GetMutexName()
-{
-	String mutex = m_szModuleName;
-	mutex.append("_mutex_");
-	return mutex;
 }
 
 String Log::GetLogFile()
@@ -62,7 +53,6 @@ void Log::SetModuleName(String& module)
 	m_szModuleName = module;	
 }
 
-
 void Log::SetLogLevel(int level)
 {
 	m_logLevel = level;
@@ -70,7 +60,7 @@ void Log::SetLogLevel(int level)
 
 BOOL  Log::GetLogDirectory(String& dir)
 {
-	if( !CWFTDirectory::GetWorkspace(dir)){
+	if( !Log::GetWorkspace(dir)){
 		return FALSE;
 	}
 	
@@ -80,8 +70,8 @@ BOOL  Log::GetLogDirectory(String& dir)
 	dir.append("\\log\\");
 	dir.append(dateBuf);
 
-	if( !CWFTDirectory::FolderExist(dir) ){
-		CWFTDirectory::CreateFolder(dir);
+	if( !Log::FolderExist(dir) ){
+		Log::CreateFolder(dir);
 	}
 
 	return TRUE;
@@ -106,16 +96,6 @@ void Log::CloseFile(FILE* pFile)
 	fflush(pFile);
 	::fclose(pFile);
 	 pFile = NULL;
-}
-
-void Log::Lock()
-{
-	EnterCriticalSection(&m_csLock); 
-}
-
-void Log::Unlock()
-{
-	LeaveCriticalSection(&m_csLock);
 }
 
 char* Log::GetCurrentTm(short tag,char* buf,size_t size)
@@ -148,12 +128,9 @@ void Log::WriteLog(int outLevel,const char* format,va_list args)
 	if(outLevel < m_logLevel){
 		return ;
 	}
-
-	Lock();
 	
 	FILE* pfile = OpenLogFile();
 	if(pfile == NULL){
-		Unlock();
 		return ;
 	}
 
@@ -168,7 +145,6 @@ void Log::WriteLog(int outLevel,const char* format,va_list args)
 	CloseFile(pfile);
 	pfile = NULL;
 
-	Unlock();
 }
 
 void Log::_Trace(const char* format,...)
