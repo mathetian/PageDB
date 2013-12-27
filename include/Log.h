@@ -5,53 +5,40 @@
 #include <iostream>
 using namespace std;
 
+#include <stdio.h>
 #include <stdlib.h>
 
 class Log
 {
 public:	
 	~Log(void);
+	static Log * GetInstance();
 
 public:
-	static void  SetLogMode(int level,String& module);
-	static Log * GetInstance();
+	void 	SetLogInfo(const string & fileName,int level);
+	
+	void 	_Trace(const char* format,...);
+	void 	_Debug(const char* format,...);
+	void 	_Warn(const char* format,...);
+	void 	_Error(const char* format,...);
+	void 	_Fatal(const char* format,...);	
+
 private:
 	static Log * _pTheLogs;
-public:
-	void 		_Trace(const char* format,...);
-	void 		_Debug(const char* format,...);
-	void 		_Warn(const char* format,...);
-	void 		_Error(const char* format,...);
-	void 		_Fatal(const char* format,...);
 
 private:
-	Log(void);
-	String GetLogFile();
-	char* GetCurrentTm(short tag,char* buf,size_t size);
-	BOOL  GetLogDirectory(String& dir);
-	void  WriteLog(int outLevel,const char* format,va_list args);
-	void  SetModuleName(String& module);
-	void  SetLogLevel(int level);
-
-	FILE* OpenLogFile();
-	void  CloseFile(FILE* pFile);
-	void  Lock();
-	void  Unlock();
-
+	Log();
+	string GetLogFileName();
+	void   WriteLog(int outLevel,const char* format,va_list args);
+	char * GetCurrentTm(int tag,char* buf,size_t size);
+	bool   GetLogDirectory(string& dir);
 
 public:
-	enum{
-		LOG_DEBUG = 1,
-		LOG_TRACE = 2,
-		LOG_WARN  = 3,
-		LOG_ERROR = 4,
-		LOG_FATAL = 5
-	};
-
+	enum{ LOG_DEBUG = 1, LOG_TRACE = 2, LOG_WARN  = 3, LOG_ERROR = 4, LOG_FATAL = 5};
 private:
-	String	m_szModuleName;
 	int		m_logLevel;
-	FILE*	m_pOutFile;
+	FILE *	m_pOutFile;
+	string 	m_prefix;
 };
 
 #endif

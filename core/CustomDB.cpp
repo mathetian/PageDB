@@ -1,5 +1,5 @@
 #include "../include/customDB.h"
-#include "Factory.h"
+
 
 CustomDB::CustomDB()
 {
@@ -16,7 +16,7 @@ CustomDB::~CustomDB()
 	if(env)
 	{
 		delete env;
-		env=NULL;
+		env = NULL;
 	}
 
 	if(cache)
@@ -28,7 +28,10 @@ CustomDB::~CustomDB()
 
 bool CustomDB::open(Options&option)
 {
-	this->option = option;
+	this -> option = option;
+
+	log = Log::GetInstance();
+	log -> SetLogInfo(option -> logLevel, option -> prefix);
 
 	switch(option -> cacheOption -> cacheType)
 	{
@@ -36,7 +39,7 @@ bool CustomDB::open(Options&option)
 		cache = new FIFOLimitedMemoryCache();
 	break;
 	default: 
-		Log::e("CustomDB::open::cacheType error\n");
+		log -> _Fatal("CustomDB::open::cacheType error\n");
 		break;
 	}
 
@@ -50,19 +53,19 @@ bool CustomDB::open(Options&option)
 	case CHASH:
 		factory = new ChainHash();break;
 	default:
-		Log::e("CustomDB::open::factory error\n");
+		log -> _Fatal("CustomDB::open::factory error\n");
 	}
 
 	if(!factory)
-		Log::e("CustomDB::open::new factory error\n");
+		log -> _Fatal("CustomDB::open::new factory error\n");
 
 	env = new Env(this);
 
 	if(!env)
-		Log::e("CustomDB::open::new Env error\n");
+		log -> _Fatal("CustomDB::open::new Env error\n");
 
 	if(env -> init() == 0)
-		Log::e("CustomDB::open::env open error\n");
+		Log -> _Fatal("CustomDB::open::env open error\n");
 }
 
 bool CustomDB::put(const string&key,const string&value)
@@ -79,23 +82,6 @@ bool CustomDB::put(const string&key,const string&value)
 	}
 	return errorStatus;
 }
-
-/*bool CustomDB::replace(const string&key,const string&value)
-{
-	errorStatus = 0;
-	if(cache->get(key))
-	{
-		cache->update(key);
-		errorStatus=1;
-	}
-	else
-	{
-		if(!factory->replace(key,value))
-			Log.w("CustomDB::replace::factory replace error\n");
-		else errorStatus=1;
-	}
-	return errorStatus;
-}*/
 
 string CustomDB::get(const string&key)
 {

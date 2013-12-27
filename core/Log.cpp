@@ -3,7 +3,8 @@
 #include  <time.h> 
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <stdbool.h>
+#include <stdarg.h>
 
 #define TIME_SHORT 50
 #define TIME_FULL  51
@@ -15,21 +16,20 @@ Log* Log::_pTheLogs = NULL;
 
 Log::Log(void)
 {
-	m_logLevel = LOG_DEBUG;
+	m_logLevel = LOG_WARN;
 }
 
 Log::~Log(void)
 {
 }
 
-void Log::SetLogMode(int level,String& logFile)
+void Log::SetLogInfo(const string & prefix,int level)
 {
 	if(_pTheLogs == NULL){
 		_pTheLogs = new Log;
 	}
-
-	_pTheLogs -> SetLogLevel(level);
-	_pTheLogs -> SetModuleName(logFile);
+	_pTheLogs -> m_prefix   = prefix;
+	_pTheLogs -> m_logLevel = level;
 }
 
 Log* Log::GetInstance()
@@ -37,30 +37,19 @@ Log* Log::GetInstance()
 	if(_pTheLogs == NULL){
 		_pTheLogs = new Log;
 	}
-
 	return _pTheLogs;
 }
 
-String Log::GetLogFile()
+string Log::GetLogFileName()
 {
-	String log = m_szModuleName;
+	string log = m_prefix;
 	log.append(".log");
 	return log;
 }
 
-void Log::SetModuleName(String& module)
+bool  Log::GetLogDirectory(string& dir)
 {
-	m_szModuleName = module;	
-}
-
-void Log::SetLogLevel(int level)
-{
-	m_logLevel = level;
-}
-
-BOOL  Log::GetLogDirectory(String& dir)
-{
-	if( !Log::GetWorkspace(dir)){
+	/*if( !Log::GetWorkspace(dir)){
 		return FALSE;
 	}
 	
@@ -73,32 +62,11 @@ BOOL  Log::GetLogDirectory(String& dir)
 	if( !Log::FolderExist(dir) ){
 		Log::CreateFolder(dir);
 	}
-
-	return TRUE;
+*/
+	return true;
 }
 
-FILE* Log::OpenLogFile()
-{
-	String logDir;
-	if(!GetLogDirectory(logDir)) return NULL;
-
-	String szlogName;
-	szlogName = GetLogFile();
-
-	logDir.append("\\");
-	logDir.append(szlogName);
-
-	return fopen(logDir.c_str(), "a+");    
-}
-
-void Log::CloseFile(FILE* pFile)
-{
-	fflush(pFile);
-	::fclose(pFile);
-	 pFile = NULL;
-}
-
-char* Log::GetCurrentTm(short tag,char* buf,size_t size)
+char* Log::GetCurrentTm(int tag,char* buf,size_t size)
 {
 	time_t now;
 	struct tm *ptime = NULL;
@@ -125,26 +93,26 @@ char* Log::GetCurrentTm(short tag,char* buf,size_t size)
 
 void Log::WriteLog(int outLevel,const char* format,va_list args)
 {
-	if(outLevel < m_logLevel){
-		return ;
+	if(outLevel > m_logLevel){
+		printf("WriteLog::outLevel::format::error\n");
+		exit(1);
 	}
 	
-	FILE* pfile = OpenLogFile();
+	FILE* pfile = fopen(GetLogFileName().c_str(), "a+");
+
 	if(pfile == NULL){
 		return ;
 	}
 
 	char buf[32]={0x00};
-	GetCurrentTm(TIME_FULL,buf,32);
+	GetCurrentTm(TIME_FULL, buf, 32);
 	
 	fprintf (pfile,"%s\t",buf);
 	vfprintf(pfile,format,args);
 	fprintf (pfile, "\n");
 	fflush(pfile);
-
-	CloseFile(pfile);
+	fclose(pfile);
 	pfile = NULL;
-
 }
 
 void Log::_Trace(const char* format,...)
