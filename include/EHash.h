@@ -33,7 +33,8 @@ class EmptyBlock{
 public:
     EmptyBlock();
   ~ EmptyBlock() {};
-private:
+  bool checkSuitable(int size, int & pos);
+public:
   int      curPos;
   int      nextBlock;
   EmptyEle eles[PAGESIZE];
@@ -97,7 +98,7 @@ private:
 private:
   /**Need read from file**/
   int            gd, pn;
-	vector <int>   entries;
+  vector <int>   entries;
   EmptyBlock     block;
 };
 

@@ -2,8 +2,18 @@
 #include <stdio.h> 
 #include <sys/stat.h>
 
-EmptyBlock::EmptyBlock() : curPos(-1), nextBlock(-1)
+EmptyBlock::EmptyBlock() : curPos(PAGESIZE), nextBlock(-1)
 {
+}
+
+bool EmptyBlock::checkSuitable(int size, int & pos)
+{
+  for(pos = curPos;pos >= 0;pos--)
+  {
+    if(eles[pos].size > size)
+      return true;
+  }
+  return false;
 }
 
 Page::Page(ExtendibleHash * eHash) : d(0),curNum(0)
@@ -46,15 +56,15 @@ bool Page::put(const string&key, const string&value, int hashVal)
   /**
     Find an suitable empty block, if not allocated it at the end of the file
   **/
-  EmptyBlock blockTmp; int addr; int offset; int datAddr;
+  EmptyBlock blockTmp; int addr; int offset, datAddr;
   blockTmp = eHash -> findSuitable(key.size() + value.size(), addr, offset, datAddr);
   
-  eHash -> datfs.seekg(datAddr,ios_base::beg);
-  eHash -> datfs.write(key.c_str(),sizeof(key));
-  eHash -> datfs.write(value.c_str(),sizeof(value));
+  eHash -> datfs.seekg(offset, ios_base::beg);
+  eHash -> datfs.write(key.c_str(), sizeof(key));
+  eHash -> datfs.write(value.c_str(), sizeof(value));
 
   eHash -> datfs.seekg(addr,ios_base::beg);
-  eHash -> datfs.write((char*)&blockTmp,sizeof(EmptyBlock)); 
+  eHash -> datfs.write((char*)&blockTmp, sizeof(EmptyBlock)); 
   return 1;
 }
 
@@ -253,11 +263,17 @@ void ExtendibleHash::readFromFile()
   idxfs.read((char*)&entries[0], entries.size()*SINT);
 }
 
-EmptyBlock ExtendibleHash::findSuitable(int size, int & addr, int & pos, int & datAddr)
+EmptyBlock ExtendibleHash::findSuitable(int size, int & blockAddr, int & offset, int & datAddr)
 {
-  EmptyBlock block;
-  
-  return block;
+  EmptyBlock blockTmp = block;blockAddr = SINT*2;
+  while(blockTmp.checkSuitable(size, offset) == false)
+  { 
+    if(blockTmp.nextBlock == -1) break;
+    idxfs.seekg(blockTmp.nextBlock, ios_base::beg);
+    idxfs.read((char*)&blockTmp, sizeof(EmptyBlock));
+  }
+  if(blockTmp.nextBlock == -1)
+    return block;
 }
 
 int defaultHashFunc(const string&str)
