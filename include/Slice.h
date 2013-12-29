@@ -41,9 +41,7 @@ public:
   }
 
   Slice& operator+=(const Slice&s1);
-
   
-
 private:
 	const char * _data;
 	size_t       _size;
