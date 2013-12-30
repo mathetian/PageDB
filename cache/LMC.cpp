@@ -21,11 +21,11 @@ LimitedMemoryCache::LimitedMemoryCache(int cacheLimitInMB)
 
 bool LimitedMemoryCache::put(const string&key,const string&value)
 {
-	int  keySize = key.size();
+	int  valueSize = value.size();
 	bool putSuccessfully = false;
 	if(valueSize < cacheLimit) 
 	{
-		while (cacheSize + keySize > cacheLimit) 
+		while (cacheSize + valueSize > cacheLimit) 
 		{
 			string removedValue = removeNext();
 			if (hardCache.erase(removedValue)) 
@@ -34,13 +34,18 @@ bool LimitedMemoryCache::put(const string&key,const string&value)
 			}
 		}
 
-		hardCache.insert(key);
-		cacheSize += keySize;
+		hardCache.insert(value);
+		cacheSize += valueSize;
 		putSuccessfully = true;
 		BaseCache::put(key, value);
 	}
 	else log -> _Warn("Large size\n");
 	return putSuccessfully;
+}
+
+string LimitedMemoryCache::get(const string&key)
+{
+	return BaseCache::get(key);
 }
 
 bool LimitedMemoryCache::remove(const string&key)

@@ -1,22 +1,24 @@
-#ifndef _FIFO_LIMITED_MEMORY_CACHE_H
-#define _FIFO_LIMITED_MEMORY_CACHE_H
+#ifndef _LRM_LMC_H
+#define _LRM_LMC_H
 
 #include <queue>
 using namespace std;
 
 #include "LMC.h"
 
-class FIFOLimitedMemoryCache : public LimitedMemoryCache{
+class LRULimitedMemoryCache : public LimitedMemoryCache{
 public:
-	FIFOLimitedMemoryCache();
-	FIFOLimitedMemoryCache(int sizeLimit);
-  ~ FIFOLimitedMemoryCache();
+	LRULimitedMemoryCache();
+	LRULimitedMemoryCache(int sizeLimit);
+	~ LRULimitedMemoryCache();
+
 public:
 	string  removeNext();
 	bool    put(const string & key, const string & value);
 	bool    remove(const string & key);
 	string	get(const string & key);
 	void    clear();
+
 private:
 	deque <string> sQue;
 	typedef LimitedMemoryCache Base;
