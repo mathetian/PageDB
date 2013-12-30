@@ -2,18 +2,23 @@
 #include <stdio.h> 
 #include <sys/stat.h>
 
-EmptyBlock::EmptyBlock() : curPos(PAGESIZE), nextBlock(-1)
+EmptyBlock::EmptyBlock() : curNum(0), nextBlock(-1)
 {
 }
 
 bool EmptyBlock::checkSuitable(int size, int & pos)
 {
-  for(pos = curPos;pos >= 0;pos--)
+  for(pos = curNum - 1;pos >= 0;pos--)
   {
     if(eles[pos].size > size)
       return true;
   }
   return false;
+}
+
+void EmptyBlock::newBlock(int size)
+{
+
 }
 
 Page::Page(ExtendibleHash * eHash) : d(0),curNum(0)
@@ -56,15 +61,12 @@ bool Page::put(const string&key, const string&value, int hashVal)
   /**
     Find an suitable empty block, if not allocated it at the end of the file
   **/
-  EmptyBlock blockTmp; int addr; int offset, datAddr;
-  blockTmp = eHash -> findSuitable(key.size() + value.size(), addr, offset, datAddr);
+  int offset = eHash -> findSuitable(key.size() + value.size());
   
   eHash -> datfs.seekg(offset, ios_base::beg);
   eHash -> datfs.write(key.c_str(), sizeof(key));
   eHash -> datfs.write(value.c_str(), sizeof(value));
 
-  eHash -> datfs.seekg(addr,ios_base::beg);
-  eHash -> datfs.write((char*)&blockTmp, sizeof(EmptyBlock)); 
   return 1;
 }
 
@@ -112,6 +114,7 @@ ExtendibleHash::ExtendibleHash(HASH hashFunc)
 {
 	this -> hashFunc = hashFunc;
 	this -> gd = 0; this -> pn = 1;
+  this -> fb = -1;
 }
 
 ExtendibleHash::~ExtendibleHash()
@@ -246,34 +249,83 @@ bool ExtendibleHash::remove(const string&key)
 
 void ExtendibleHash::writeToFile()
 { 
-  char * content = new char[SINT*2];
+  char * content = new char[SINT*3];
   content = (char*)&gd; content += 4;
-  content = (char*)&pn; content -= 4;
-  idxfs.write(content,SINT*2);
-  idxfs.write((char*)&block,SEBLOCK);
+  content = (char*)&pn; content += 4;
+  content = (char*)&fb; content -= 8;
+  idxfs.write(content,SINT*3);
   idxfs.write((char*)&entries[0], entries.size()*SINT);
 }
 
 void ExtendibleHash::readFromFile()
 {
-  idxfs.read((char*)&gd,SINT);
-  idxfs.read((char*)&pn,SINT);
-  idxfs.read((char*)&block,SEBLOCK);
+  idxfs.read((char*)&gd, SINT);
+  idxfs.read((char*)&pn, SINT);
+  idxfs.read((char*)&fb, SINT);
   entries = vector<int> (1 << gd, 0);
   idxfs.read((char*)&entries[0], entries.size()*SINT);
 }
 
-EmptyBlock ExtendibleHash::findSuitable(int size, int & blockAddr, int & offset, int & datAddr)
+int ExtendibleHash::findSuitable(int size)
 {
-  EmptyBlock blockTmp = block;blockAddr = SINT*2;
-  while(blockTmp.checkSuitable(size, offset) == false)
-  { 
-    if(blockTmp.nextBlock == -1) break;
-    idxfs.seekg(blockTmp.nextBlock, ios_base::beg);
-    idxfs.read((char*)&blockTmp, sizeof(EmptyBlock));
+  EmptyBlock block; int offset, pos; int blockDir;
+  if(fb == -1)
+  {
+    block.curNum = 1;
+    block.eles[0].pos = datfs.tellg();
+    block.eles[0].size = size;
+    offset = datfs.tellg();offset += size;
+    datfs.seekg(2*size,ios_base::end);
+    datfs.write((char*)&block, sizeof(EmptyBlock));
+    return offset;
   }
-  if(blockTmp.nextBlock == -1)
-    return block;
+  
+  datfs.seekg(fb, ios_base::cur); 
+  datfs.write((char*)&block, sizeof(EmptyBlock));
+
+  blockDir = fb;
+  while(block.checkSuitable(size, pos) == false)
+  { 
+    if(block.nextBlock == -1) break;
+    blockDir = block.nextBlock;
+    idxfs.seekg(block.nextBlock, ios_base::beg);
+    idxfs.read((char*)&block, sizeof(EmptyBlock));
+  }
+  
+  if(block.nextBlock == -1)
+  {
+    EmptyBlock nBlock;
+    nBlock.curNum = 1;
+    block.eles[0].pos = datfs.tellg();
+    block.eles[0].size = size;
+    offset = datfs.tellg(); offset += size;
+    datfs.seekg(2 * size, ios_base::end);
+    datfs.write((char*)&block, SEBLOCK);
+  }
+  else
+  {
+    if(block.eles[pos].size == size)
+    {
+      block.curNum --;
+      offset = block.eles[pos].pos;
+      if(block.curNum == 0)
+      {
+        block.curNum ++;
+        block.eles[0].pos = datfs.tellg();
+        block.eles[0].size = size;
+      }
+      datfs.seekg(blockDir, ios_base::beg);
+      datfs.write((char*)&block, SEBLOCK);
+    }
+    else
+    {
+      offset = block.eles[pos].pos;
+      block.eles[pos].size -= size;
+      datfs.seekg(blockDir, ios_base::beg);
+      datfs.write((char*)&block, SEBLOCK);
+    }
+  }
+  return offset;
 }
 
 int defaultHashFunc(const string&str)
@@ -284,4 +336,3 @@ int defaultHashFunc(const string&str)
       value = (value + (str.at(index) << (index*5 % 24))) & 0x7FFFFFFF;
   return value;
 }
-

@@ -3,6 +3,7 @@
 
 #include <string>
 #include <iostream>
+#include <fstream>
 using namespace std;
 
 #include <stdio.h>
@@ -37,7 +38,6 @@ public:
 	enum{ LOG_DEBUG = 1, LOG_TRACE = 2, LOG_WARN  = 3, LOG_ERROR = 4, LOG_FATAL = 5};
 private:
 	int		m_logLevel;
-	FILE *	m_pOutFile;
 	string 	m_prefix;
 };
 

@@ -1,5 +1,5 @@
 #include "../include/CustomDB.h"
-#include "../include/FIFOLimitedMemoryCache.h"
+#include "../include/FFLMC.h"
 #include "../include/EHash.h"
 #include "../include/CHash.h"
 
@@ -27,7 +27,7 @@ bool CustomDB::open(const Options&option)
 	this -> option = option;
 
 	log = Log::GetInstance();
-	log -> SetLogInfo(option.prefix, option.logLevel);
+	log -> SetLogInfo(option.logPrefix, option.logLevel);
 
 	switch(option.cacheOption.cacheType)
 	{
@@ -57,9 +57,9 @@ bool CustomDB::open(const Options&option)
 	if(factory == NULL)
 		log -> _Fatal("CustomDB::open::new factory error\n");
 
-	if(init() == 0)
-		log -> _Fatal("CustomDB::open::env open error\n");	
-}
+	if(factory -> init(option.dbFilePrefix) == false)
+		log -> _Fatal("CustomDB::open::init factory error\n");
+}	
 
 bool CustomDB::put(const string&key,const string&value)
 {
@@ -70,8 +70,11 @@ bool CustomDB::put(const string&key,const string&value)
 	{
 		if(!factory -> put(key,value))
 			log -> _Warn("CustomDB::put::factory put error\n");
-		else 
+		else
+		{
+			cache -> put(key,value);
 			errorStatus = SUCCE;
+		}
 	}
 	return errorStatus;
 }
@@ -86,7 +89,11 @@ string CustomDB::get(const string&key)
 		rs = factory -> get(key);
 		if(rs.size() == 0) 
 			log -> _Warn("CustomDB::get::factor get error\n");
-		else errorStatus = SUCCE;
+		else
+		{
+			cache -> put(key,rs);
+			errorStatus = SUCCE;
+		}
 	}
 	return rs;
 }
@@ -112,9 +119,4 @@ bool CustomDB::remove(const string&key)
 bool CustomDB::getError()
 {
 	return errorStatus;
-}
-
-bool CustomDB::init()
-{
-	factory -> 
 }

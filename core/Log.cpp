@@ -99,7 +99,6 @@ void Log::WriteLog(int outLevel,const char* format,va_list args)
 	}
 	
 	FILE* pfile = fopen(GetLogFileName().c_str(), "a+");
-
 	if(pfile == NULL){
 		return ;
 	}

@@ -34,8 +34,9 @@ public:
     EmptyBlock();
   ~ EmptyBlock() {};
   bool checkSuitable(int size, int & pos);
+  void newBlock(int size);
 public:
-  int      curPos;
+  int      curNum;
   int      nextBlock;
   EmptyEle eles[PAGESIZE];
 };
@@ -83,9 +84,9 @@ public:
     bool     init(const string&filename);
 
 private:
-    void         writeToFile();
-    void         readFromFile();
-    EmptyBlock   findSuitable(int size, int & addr, int & pos, int & datAddr);
+    void     writeToFile();
+    void     readFromFile();
+    int      findSuitable(int size);
 
 private:
   HASH           hashFunc;
@@ -97,9 +98,8 @@ private:
 
 private:
   /**Need read from file**/
-  int            gd, pn;
+  int            gd, pn, fb;
   vector <int>   entries;
-  EmptyBlock     block;
 };
 
 #endif

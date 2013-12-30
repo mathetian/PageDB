@@ -4,19 +4,22 @@
 #include <queue>
 using namespace std;
 
-#include "LimitedMemoryCache.h"
+#include "LMC.h"
 
 class FIFOLimitedMemoryCache : public LimitedMemoryCache{
 public:
 	FIFOLimitedMemoryCache();
 	FIFOLimitedMemoryCache(int sizeLimit);
 	virtual ~ FIFOLimitedMemoryCache();
-	virtual string removeNext();
-	virtual bool put(const char&key,const char&value);
-	virtual bool remove(const char&key);
-	virtual void clear();
+public:
+	string  removeNext();
+	bool    put(const string & key, const string & value);
+	bool    remove(const string & key);
+	string	get(const string & key);
+	void    clear();
 private:
-	queue<string> sQue;
+	deque <string> sQue;
+	typedef LimitedMemoryCache Base;
 };
 
 #endif

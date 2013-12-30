@@ -35,6 +35,7 @@ public:
   	bool     put(const string&key,const string&value);
   	string   get(const string&key);
     bool     remove(const string&key);
+    bool	 init(const string&filename);
 private:
 	Chain  * getChain(const string&key);
 private:

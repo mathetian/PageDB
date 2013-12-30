@@ -35,7 +35,8 @@ typedef struct{
 
 typedef struct{
 	int 		  logLevel;
-	string 	      prefix;
+	string 	      logPrefix;
+	string 		  dbFilePrefix;
 	EnvOption     envOption;
 	CacheOption   cacheOption;
 	FactoryOption factoryOption;
