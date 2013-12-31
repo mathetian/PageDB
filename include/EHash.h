@@ -27,7 +27,7 @@ typedef struct _tEmptyEle{
 class EmptyBlock{
 public:
     EmptyBlock();
-  ~ EmptyBlock() {};
+   ~EmptyBlock();
   bool checkSuitable(int size, int & pos);
   void newBlock(int size);
 public:
@@ -78,6 +78,9 @@ public:
     bool     remove(const string&key);
     bool     init(const string&filename);
 
+private:
+    void     cycle(int offset, int size);
+    
 private:
     void     writeToFile();
     void     readFromFile();

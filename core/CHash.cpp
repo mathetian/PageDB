@@ -1,6 +1,24 @@
 #include "../include/CHash.h"
 #include <sys/stat.h>
 
+EmptyBlock::EmptyBlock() : curNum(0), nextBlock(-1)
+{
+}
+
+EmptyBlock::~EmptyBlock()
+{
+}
+
+bool EmptyBlock::checkSuitable(int size, int & pos)
+{
+  for(pos = curNum - 1;pos >= 0;pos--)
+  {
+    if(eles[pos].size > size)
+      return true;
+  }
+  return false;
+}
+
 Chain::Chain(ChainHash * cHash, int defaultFirstOffset)
 {
 	this -> cHash = cHash;
@@ -71,12 +89,12 @@ bool   Chain::check(const string&key, int hashVal)
 
 bool Chain::remove(const string&key, int hashVal)
 {
-	int offset = firstoffset; Elem elem;
+	int offset = firstoffset; Elem elem; int oldoffset = firstoffset;
 	while(offset != -1)
 	{
 		cHash -> datfs.seekg(offset, ios_base::beg);
 		cHash -> datfs.read ((char*)&elem, SELEM);
-		offset = elem.nextOffset; 
+		oldoffset = offset; offset = elem.nextOffset; 
 		if(elem.hashVal != hashVal || elem.keySize != key.size())
 			continue;
 		char * content = new char[elem.keySize + 2];
@@ -88,6 +106,7 @@ bool Chain::remove(const string&key, int hashVal)
 			/**
 				Storage the emptry space into the the header linklist
 			**/
+			cHash -> cycle(oldoffset, SELEM + elem.keySize + elem.valueSize);
 			return true;
 		}
 	}
@@ -179,4 +198,117 @@ int defaultHashFunc(const string&str)
   for(index = 0;index < str.size();index++)
       value = (value + (str.at(index) << (index*5 % 24))) & 0x7FFFFFFF;
   return value;
+}
+
+int ChainHash::findSuitable(int size)
+{
+  EmptyBlock block; int offset, pos; int blockDir;
+  
+  if(fb == -1)
+  {
+    block.curNum = 1;
+    block.eles[0].pos = datfs.tellg();
+    block.eles[0].size = size;
+    offset = datfs.tellg();offset += size;
+    datfs.seekg(2*size,ios_base::end);
+    datfs.write((char*)&block, sizeof(EmptyBlock));
+    return offset;
+  }
+  
+  datfs.seekg(fb, ios_base::cur); 
+  datfs.write((char*)&block, sizeof(EmptyBlock));
+
+  blockDir = fb;
+  while(block.checkSuitable(size, pos) == false)
+  { 
+    if(block.nextBlock == -1) break;
+    blockDir = block.nextBlock;
+    datfs.seekg(block.nextBlock, ios_base::beg);
+    datfs.read((char*)&block, sizeof(EmptyBlock));
+  }
+  
+  if(block.nextBlock == -1)
+  {
+    EmptyBlock nBlock;
+    nBlock.curNum = 1;
+    block.eles[0].pos = datfs.tellg();
+    block.eles[0].size = size;
+    offset = datfs.tellg(); offset += size;
+    datfs.seekg(2 * size, ios_base::end);
+    datfs.write((char*)&block, SEBLOCK);
+  }
+  else
+  {
+    if(block.eles[pos].size == size)
+    {
+      block.curNum --;
+      offset = block.eles[pos].pos;
+      if(block.curNum == 0)
+      {
+        block.curNum ++;
+        block.eles[0].pos = datfs.tellg();
+        block.eles[0].size = size;
+      }
+      datfs.seekg(blockDir, ios_base::beg);
+      datfs.write((char*)&block, SEBLOCK);
+    }
+    else
+    {
+      offset = block.eles[pos].pos;
+      block.eles[pos].size -= size;
+      datfs.seekg(blockDir, ios_base::beg);
+      datfs.write((char*)&block, SEBLOCK);
+    }
+  }
+  return offset;
+}
+
+void ChainHash::cycle(int offset, int size)
+{
+  EmptyBlock block;
+  
+  if(fb == -1)
+  {
+    block.curNum = 1;
+    block.eles[0].pos = offset;
+    block.eles[0].size = size;
+    fb = datfs.tellg();
+    datfs.seekg(0, ios_base::end);
+    datfs.write((char*)&block, sizeof(EmptyBlock));
+    return;
+  }
+
+  datfs.seekg(fb, ios_base::beg);
+  datfs.read((char*)&block, SEBLOCK);
+  while(block.curNum == PAGESIZE && block.nextBlock != -1)
+  {
+    datfs.seekg(block.nextBlock, ios_base::beg);
+    datfs.read((char*)&block, SEBLOCK);
+  }
+  
+  if(block.curNum < PAGESIZE)
+  {
+    block.eles[block.curNum].pos = offset;
+    block.eles[block.curNum].size = size;
+    block.curNum++;
+    datfs.seekg( -SEBLOCK, ios_base::cur);
+    datfs.write((char*)&block, SEBLOCK);
+  }
+  else
+  {
+    EmptyBlock block2;
+    block2.eles[0].pos = offset;
+    block2.eles[0].size = size;
+    block2.curNum++;
+    int curPos = datfs.tellg();
+    
+    datfs.seekg(0, ios_base::end);
+    datfs.write((char*)&block, SEBLOCK);
+
+    block.nextBlock = datfs.tellg();
+    block.nextBlock -= SEBLOCK;
+
+    datfs.seekg(curPos - SEBLOCK, ios_base::beg);
+    datfs.write((char*)&block, SEBLOCK);
+  }
 }

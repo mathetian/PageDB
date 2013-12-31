@@ -28,15 +28,15 @@ typedef struct _tEmptyEle{
 class EmptyBlock{
 public:
     EmptyBlock();
-  ~ EmptyBlock() {};
+   ~EmptyBlock();
   bool checkSuitable(int size, int & pos);
   void newBlock(int size);
+
 public:
   int      curNum;
   int      nextBlock;
   EmptyEle eles[PAGESIZE];
 };
-
 
 typedef struct _tELEM{
   int nextOffset, keySize;
@@ -84,6 +84,9 @@ public:
   	string   get(const string&key);
     bool     remove(const string&key);
     bool	   init(const string&filename);
+
+private:
+    void     cycle(int offset, int size);
 
 private:
     void     writeToFile();

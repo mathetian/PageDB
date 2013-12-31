@@ -1,1 +1,11 @@
 A light-weight JSONBased Database System
+
+------------------------------------------
+TODO List:
+
+1. Test
+2. JSON
+3. Lock
+4. Parallel
+5. Other support
+6. Vim or others

@@ -6,6 +6,10 @@ EmptyBlock::EmptyBlock() : curNum(0), nextBlock(-1)
 {
 }
 
+EmptyBlock::~EmptyBlock()
+{
+}
+
 bool EmptyBlock::checkSuitable(int size, int & pos)
 {
   for(pos = curNum - 1;pos >= 0;pos--)
@@ -101,7 +105,8 @@ bool Page::remove(const string&key, int hashVal)
   /**
     Attach the space to the emptryBlock
   **/
-
+  eHash -> cycle(elements[index].data_pointer, elements[index].key_size + elements[index].data_size);
+  
   for(;index < curNum - 1;index++)
     elements[rindex] = elements[rindex + 1];
   return true;
@@ -333,4 +338,54 @@ int defaultHashFunc(const string&str)
   for(index = 0;index < str.size();index++)
       value = (value + (str.at(index) << (index*5 % 24))) & 0x7FFFFFFF;
   return value;
+}
+
+void ExtendibleHash::cycle(int offset, int size)
+{
+  EmptyBlock block;
+  
+  if(fb == -1)
+  {
+    block.curNum = 1;
+    block.eles[0].pos = offset;
+    block.eles[0].size = size;
+    fb = datfs.tellg();
+    datfs.seekg(0, ios_base::end);
+    datfs.write((char*)&block, sizeof(EmptyBlock));
+    return;
+  }
+
+  datfs.seekg(fb, ios_base::beg);
+  datfs.read((char*)&block, SEBLOCK);
+  while(block.curNum == PAGESIZE && block.nextBlock != -1)
+  {
+    datfs.seekg(block.nextBlock, ios_base::beg);
+    datfs.read((char*)&block, SEBLOCK);
+  }
+  
+  if(block.curNum < PAGESIZE)
+  {
+    block.eles[block.curNum].pos = offset;
+    block.eles[block.curNum].size = size;
+    block.curNum++;
+    datfs.seekg( -SEBLOCK, ios_base::cur);
+    datfs.write((char*)&block, SEBLOCK);
+  }
+  else
+  {
+    EmptyBlock block2;
+    block2.eles[0].pos = offset;
+    block2.eles[0].size = size;
+    block2.curNum++;
+    int curPos = datfs.tellg();
+    
+    datfs.seekg(0, ios_base::end);
+    datfs.write((char*)&block, SEBLOCK);
+
+    block.nextBlock = datfs.tellg();
+    block.nextBlock -= SEBLOCK;
+
+    datfs.seekg(curPos - SEBLOCK, ios_base::beg);
+    datfs.write((char*)&block, SEBLOCK);
+  }
 }
