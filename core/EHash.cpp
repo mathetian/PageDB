@@ -1,6 +1,6 @@
 #include "../include/EHash.h"
-#include <stdio.h> 
 #include <sys/stat.h>
+#include <string.h>
 
 EmptyBlock::EmptyBlock() : curNum(0), nextBlock(-1)
 {
@@ -14,11 +14,6 @@ bool EmptyBlock::checkSuitable(int size, int & pos)
       return true;
   }
   return false;
-}
-
-void EmptyBlock::newBlock(int size)
-{
-
 }
 
 Page::Page(ExtendibleHash * eHash) : d(0),curNum(0)
@@ -98,12 +93,14 @@ bool Page::remove(const string&key, int hashVal)
       eHash -> datfs.seekg(elements[index].data_pointer, ios_base::beg);
       char * dat =  new char[elements[index].key_size + 1];
       eHash -> datfs.read(dat, elements[index].key_size);
-      if(strcmp(dat, key.c_str()) == 0)
-        break;
-        return true;
+      if(strcmp(dat, key.c_str()) == 0) break;
     }
   }
   if(index == curNum) return false;
+
+  /**
+    Attach the space to the emptryBlock
+  **/
 
   for(;index < curNum - 1;index++)
     elements[rindex] = elements[rindex + 1];
@@ -255,6 +252,7 @@ void ExtendibleHash::writeToFile()
   content = (char*)&fb; content -= 8;
   idxfs.write(content,SINT*3);
   idxfs.write((char*)&entries[0], entries.size()*SINT);
+  delete [] content; content = NULL;
 }
 
 void ExtendibleHash::readFromFile()

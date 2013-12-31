@@ -3,19 +3,14 @@
 #define PAGESIZE 25
 
 #include <string>
-#include <map>
 #include <vector>
-#include <iostream>
 #include <fstream>
 using namespace std;
 
-#include <sys/types.h>
 #include "Factory.h"
-#include "Slice.h"
 
 #define PAGESIZE 25
 #define SINT     sizeof(int)
-#define SOFF     sizeof(off_t)
 #define SPAGE    sizeof(Page)
 #define SEBLOCK  sizeof(EmptyBlock)
 
@@ -95,7 +90,7 @@ private:
   fstream        idxfs;
   fstream        datfs;
   friend  class  Page;
-
+  
 private:
   /**Need read from file**/
   int            gd, pn, fb;
