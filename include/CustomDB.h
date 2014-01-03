@@ -12,31 +12,32 @@ using namespace std;
 #define ERROR 0
 #define SUCCE 1
 
-class CustomDB{
+class CustomDB
+{
 public:
-	CustomDB();
-	virtual ~ CustomDB();
+    CustomDB();
+    virtual ~ CustomDB();
 
 public:
-	bool 	open(const Options&option);
-	bool 	put(const string&key,const string&value);
-	string  get(const string&key);
-	bool 	remove(const string&key);
-	bool	getError();
+    bool 	open(const Options&option);
+    bool 	put(const string&key,const string&value);
+    string  get(const string&key);
+    bool 	remove(const string&key);
+    bool	getError();
 
 private:
-	Options   	option;
-	Factory   * factory;
-	BaseCache * cache;
-	Log       * log;
-	int         errorStatus;
+    Options   	option;
+    Factory   * factory;
+    BaseCache * cache;
+    Log       * log;
+    int         errorStatus;
 
 public:
-	bool init();
+    bool init();
 
 private:
-	FILE	 * idxFile;
-	FILE     * datFile;
+    FILE	 * idxFile;
+    FILE     * datFile;
 };
 
 #endif

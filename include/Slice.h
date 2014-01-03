@@ -8,43 +8,60 @@
 #include <iostream>
 using namespace std;
 
-class Slice{
+class Slice
+{
 public:
-  Slice() : 
-  		_data(""), _size(0) {}
-  
-  Slice(const char* d, size_t n) : 
-  		_data(d), _size(n) {}
-  
-  Slice(const std::string& s) : 
-  		_data(s.data()), _size(s.size()) {}
-  
-  Slice(const char* s) : 
-  		_data(s), _size(strlen(s)) {}
+    Slice() :
+        _data(""), _size(0) {}
 
-public:
-  const char* tochars()  const { return _data; }
-  
-  std::string toString() const { return std::string(_data, _size); }
+    Slice(const char* d, size_t n) :
+        _data(d), _size(n) {}
 
-  size_t size() const { return _size; }
-  
-  bool  empty() const { return _size == 0; }
+    Slice(const std::string& s) :
+        _data(s.data()), _size(s.size()) {}
 
-  void clear() { _data = ""; _size = 0; }
+    Slice(const char* s) :
+        _data(s), _size(strlen(s)) {}
 
 public:
-  char operator[](size_t n) const 
-  {
-    assert(n < size());
-    return _data[n];
-  }
+    const char* tochars()  const
+    {
+        return _data;
+    }
 
-  Slice& operator+=(const Slice&s1);
-  
+    std::string toString() const
+    {
+        return std::string(_data, _size);
+    }
+
+    size_t size() const
+    {
+        return _size;
+    }
+
+    bool  empty() const
+    {
+        return _size == 0;
+    }
+
+    void clear()
+    {
+        _data = "";
+        _size = 0;
+    }
+
+public:
+    char operator[](size_t n) const
+    {
+        assert(n < size());
+        return _data[n];
+    }
+
+    Slice& operator+=(const Slice&s1);
+
 private:
-	const char * _data;
-	size_t       _size;
+    const char * _data;
+    size_t       _size;
 };
 
 bool operator==(const Slice&s1, const Slice&s2);
@@ -53,8 +70,8 @@ bool operator> (const Slice&s1, const Slice&s2);
 
 inline ostream & operator << (ostream & os, const Slice & sl)
 {
-      os << sl.toString();
-      return os;
+    os << sl.toString();
+    return os;
 }
 
 inline istream & operator >> (istream & is, Slice&sl)

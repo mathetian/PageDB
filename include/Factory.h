@@ -4,15 +4,16 @@
 #include <string>
 using namespace std;
 
-class Factory{
+class Factory
+{
 public:
-	Factory() {}
-	virtual ~ Factory() {}
+    Factory() {}
+    virtual ~ Factory() {}
 public:
-	virtual bool   put(const string&key,const string&value) = 0;
-	virtual string get(const string&key) = 0;
-	virtual bool   remove(const string&key) = 0;
-	virtual bool   init(const string&filename) = 0;
+    virtual bool   put(const string&key,const string&value) = 0;
+    virtual string get(const string&key) = 0;
+    virtual bool   remove(const string&key) = 0;
+    virtual bool   init(const string&filename) = 0;
 };
 
 #endif

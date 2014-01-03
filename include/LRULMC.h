@@ -6,22 +6,23 @@ using namespace std;
 
 #include "LMC.h"
 
-class LRULimitedMemoryCache : public LimitedMemoryCache{
+class LRULimitedMemoryCache : public LimitedMemoryCache
+{
 public:
-	LRULimitedMemoryCache();
-	LRULimitedMemoryCache(int sizeLimit);
-	~ LRULimitedMemoryCache();
+    LRULimitedMemoryCache();
+    LRULimitedMemoryCache(int sizeLimit);
+    ~ LRULimitedMemoryCache();
 
 public:
-	string  removeNext();
-	bool    put(const string & key, const string & value);
-	bool    remove(const string & key);
-	string	get(const string & key);
-	void    clear();
+    string  removeNext();
+    bool    put(const string & key, const string & value);
+    bool    remove(const string & key);
+    string	get(const string & key);
+    void    clear();
 
 private:
-	deque <string> sQue;
-	typedef LimitedMemoryCache Base;
+    deque <string> sQue;
+    typedef LimitedMemoryCache Base;
 };
 
 #endif

@@ -6,21 +6,22 @@
 #include <map>
 using namespace std;
 
-class BaseCache{
+class BaseCache
+{
 public:
-	BaseCache();
-	virtual ~ BaseCache();
+    BaseCache();
+    virtual ~ BaseCache();
 public:
-	virtual bool 		   put(const string&key, const string&value);
-	virtual string  	   get(const string&key);
-	virtual bool 		   remove(const string&key);
-	virtual vector<string> keys();
-	virtual void           clear();
+    virtual bool 		   put(const string&key, const string&value);
+    virtual string  	   get(const string&key);
+    virtual bool 		   remove(const string&key);
+    virtual vector<string> keys();
+    virtual void           clear();
 public:
-	int 				   errorState();
+    int 				   errorState();
 private:
-	int lastflag;
-	map<string, string> softMap;
+    int lastflag;
+    map<string, string> softMap;
 };
 
 #endif
