@@ -27,6 +27,7 @@ bool CustomDB::open(const Options&option)
     this -> option = option;
 
     log = Log::GetInstance();
+    
     log -> SetLogInfo(option.logPrefix, option.logLevel);
 
     switch(option.cacheOption.cacheType)

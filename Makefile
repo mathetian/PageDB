@@ -21,5 +21,5 @@ compile:
 test: ${TESTS}
 	$(CXX) ${HEADER} $^ -o $@ ${LDLIBS}
 
-clean:
-	rm -f *.o *.idx *.dat
+clean: 
+	rm -f *.o *.idx *.dat test demo*

@@ -4,6 +4,8 @@
 #include "EHash.h"
 #include "BufferPacket.h"
 
+#define FILEMODE (std::fstream::in | std::fstream::out | std::fstream::app)
+
 EEmptyBlock::EEmptyBlock() : curNum(0), nextBlock(-1)
 {
 }
@@ -136,8 +138,14 @@ bool ExtendibleHash::init(const string&filename)
     string idxName = filename + ".idx";
     string datName = filename +  ".dat";
 
-    idxfs.open (idxName.c_str(), std::fstream::in | std::fstream::out | std::fstream::app);
-    datfs.open (datName.c_str(), std::fstream::in | std::fstream::out | std::fstream::app);
+    idxfs.open (idxName.c_str(), FILEMODE);
+    datfs.open (datName.c_str(), FILEMODE);
+    
+    if(!idxfs || !datfs)
+    {
+        printf("ExtendibleHash::init::open error\n");
+        return false;
+    }
 
     if((stat(idxName.c_str(), &buf) == -1) || buf.st_size == 0)
     {
@@ -156,6 +164,7 @@ bool ExtendibleHash::init(const string&filename)
         page = NULL;
     }
     else readFromFile();
+    return true;
 }
 
 bool ExtendibleHash::put(const string&key,const string&value)
@@ -268,9 +277,13 @@ void ExtendibleHash::writeToFile()
     BufferPacket packet(SINT * 3 + entries.size()*SINT);
     packet << gd << pn << fb;
     packet.write((char*)&entries[0], entries.size()*SINT);
-
+    cout<<"a?"<<endl;
     packet.setBeg();
     idxfs.write(packet.getData(),packet.getSize());
+    cout<<"b?"<<endl;
+    if(idxfs.fail() || idxfs.bad())
+        cout<<"what?"<<endl;
+    idxfs.flush();
 }
 
 void ExtendibleHash::readFromFile()

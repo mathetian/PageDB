@@ -8,6 +8,8 @@
 #include <string>
 using namespace std;
 
+#include "Log.h"
+
 typedef struct
 {
     string fileName;
@@ -23,28 +25,40 @@ typedef struct
 #define FIFO 0
 #define  LRU 1
 
-typedef struct
-{
+typedef struct _tCacheOption{
     int cacheType;
     int sizeLimit;
+    _tCacheOption()
+    {
+        sizeLimit = 4; 
+        cacheType = FIFO;
+    }
 } CacheOption;
 
 #define EHASH 0
 #define CHASH 1
 
-typedef struct
-{
+typedef struct _tFactoryOption{
     int factoryType;
+    _tFactoryOption()
+    { factoryType = EHASH; }
 } FactoryOption;
 
-typedef struct
+typedef struct _tOptions
 {
-    int 		  logLevel;
-    string 	      logPrefix;
-    string 		  dbFilePrefix;
+    LOG_TYPE 	  logLevel;
+    string 	      logPrefix, dbFilePrefix;
     EnvOption     envOption;
     CacheOption   cacheOption;
     FactoryOption factoryOption;
-} Options;
+
+    _tOptions()
+    {
+        logLevel = LOG_DEBUG;
+        logPrefix = "demo";
+        dbFilePrefix = "demo";
+    } 
+}Options;
+
 
 #endif

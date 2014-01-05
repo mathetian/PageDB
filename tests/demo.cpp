@@ -9,6 +9,7 @@ int main()
     Options option;
     CustomDB * db = new CustomDB;
     db -> open(option);
+    printf("open successful\n");
     db -> put("hello","world");
     cout<< db->get("hello") <<endl;
     delete db;

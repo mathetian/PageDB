@@ -4,6 +4,7 @@ BufferPacket::BufferPacket(int size)
 {
 	this -> size = size;
 	this -> data = new char[size];
+	this -> cur  = 0;
 	log = Log::GetInstance();
 }
 
@@ -16,7 +17,7 @@ BufferPacket::~BufferPacket()
 BufferPacket & BufferPacket::operator << (int ivalue)
 {
 	if(cur + sizeof(int) > size)
-		log -> _Error("BufferPacket error\n");
+		log -> _Error("BufferPacket error << int\n");
 	else
 	{
 		*(int*)(data + cur) = ivalue;
@@ -28,7 +29,7 @@ BufferPacket & BufferPacket::operator << (int ivalue)
 BufferPacket & BufferPacket::operator << (size_t st)
 {
 	if(cur + sizeof(size_t) > size)
-		log -> _Error("BufferPacket error\n");
+		log -> _Error("BufferPacket error << size_t\n");
 	else
 	{
 		*(size_t*)(data + cur) = st;
@@ -40,7 +41,7 @@ BufferPacket & BufferPacket::operator << (size_t st)
 BufferPacket & BufferPacket::operator << (string str)
 {
 	if(cur + str.size() > size)
-		log -> _Error("BufferPacket error\n");
+		log -> _Error("BufferPacket error << string\n");
 	else
 	{
 		memcpy(data + cur, str.c_str(), str.size());
@@ -52,7 +53,7 @@ BufferPacket & BufferPacket::operator << (string str)
 void BufferPacket::write(char * str, int len)
 {
 	if(cur + len > size) 
-		log -> _Error("BufferPacket error\n");
+		log -> _Error("BufferPacket error write\n");
 	else
 	{
 		memcpy(data + cur, str, len);

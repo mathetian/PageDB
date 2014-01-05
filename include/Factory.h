@@ -16,6 +16,8 @@ public:
     virtual string get(const string&key) = 0;
     virtual bool   remove(const string&key) = 0;
     virtual bool   init(const string&filename) = 0;
+protected:
+	int 	flag;
 };
 
 

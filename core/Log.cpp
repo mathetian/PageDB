@@ -14,6 +14,32 @@
 
 Log* Log::_pTheLogs = NULL;
 
+ostream& operator<<(ostream& out, const LOG_TYPE value){
+#define MAPENTRY(p) {p, #p}
+    const struct MapEntry{
+        LOG_TYPE value;
+        const char* str;
+    } entries[] = {
+        MAPENTRY(LOG_DEBUG),
+        MAPENTRY(LOG_TRACE),
+        MAPENTRY(LOG_WARN),
+         MAPENTRY(LOG_ERROR),
+        MAPENTRY(LOG_FATAL),
+        {LOG_DEBUG, 0}//doesn't matter what is used instead of ErrorA here...
+    };
+#undef MAPENTRY
+    const char* s = 0;
+    for (const MapEntry* i = entries; i->str; i++){
+        if (i->value == value){
+            s = i->str;
+            break;
+        }
+    }
+
+    return out << s;
+}
+
+
 Log::Log(void)
 {
     m_logLevel = LOG_WARN;
@@ -23,7 +49,7 @@ Log::~Log(void)
 {
 }
 
-void Log::SetLogInfo(const string & prefix,int level)
+void Log::SetLogInfo(const string & prefix,LOG_TYPE level)
 {
     if(_pTheLogs == NULL)
     {
@@ -47,25 +73,6 @@ string Log::GetLogFileName()
     string log = m_prefix;
     log.append(".log");
     return log;
-}
-
-bool  Log::GetLogDirectory(string& dir)
-{
-    /*if( !Log::GetWorkspace(dir)){
-    	return FALSE;
-    }
-
-    char dateBuf[32] = {0x00};
-    GetCurrentTm(TIME_SHORT,dateBuf,32);
-
-    dir.append("\\log\\");
-    dir.append(dateBuf);
-
-    if( !Log::FolderExist(dir) ){
-    	Log::CreateFolder(dir);
-    }
-    */
-    return true;
 }
 
 char* Log::GetCurrentTm(int tag,char* buf,size_t size)
@@ -94,11 +101,12 @@ char* Log::GetCurrentTm(int tag,char* buf,size_t size)
     return NULL;
 }
 
-void Log::WriteLog(int outLevel,const char* format,va_list args)
+void Log::WriteLog(LOG_TYPE outLevel,const char* format,va_list args)
 {
     if(outLevel > m_logLevel)
     {
-        printf("WriteLog::outLevel::format::error\n");
+        vprintf(format,args);
+        printf("WriteLog::outLevel::level::error\n");
         exit(1);
     }
 
@@ -110,8 +118,18 @@ void Log::WriteLog(int outLevel,const char* format,va_list args)
 
     char buf[32]= {0x00};
     GetCurrentTm(TIME_FULL, buf, 32);
-
+    
     fprintf (pfile,"%s\t",buf);
+    
+    switch(outLevel)
+    {
+    case LOG_TRACE: fprintf(pfile,"LOG_TRACE---"); break;
+    case LOG_DEBUG: fprintf(pfile,"LOG_DEBUG---"); break;
+    case LOG_WARN : fprintf(pfile,"LOG_WARN ---"); break;
+    case LOG_ERROR: fprintf(pfile,"LOG_ERROR---"); break;
+    case LOG_FATAL: fprintf(pfile,"LOG_FATAL---"); break;
+    }
+    
     vfprintf(pfile,format,args);
     fprintf (pfile, "\n");
     fflush(pfile);

@@ -11,6 +11,7 @@ class BaseCache
 public:
     BaseCache();
     virtual ~ BaseCache();
+    
 public:
     virtual bool 		   put(const string&key, const string&value);
     virtual string  	   get(const string&key);
