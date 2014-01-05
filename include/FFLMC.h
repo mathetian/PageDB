@@ -18,6 +18,7 @@ public:
     bool    remove(const string & key);
     string	get(const string & key);
     void    clear();
+
 private:
     deque <string> sQue;
     typedef LimitedMemoryCache Base;

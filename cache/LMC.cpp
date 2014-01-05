@@ -1,4 +1,4 @@
-#include "../include/LMC.h"
+#include "LMC.h"
 
 const int LimitedMemoryCache::defaultCacheSizeInMB=16;
 const int LimitedMemoryCache::defaultCacheSize = defaultCacheSizeInMB * 1024 * 1024;
@@ -17,6 +17,10 @@ LimitedMemoryCache::LimitedMemoryCache(int cacheLimitInMB)
     log = Log::GetInstance();
     if(cacheSize > defaultCacheSize)
         log -> _Warn("LimitedMemoryCache: defaultCacheSize\n");
+}
+
+LimitedMemoryCache::~LimitedMemoryCache()
+{
 }
 
 bool LimitedMemoryCache::put(const string&key,const string&value)
@@ -61,4 +65,11 @@ void LimitedMemoryCache::clear()
     hardCache.clear();
     BaseCache::clear();
 }
+
+void LimitedMemoryCache::clearQ(deque <string> &q )
+{
+    deque<string> empty;
+    swap(q, empty);
+}
+
 

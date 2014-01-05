@@ -3,8 +3,6 @@
 
 #include <list>
 #include <vector>
-using namespace std;
-
 #include <fstream>
 using namespace std;
 
@@ -12,21 +10,19 @@ using namespace std;
 
 typedef int (*HASH)(const string&key);
 
-extern int defaultHashFunc(const string&str);
-
 #define PAGESIZE 25
 #define SINT     sizeof(int)
 #define SEBLOCK  sizeof(EmptyBlock)
 #define SELEM    sizeof(Elem)
 
-typedef struct _tEmptyEle
+typedef struct _tCEmptyEle
 {
     int   pos, size;
-    _tEmptyEle()
+    _tCEmptyEle()
     {
         pos = size = -1;
     }
-} EmptyEle;
+} CEmptyEle;
 
 class EmptyBlock
 {
@@ -39,7 +35,7 @@ public:
 public:
     int      curNum;
     int      nextBlock;
-    EmptyEle eles[PAGESIZE];
+    CEmptyEle eles[PAGESIZE];
 };
 
 typedef struct _tELEM

@@ -12,32 +12,31 @@ using namespace std;
 #define PAGESIZE 25
 #define SINT     sizeof(int)
 #define SPAGE    sizeof(Page)
-#define SEBLOCK  sizeof(EmptyBlock)
+#define SEEBLOCK  sizeof(EEmptyBlock)
 
 typedef int (*HASH)(const string&key);
 
-extern int defaultHashFunc(const string&str);
 
-typedef struct _tEmptyEle
+typedef struct _tEEmptyEle
 {
     int   pos, size;
-    _tEmptyEle()
+    _tEEmptyEle()
     {
         pos = size = -1;
     }
-} EmptyEle;
+} EEmptyEle;
 
-class EmptyBlock
+class EEmptyBlock
 {
 public:
-    EmptyBlock();
-    ~EmptyBlock();
+    EEmptyBlock();
+    ~EEmptyBlock();
     bool checkSuitable(int size, int & pos);
     void newBlock(int size);
 public:
     int      curNum;
     int      nextBlock;
-    EmptyEle eles[PAGESIZE];
+    EEmptyEle eles[PAGESIZE];
 };
 
 typedef struct

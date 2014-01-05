@@ -3,6 +3,7 @@
 
 #include <list>
 #include <set>
+#include <queue>
 using namespace std;
 
 #include "BaseCache.h"
@@ -14,14 +15,18 @@ public:
     LimitedMemoryCache();
     LimitedMemoryCache(int cacheLimitInMB);
     virtual ~ LimitedMemoryCache();
+
 public:
     virtual bool   put(const string&key, const string&value);
     virtual string get(const string&key);
     virtual bool   remove(const string&key);
-    virtual vector<string> keys(const string&key);
     virtual void   clear();
+
 public:
     virtual string   removeNext() = 0;
+
+protected:
+    void clearQ(deque <string> &q);
 
 private:
     const static int defaultCacheSize;

@@ -1,4 +1,4 @@
-#include "../include/LRULMC.h"
+#include "LRULMC.h"
 
 LRULimitedMemoryCache::LRULimitedMemoryCache() : LimitedMemoryCache()
 {
@@ -44,14 +44,6 @@ bool   LRULimitedMemoryCache::remove(const string&key)
 string LRULimitedMemoryCache::get(const string&key)
 {
 
-}
-
-
-
-void clearQ(deque <string> &q )
-{
-    deque<string> empty;
-    swap(q, empty);
 }
 
 void   LRULimitedMemoryCache::clear()

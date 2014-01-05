@@ -1,4 +1,4 @@
-#include "../include/FFLMC.h"
+#include "FFLMC.h"
 
 FIFOLimitedMemoryCache::FIFOLimitedMemoryCache() : LimitedMemoryCache()
 {
@@ -56,12 +56,6 @@ bool FIFOLimitedMemoryCache::remove(const string&key)
     }
     sQue.erase(itDq);
     return true;
-}
-
-void clearQ(deque <string> &q )
-{
-    deque<string> empty;
-    swap(q, empty);
 }
 
 void FIFOLimitedMemoryCache::clear()

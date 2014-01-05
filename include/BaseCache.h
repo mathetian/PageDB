@@ -15,10 +15,9 @@ public:
     virtual bool 		   put(const string&key, const string&value);
     virtual string  	   get(const string&key);
     virtual bool 		   remove(const string&key);
-    virtual vector<string> keys();
+    vector<string>         keys();
     virtual void           clear();
-public:
-    int 				   errorState();
+    
 private:
     int lastflag;
     map<string, string> softMap;

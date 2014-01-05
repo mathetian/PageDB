@@ -1,7 +1,7 @@
-#include "../include/CustomDB.h"
-#include "../include/FFLMC.h"
-#include "../include/EHash.h"
-#include "../include/CHash.h"
+#include "CustomDB.h"
+#include "FFLMC.h"
+#include "EHash.h"
+#include "CHash.h"
 
 CustomDB::CustomDB()
 {

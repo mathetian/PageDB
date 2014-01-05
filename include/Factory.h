@@ -4,6 +4,8 @@
 #include <string>
 using namespace std;
 
+extern int defaultHashFunc(const string&str);
+
 class Factory
 {
 public:
@@ -15,5 +17,6 @@ public:
     virtual bool   remove(const string&key) = 0;
     virtual bool   init(const string&filename) = 0;
 };
+
 
 #endif
