@@ -1,34 +1,25 @@
-WKDIR=..
-
-CXX = g++
-
-COMPILE.c=$(CC) $(CFLAGS) $(CPPFLAGS) -c
-LINK.c=$(CC) $(CFLAGS) $(CPPFLAGS) $(LDDIR) $(LDFLAGS)
-
-LDDIR=-L../include
-CFLAGS=-DLINUX -ansi -I$(WKDIR)/include -Wall -D_GNU_SOURCE $(EXTRA)
-
-AR	= ar
+CXX     = g++
+AR	    = ar
 LIBMISC	= libcustomDB.a
+RANLIB  = ranlib
+HEADER  = -I./include -I./helpers
+SOURCES = cache/*.cpp core/*.cpp helpers/*.cpp
 
-OBJS   = CustomDB.o
+TESTS   = tests/demo.cpp
 
-RANLIB     = ranlib
+LDLIBS  = -L. -lcustomDB
 
-PROGS = CHash EHash CustomDB Log LMC FFLMC LRULMC BaseCache
-
-CXXFLAGS = -I./include -I./helpers
-
-SOURCES=cache/*.cpp core/*.cpp helpers/*.cpp
-
-all:
-	${CXX} ${CXXFLAGS} -c ${SOURCES}
-
-lib:${OBJS}
+lib:compile
 	${AR} rv ${LIBMISC} *.o
 	$(MAKE) clean
 	${RANLIB} ${LIBMISC}
 	rm -f *.o
 
+compile:
+	${CXX} ${HEADER} -c ${SOURCES}
+
+test: ${TESTS}
+	$(CXX) ${HEADER} $^ -o $@ ${LDLIBS}
+
 clean:
-	rm -f ${PROGS} ${TEMPFILES} *.o *.idx *.dat all
+	rm -f *.o *.idx *.dat
