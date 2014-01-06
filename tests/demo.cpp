@@ -11,8 +11,8 @@ int main()
     db -> open(option);
     printf("open successful\n");
     db -> put("hello","world");
-    cout<< db -> get("hello1") <<endl;
-    db -> put("hello","world");
+    /*cout<< db -> get("hello1") <<endl;
+    db -> put("hello","world");*/
     delete db;
 
     return 0;
