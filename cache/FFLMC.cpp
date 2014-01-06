@@ -32,16 +32,19 @@ bool FIFOLimitedMemoryCache::put(const string&key,const string&value)
 string FIFOLimitedMemoryCache::get(const string&key)
 {
     string value = LimitedMemoryCache::get(key);
-
+    
     deque <string>::iterator itDq = sQue.begin();
 
     for(; itDq < sQue.end(); itDq++)
     {
         if(*itDq == key) break;
     }
-
-    sQue.erase(itDq);
-    sQue.push_back(value);
+    
+    if(itDq != sQue.end())
+    {
+        sQue.erase(itDq);
+        sQue.push_back(value);
+    }
 
     return value;
 }

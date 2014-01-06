@@ -60,19 +60,24 @@ bool CustomDB::open(const Options&option)
 
     if(factory -> init(option.dbFilePrefix) == false)
         log -> _Fatal("CustomDB::open::init factory error\n");
+
+    log -> _Trace("CustomDB::open initialization successfully\n");
 }
 
 bool CustomDB::put(const string&key,const string&value)
 {
     errorStatus = ERROR;
     if((cache -> get(key)).size() != 0)
-        log -> _Trace("CustomDB::put::exist in cache\n");
+        log -> _Warn("CustomDB::put::exist in cache, %s %s\n", key.c_str(), value.c_str());
     else
     {
+        log -> _Trace("CustomDB::put::not exist in cache\n");
+        
         if(!factory -> put(key,value))
-            log -> _Warn("CustomDB::put::factory put error\n");
+            log -> _Warn("CustomDB::put::factory put error, %s %s\n",key.c_str(), value.c_str());
         else
         {
+            log -> _Trace("CustomDB::put::factory put successfully\n");
             cache -> put(key,value);
             errorStatus = SUCCE;
         }
@@ -89,7 +94,7 @@ string CustomDB::get(const string&key)
     {
         rs = factory -> get(key);
         if(rs.size() == 0)
-            log -> _Warn("CustomDB::get::factor get error\n");
+            log -> _Warn("CustomDB::get::factory get error, %s\n",key.c_str());
         else
         {
             cache -> put(key,rs);

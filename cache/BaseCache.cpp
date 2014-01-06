@@ -1,13 +1,5 @@
 #include "BaseCache.h"
 
-BaseCache::BaseCache()
-{
-}
-
-BaseCache::~BaseCache()
-{
-}
-
 bool BaseCache::put(const string&key,const string&value)
 {
     if(softMap.find(key) == softMap.end())

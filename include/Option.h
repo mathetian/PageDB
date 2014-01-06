@@ -54,7 +54,7 @@ typedef struct _tOptions
 
     _tOptions()
     {
-        logLevel = LOG_DEBUG;
+        logLevel = LOG_WARN;
         logPrefix = "demo";
         dbFilePrefix = "demo";
     } 

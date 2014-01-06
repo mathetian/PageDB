@@ -10,10 +10,10 @@ public:
     virtual ~ MemoryPool();
 
 public:
-    unsigned char*Allocate(uint64_t nFileLen,uint64_t&nAllocateSize);
+    char*Allocate(uint64_t nFileLen,uint64_t&nAllocateSize);
 
 private:
-    unsigned char      * m_pMem;
+    char      * m_pMem;
     uint64_t    m_nMemSize;
     uint64_t    m_nMemMax;
     uint64_t    m_nAvailPhys;

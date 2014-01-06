@@ -16,12 +16,11 @@ extern std::ostream& operator<<(std::ostream& out, const LOG_TYPE value);
 class Log
 {
 public:
-    ~Log(void);
     static Log * GetInstance();
+    void    SetLogInfo(const string & fileName,LOG_TYPE level);
 
 public:
-    void 	SetLogInfo(const string & fileName,LOG_TYPE level);
-
+    ~Log()  { }
     void 	_Trace(const char* format,...);
     void 	_Debug(const char* format,...);
     void 	_Warn(const char* format,...);
@@ -29,17 +28,17 @@ public:
     void 	_Fatal(const char* format,...);
 
 private:
-    static Log * _pTheLogs;
+    static Log *     _pTheLogs;
+    static LOG_TYPE  m_logLevel;
+    static string    m_prefix;
+    static FILE *    pfile;
 
 private:
-    Log();
+    Log() {}
     string GetLogFileName();
     void   WriteLog(LOG_TYPE outLevel,const char* format,va_list args);
     char * GetCurrentTm(int tag,char* buf,size_t size);
 
-private:
-    LOG_TYPE m_logLevel;
-    string 	 m_prefix;
 };
 
 #endif

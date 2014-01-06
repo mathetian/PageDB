@@ -11,9 +11,7 @@ LDLIBS  = -L. -lcustomDB
 
 lib:compile
 	${AR} rv ${LIBMISC} *.o
-	$(MAKE) clean
 	${RANLIB} ${LIBMISC}
-	rm -f *.o
 
 compile:
 	${CXX} ${HEADER} -c ${SOURCES}

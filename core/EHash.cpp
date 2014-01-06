@@ -6,14 +6,6 @@
 
 #define FILEMODE (std::fstream::in | std::fstream::out | std::fstream::app)
 
-EEmptyBlock::EEmptyBlock() : curNum(0), nextBlock(-1)
-{
-}
-
-EEmptyBlock::~EEmptyBlock()
-{
-}
-
 bool EEmptyBlock::checkSuitable(int size, int & pos)
 {
     for(pos = curNum - 1; pos >= 0; pos--)
@@ -24,19 +16,19 @@ bool EEmptyBlock::checkSuitable(int size, int & pos)
     return false;
 }
 
-Page::Page(ExtendibleHash * eHash) : d(0),curNum(0)
+BufferPacket Page::getPacket()
 {
-    memset(elements,-1,sizeof(elements));
-    this -> eHash = eHash;
+    BufferPacket packet(SINT * 2 + sizeof(elements));
+    packet << d << curNum;
+    packet.write((char*)&elements[0], sizeof(elements));
+    return packet;
 }
 
-Page::~Page()
+void  Page::setBucket(BufferPacket & packet)
 {
-}
-
-bool Page::full()
-{
-    return curNum > PAGESIZE;
+    packet.setBeg();
+    packet >> d >> curNum;
+    packet.read((char*)&elements[0],SPELEMENT*(PAGESIZE + 5));
 }
 
 bool Page::put(const string&key, const string&value, int hashVal)
@@ -54,7 +46,7 @@ bool Page::put(const string&key, const string&value, int hashVal)
                 **/
                 eHash -> datfs.seekg(element.data_pointer,ios_base::beg);
                 BufferPacket packet(element.key_size + element.data_size);
-                eHash -> datfs.read(packet.getData(),packet.getSize());
+                eHash -> datfs.read(packet.getData(), packet.getSize());
                 packet.setBeg();string str1(packet.getSize(),0);
                 packet >> str1;
                 if(str1 == key) return 0;
@@ -65,7 +57,6 @@ bool Page::put(const string&key, const string&value, int hashVal)
       Find an suitable empty block, if not allocated it at the end of the file
     **/
     int offset = eHash -> findSuitable(key.size() + value.size());
-
     eHash -> datfs.seekg(offset, ios_base::beg);
     eHash -> datfs.write(key.c_str(), sizeof(key));
     eHash -> datfs.write(value.c_str(), sizeof(value));
@@ -152,13 +143,16 @@ bool ExtendibleHash::init(const string&filename)
         gd = 0;
         pn = 1;
         entries.push_back(0);
+
         page = new Page(this);
 
         idxfs.seekg(0,ios_base::beg);
         writeToFile();
 
         datfs.seekg(0,ios_base::beg);
-        datfs.write((char*)page,sizeof(Page));
+        BufferPacket packet = page -> getPacket();
+        datfs.write(packet.getData(),packet.getSize());
+        datfs.flush();
 
         delete page;
         page = NULL;
@@ -171,14 +165,20 @@ bool ExtendibleHash::put(const string&key,const string&value)
 {
     int hashVal = hashFunc(key);
     int cur     = hashVal & ((1 << gd) -1);
+
     page        = new Page(this);
 
+    BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
+    
     datfs.seekg(entries.at(cur), ios_base::beg);
-    datfs.read((char*)page, SPAGE);
+    datfs.read(packet.getData(), packet.getSize());
 
+    page -> setBucket(packet);
+    page -> printAllEle();
+    
     if(page -> full() && page -> d == gd)
     {
-        this -> gd++;
+        this -> gd++; 
         int oldSize = entries.size();
         for(int i = 0; i < oldSize; i++)
             entries.push_back(entries.at(i));
@@ -189,6 +189,8 @@ bool ExtendibleHash::put(const string&key,const string&value)
 
     if(page -> full() && page -> d < gd)
     {
+        log -> _Trace("ExtendibleHash :: put :: split \n");
+
         page -> put(key, value, hashVal);
 
         Page * p1 = new Page(this);
@@ -234,8 +236,10 @@ bool ExtendibleHash::put(const string&key,const string&value)
     }
     else
         page -> put(key, value, hashVal);
+        
     delete page;
     page = NULL;
+    
     return true;
 }
 
@@ -276,22 +280,23 @@ void ExtendibleHash::writeToFile()
 {
     BufferPacket packet(SINT * 3 + entries.size()*SINT);
     packet << gd << pn << fb;
+
     packet.write((char*)&entries[0], entries.size()*SINT);
-    cout<<"a?"<<endl;
-    packet.setBeg();
+
     idxfs.write(packet.getData(),packet.getSize());
-    cout<<"b?"<<endl;
-    if(idxfs.fail() || idxfs.bad())
-        cout<<"what?"<<endl;
     idxfs.flush();
 }
 
 void ExtendibleHash::readFromFile()
 {
-    idxfs.read((char*)&gd, SINT);
-    idxfs.read((char*)&pn, SINT);
-    idxfs.read((char*)&fb, SINT);
+    BufferPacket packet(SINT * 3);
+    
+    idxfs.read(packet.getData(), packet.getSize());
+    
+    packet >> gd >> pn >> fb;
+
     entries = vector<int> (1 << gd, 0);
+
     idxfs.read((char*)&entries[0], entries.size()*SINT);
 }
 
@@ -305,10 +310,15 @@ int ExtendibleHash::findSuitable(int size)
         block.curNum = 1;
         block.eles[0].pos = datfs.tellg();
         block.eles[0].size = size;
-        offset = datfs.tellg();
+        
+        offset  = datfs.tellg();
         offset += size;
+        
         datfs.seekg(2*size,ios_base::end);
         datfs.write((char*)&block, SEEBLOCK);
+        
+        datfs.flush();
+
         return offset;
     }
 

@@ -6,11 +6,13 @@
 #include <map>
 using namespace std;
 
+#include "Log.h"
+
 class BaseCache
 {
 public:
-    BaseCache();
-    virtual ~ BaseCache();
+    BaseCache() { log = Log::GetInstance(); }
+    virtual ~ BaseCache() { }
     
 public:
     virtual bool 		   put(const string&key, const string&value);
@@ -18,7 +20,10 @@ public:
     virtual bool 		   remove(const string&key);
     vector<string>         keys();
     virtual void           clear();
-    
+
+protected:
+	Log   * log;
+	
 private:
     int lastflag;
     map<string, string> softMap;

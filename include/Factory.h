@@ -2,14 +2,17 @@
 #define _FAC_H
 
 #include <string>
+#include <iostream>
 using namespace std;
+
+#include "Log.h"
 
 extern int defaultHashFunc(const string&str);
 
 class Factory
 {
 public:
-    Factory() {}
+    Factory() { log = Log::GetInstance(); }
     virtual ~ Factory() {}
 public:
     virtual bool   put(const string&key,const string&value) = 0;
@@ -18,6 +21,7 @@ public:
     virtual bool   init(const string&filename) = 0;
 protected:
 	int 	flag;
+	Log  *  log;
 };
 
 

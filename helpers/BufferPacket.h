@@ -19,13 +19,14 @@ public:
 	BufferPacket & operator << (size_t st);
 	BufferPacket & operator << (string str);
 	void		   write       (char * str, int len);
+	void		   write       (BufferPacket packet);
 
 public:
-	BufferPacket & operator >> (int ivalue);
-	BufferPacket & operator >> (size_t st);
-	BufferPacket & operator >> (string str);
+	BufferPacket & operator >> (int&ivalue);
+	BufferPacket & operator >> (size_t&st);
+	BufferPacket & operator >> (string&str);
 	void 		   read        (char * str, int len);
-
+	
 public:
 	char * getData() { return data;}
 	int    getSize() { return size;}
@@ -36,5 +37,11 @@ private:
 	int    size, cur;
 	Log  * log;
 };
+
+/*inline istream & operator << (istream & is, const BufferPacket & packet)
+{
+	cout<<"what?"<<endl;
+	return is;
+}*/
 
 #endif

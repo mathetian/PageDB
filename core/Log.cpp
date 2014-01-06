@@ -12,7 +12,10 @@
 #define TM_FORMAT_SHORT     "%04d%02d%02d"
 #define TM_FORMAT_FULL      "%04d.%02d.%02d - %02d:%02d:%02d"
 
-Log* Log::_pTheLogs = NULL;
+Log   *  Log::_pTheLogs = NULL;
+LOG_TYPE Log::m_logLevel;
+string   Log::m_prefix;
+FILE  *  Log::pfile;
 
 ostream& operator<<(ostream& out, const LOG_TYPE value){
 #define MAPENTRY(p) {p, #p}
@@ -39,32 +42,23 @@ ostream& operator<<(ostream& out, const LOG_TYPE value){
     return out << s;
 }
 
-
-Log::Log(void)
-{
-    m_logLevel = LOG_WARN;
-}
-
-Log::~Log(void)
-{
-}
-
 void Log::SetLogInfo(const string & prefix,LOG_TYPE level)
 {
-    if(_pTheLogs == NULL)
-    {
+    if(_pTheLogs == NULL) 
         _pTheLogs = new Log;
-    }
+
     _pTheLogs -> m_prefix   = prefix;
     _pTheLogs -> m_logLevel = level;
+    _pTheLogs -> pfile = fopen(GetLogFileName().c_str(), "a+");
+    if(! _pTheLogs -> pfile)
+        printf("open file error\n");
 }
 
 Log* Log::GetInstance()
 {
     if(_pTheLogs == NULL)
-    {
         _pTheLogs = new Log;
-    }
+    
     return _pTheLogs;
 }
 
@@ -102,21 +96,21 @@ char* Log::GetCurrentTm(int tag,char* buf,size_t size)
 }
 
 void Log::WriteLog(LOG_TYPE outLevel,const char* format,va_list args)
-{
+{    
     if(outLevel > m_logLevel)
     {
         vprintf(format,args);
-        printf("WriteLog::outLevel::level::error\n");
         exit(1);
     }
 
-    FILE* pfile = fopen(GetLogFileName().c_str(), "a+");
-    if(pfile == NULL)
-    {
-        return ;
-    }
-
+    /**
+        Need advanced solution
+    **/
+   /* if(outLevel ==  m_logLevel)
+        vprintf(format,args1);*/
+    
     char buf[32]= {0x00};
+    
     GetCurrentTm(TIME_FULL, buf, 32);
     
     fprintf (pfile,"%s\t",buf);
@@ -129,12 +123,11 @@ void Log::WriteLog(LOG_TYPE outLevel,const char* format,va_list args)
     case LOG_ERROR: fprintf(pfile,"LOG_ERROR---"); break;
     case LOG_FATAL: fprintf(pfile,"LOG_FATAL---"); break;
     }
-    
     vfprintf(pfile,format,args);
+
     fprintf (pfile, "\n");
+    
     fflush(pfile);
-    fclose(pfile);
-    pfile = NULL;
 }
 
 void Log::_Trace(const char* format,...)

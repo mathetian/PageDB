@@ -61,7 +61,7 @@ void BufferPacket::write(char * str, int len)
 	}
 }
 
-BufferPacket & BufferPacket::operator >> (int ivalue)
+BufferPacket & BufferPacket::operator >> (int&ivalue)
 {
 	if(cur + sizeof(ivalue) > size) 
 		log -> _Error("BufferPacket >> int overflow\n");
@@ -73,7 +73,7 @@ BufferPacket & BufferPacket::operator >> (int ivalue)
 	return *this;
 }
 
-BufferPacket & BufferPacket::operator >> (size_t st)
+BufferPacket & BufferPacket::operator >> (size_t&st)
 {
 	if(cur + sizeof(st) > size)
 		log -> _Error("BufferPacket >> size_t overflow\n");
@@ -85,7 +85,7 @@ BufferPacket & BufferPacket::operator >> (size_t st)
 	return *this;
 }
 
-BufferPacket & BufferPacket::operator >> (string str)
+BufferPacket & BufferPacket::operator >> (string&str)
 {
 	if(cur + str.size() > size)
 		log -> _Error("BufferPacket >> string overflow\n");
@@ -107,5 +107,16 @@ void BufferPacket::read(char * str, int len)
 	{
 		memcpy(str,data + cur,len);
 		cur += len;
+	}
+}
+
+void BufferPacket::write(BufferPacket packet)
+{
+	if(cur + packet.getSize() > size)
+		log -> _Error("BufferPacket write packet overflow\n");
+	else
+	{
+		memcpy(data + cur,(char*)&packet,packet.getSize());
+		cur += packet.getSize();
 	}
 }
