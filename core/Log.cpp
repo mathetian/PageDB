@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdarg.h>
+#include <string.h>
 
 #define TIME_SHORT 50
 #define TIME_FULL  51
@@ -108,13 +109,13 @@ void Log::WriteLog(LOG_TYPE outLevel,const char* format,va_list args)
     **/
    /* if(outLevel ==  m_logLevel)
         vprintf(format,args1);*/
-    
+
     char buf[32]= {0x00};
     
     GetCurrentTm(TIME_FULL, buf, 32);
     
     fprintf (pfile,"%s\t",buf);
-    
+
     switch(outLevel)
     {
     case LOG_TRACE: fprintf(pfile,"LOG_TRACE---"); break;

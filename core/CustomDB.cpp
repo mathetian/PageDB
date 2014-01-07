@@ -118,6 +118,7 @@ bool CustomDB::remove(const string&key)
     }
     if((factory -> remove(key)) == 0)
         log -> _Error("CustomDB::remove::factory remove error\n");
+    
     errorStatus = SUCCE;
     return errorStatus;
 }
