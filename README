@@ -9,3 +9,15 @@ TODO List:
 4. Parallel
 5. Other support
 6. Vim or others
+
+------------------------------------------
+
+I guess I will make some other tasks to implement the DB, like 3.
+
+Also,
+
+7. Memory Pool 
+8. Thread Pool
+9. AIO, IOCP
+
+Are very import in this project.
