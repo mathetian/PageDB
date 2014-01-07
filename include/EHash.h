@@ -33,7 +33,7 @@ public:
     EEmptyBlock() : curNum(0), nextBlock(-1) { }
     ~EEmptyBlock() { }
     bool checkSuitable(int size, int & pos);
-
+    EEmptyBlock split();
 public:
     int      curNum;
     int      nextBlock;
@@ -122,11 +122,12 @@ private:
 private:
     HASH           hashFunc;
     Page   *       page;
-    int            curId;
+    bool           updated;
+    bool           eupdated;
     fstream        idxfs;
     fstream        datfs;
     friend  class  Page;
-    
+
 private:
     /**Need read from file**/
     int            gd, pn, fb;
