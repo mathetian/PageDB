@@ -102,6 +102,7 @@ public:
 public:
 	char * getMemory(size_t size);
 	bool   freeMemory(char * p, size_t size);
+	bool   freeMemory(void * p, size_t size) { return freeMemory((char*)p, size);}
 private:
 	bool   allocateMemory(size_t size);
 	void   freeAllMemory();

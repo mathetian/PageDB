@@ -5,7 +5,9 @@ RANLIB  = ranlib
 HEADER  = -I./include -I./helpers
 SOURCES = cache/*.cpp core/*.cpp helpers/*.cpp
 
-TESTS   = tests/demo.cpp
+TESTS   = tests/dp_test.cpp
+
+MPTEST  = tests/mp_test.cpp
 
 LDLIBS  = -L. -lcustomDB
 
@@ -19,5 +21,8 @@ compile:
 test: ${TESTS}
 	$(CXX) ${HEADER} $^ -o $@ ${LDLIBS}
 
+mp_test: ${MPTEST}
+	$(CXX) ${HEADER} $^ -o $@ ${LDLIBS}
+
 clean: 
-	rm -f *.o *.idx *.dat test demo*
+	rm -f *.o *.idx *.dat test demo* mp_test
