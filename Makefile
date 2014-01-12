@@ -16,7 +16,10 @@ lib:compile
 	${RANLIB} ${LIBMISC}
 
 compile:
-	${CXX} ${HEADER} -c ${SOURCES}
+	${CXX} ${HEADER} -c ${SOURCES} 
+
+thread:
+	${CXX}  helpers/ThreadPool.h -o thread -std=c++0x
 
 test: ${TESTS}
 	$(CXX) ${HEADER} $^ -o $@ ${LDLIBS}
