@@ -3,6 +3,8 @@
 ThreadPool::ThreadPool(int threadNum)
 {
 	m_actThreadNum = 0;
+	m_threadNum    = 0;
+	m_targetNum    = 0;
 	resize(threadNum);
 }
 
@@ -22,26 +24,30 @@ void ThreadPool::schedule(const Task & task)
 	m_taskCIN.notify_one();
 }
 
-bool ThreadPool::wait() const
+void ThreadPool::wait() const
 {
 	unique_lock<mutex> lock(m_monitor);
 	
 	while(m_actThreadNum != 0 || m_Tasks.size() != 0)
-		m_tasksFinished.wait(lock);
+		m_tasksFinishedOrTerminated.wait(lock);
 }
 
-
-bool ThreadPool::wait(struct timeval & spec) const
+void ThreadPool::timedwait(struct timeval & spec) const
 {
-	unique_lock<mutex> lock(m_monitor);
+}
+
+void ThreadPool::timedwait(chrono::steady_clock::time_point abs_time) const
+{
+	unique_lock<mutex> lock(this -> m_monitor);
 
 	while(m_actThreadNum != 0 || m_Tasks.size() != 0)
-		m_tasksFinished.wait(lock);
+		m_tasksFinishedOrTerminated.wait_until(lock, abs_time);
 }
 
 bool ThreadPool::resize(int targetNum)
 {
     unique_lock<mutex> lock(m_monitor);
+
     if(targetNum < m_actThreadNum)
       return false;
     else if(targetNum == m_threadNum)
@@ -59,6 +65,10 @@ bool ThreadPool::resize(int targetNum)
       /**
           Without implementation
       **/
+        m_targetNum = targetNum;
+       	while(m_threadNum == targetNum)
+   			m_tasksFinishedOrTerminated.wait(lock);	
+   		m_targetNum = 0;
     }
     return true;
 }
@@ -81,9 +91,19 @@ bool ThreadPool::executeTask()
 
 	  while(m_Tasks.size() == 0)
 	  {
-	    m_taskCIN.wait(lock);
+	  	if(m_targetNum != 0 && m_targetNum < m_threadNum)
+	  	{	
+	  		m_targetNum-- ; m_threadNum-- ;
+	  		m_tasksFinishedOrTerminated.notify_one();
+	  		
+	  		return false;
+	  	}
+	  	else
+	  	{
+	  		m_taskCIN.wait(lock);
+	  	}
 	  }
-
+	  m_actThreadNum++;
 	  task = m_Tasks.front();
 	  m_Tasks.pop();
 	}
@@ -91,13 +111,22 @@ bool ThreadPool::executeTask()
 	if(task)
 	{
 	  task();
+
+	  unique_lock<mutex> lock(m_monitor);
+	  
+	  m_tasksFinishedOrTerminated.notify_one();
+
+	  m_actThreadNum--;
 	}
 	return true;
 }
 
 void ThreadPool::killAllThreads()
 {
-
+	unique_lock<mutex> lock(m_monitor);
+	
+	m_targetNum = 0;
+	m_tasksFinishedOrTerminated.wait(lock);
 }
 
 void WorkThread::createThread(SPool const & pool)
@@ -106,7 +135,7 @@ void WorkThread::createThread(SPool const & pool)
 	
 	if(worker)
 	{
-		worker->m_thread.reset(new thread(bind(&WorkThread::run, worker)));
+		worker -> m_thread.reset(new thread(bind(&WorkThread::run, worker)));
 	}
 }
 

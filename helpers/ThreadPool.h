@@ -5,6 +5,7 @@
 #include <mutex>
 #include <queue>
 #include <memory>
+#include <chrono>
 #include <thread>
 #include <vector>
 #include <functional>
@@ -36,9 +37,12 @@ public:
 public:
   void schedule(const Task & task);
 
-  bool wait() const;
+  void wait() const;
 
-  bool wait(struct timeval & spec) const;
+  /**Without implementation, can't understand the format for time.**/
+  void timedwait(struct timeval & spec) const;
+
+  void timedwait(chrono::steady_clock::time_point abs_time) const;
 
   bool resize(int targetNum = 0);
 
@@ -61,16 +65,17 @@ private:
 private:
   int    m_threadNum;
   int    m_actThreadNum;
+  int    m_targetNum;
 
 private:
   queue  < Task> m_Tasks;
   vector <SWork> m_terminatedWorks;
 
 private:
-  static mutex              m_monitor;
-  static condition_variable m_taskCIN;
-  static condition_variable m_tasksFinished;
-
+  mutable mutex              m_monitor;
+  mutable condition_variable m_taskCIN;
+  mutable condition_variable m_tasksFinishedOrTerminated;
+  
   friend class WorkThread;
 
 };
