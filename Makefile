@@ -19,7 +19,7 @@ compile:
 	${CXX} ${HEADER} -c ${SOURCES} 
 
 thread:
-	${CXX}  helpers/ThreadPool.h -o thread -std=c++0x
+	${CXX}  ${HEADER} helpers/ThreadPool.cpp -o thread -std=c++0x
 
 test: ${TESTS}
 	$(CXX) ${HEADER} $^ -o $@ ${LDLIBS}
@@ -28,4 +28,4 @@ mp_test: ${MPTEST}
 	$(CXX) ${HEADER} $^ -o $@ ${LDLIBS}
 
 clean: 
-	rm -f *.o *.idx *.dat test demo* mp_test
+	rm -f *.o *.idx *.dat test demo* mp_test thread
