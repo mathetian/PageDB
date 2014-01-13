@@ -139,7 +139,40 @@ void WorkThread::createThread(SPool const & pool)
 	}
 }
 
-int main()
+void RWLock::readLock()
 {
-	
+	unique_lock<mutex> lock(m_monitor);
+	if(m_nWriter || m_wWriter)
+	{
+		m_wReader++;
+		while(m_nWriter || m_wWriter)
+			m_condRead.wait(lock);
+		m_wReader--;
+	}
+	m_nReader++;
+}
+
+void RWLock::readUnlock()
+{
+	unique_lock<mutex> lock(m_monitor);
+	m_nReader--;
+}
+
+void RWLock::writeLock()
+{
+	unique_lock<mutex> lock(m_monitor);
+	if(m_nReader || m_nWriter)
+	{
+		m_wWriter++;
+		while(m_nReader || m_nWriter)
+			m_condWrite.wait(lock);
+		m_wWriter--;
+	}
+	m_wWriter++;
+}
+
+void RWLock::writeUnlock()
+{
+	unique_lock<mutex> lock(m_monitor);
+	m_wWriter--;
 }

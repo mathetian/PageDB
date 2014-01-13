@@ -98,4 +98,76 @@ private:
     SThread  m_thread; 
 };
 
+class ScopeMutex{
+public:
+    ScopeMutex() { m_mutex.lock(); }
+    ~ScopeMutex() { m_mutex.unlock(); }
+private:
+    mutable mutex m_mutex;
+};
+
+/**
+  As C++ standard doesn't provide RWLock, so I just implement here.
+**/
+class RWLock{
+public:
+    RWLock() : m_nReader(0), m_nWriter(0), m_wReader(0), m_wWriter(0) { }
+   ~RWLock() { }
+
+public:
+    void readLock();
+    void readUnlock();
+
+public:
+    void writeLock();
+    void writeUnlock();
+
+private:
+    int  m_nReader;
+    int  m_nWriter;
+    int  m_wReader;
+    int  m_wWriter;
+
+private:
+  mutable mutex m_monitor;
+  mutable condition_variable m_condRead;
+  mutable condition_variable m_condWrite;
+};
+
+/**
+  Java, C# style's Thread
+**/
+
+class Thread{
+private:
+    typedef function<void()> Task;
+
+public:
+    Thread(const Task & task)
+    {
+        m_task = task;
+        m_pthr = NULL;
+    }
+   ~Thread() { }
+
+public:
+    void run()
+    {
+        if(m_task)
+        {
+            m_pthr =  new thread(m_task);
+        }
+    }
+
+    void join()
+    {
+        m_pthr -> join();
+    }
+
+private: 
+    Task  m_task;
+
+private:
+    thread * m_pthr;
+};
 #endif
