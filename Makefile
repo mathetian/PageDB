@@ -27,5 +27,8 @@ test: ${TESTS}
 mp_test: ${MPTEST}
 	$(CXX) ${HEADER} $^ -o $@ ${LDLIBS}
 
+aio_test: 
+	${CXX} helpers/AIO.h -o aio -std=c++0x -lrt
+
 clean: 
 	rm -f *.o *.idx *.dat test demo* mp_test thread
