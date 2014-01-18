@@ -26,6 +26,13 @@ protected:
 };
 
 /**Two samples to describe how to use it**/
-extern int defaultHashFunc(const Slice & key);
+inline int defaultHashFunc(const Slice & key)
+{
+    int index;
+    int value = 0x238F13AF * key.size();
+    for(index = 0; index < key.size(); index++)
+        value = (value + (key[index] << (index*5 % 24))) & 0x7FFFFFFF;
+    return value;
+}
 
 #endif

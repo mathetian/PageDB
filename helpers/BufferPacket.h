@@ -32,12 +32,12 @@ public:
 
 public:
 	/**Sorry for that**/
-	BufferPacket & write(const char * str, int len);
-	BufferPacket & read (char * str, int len);
+	void write(const char * str, int len);
+	void read (char * str, int len);
 
 public:
 	char * getData() { return data;}
-	int    getSize() { return size;}
+	int    getSize() const { return size;}
 	void   setBeg()  { cur = 0;}
 
 private:

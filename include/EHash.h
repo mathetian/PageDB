@@ -16,6 +16,12 @@ using namespace std;
 #define SEEBLOCK  sizeof(EEmptyBlock)
 #define SPELEMENT sizeof(PageElement)
 
+class EEmptyEle
+{ public: 
+    EEmptyEle(): pos(-1), size(-1) { }
+    int  pos, size;
+};
+
 class EEmptyBlock
 {
 public:
@@ -25,12 +31,6 @@ public:
     bool        checkSuitable(int size, int & pos);
     EEmptyBlock split();
 
-private:
-    class EEmptyEle
-    { public: 
-        EEmptyEle(): pos(-1), size(-1) { }
-        int  pos, size;
-    };
 public:
     int       curNum;
     int       nextBlock;
@@ -38,6 +38,7 @@ public:
 };
 
 class Page;
+class ExtendibleHash;
 
 class PageElement
 {
@@ -50,6 +51,7 @@ private:
 
     friend ostream & operator << (ostream & os, PageElement & e);
     friend class Page;
+    friend class ExtendibleHash;
 };
 
 inline  ostream & operator << (ostream & os, PageElement & e)
@@ -58,7 +60,7 @@ inline  ostream & operator << (ostream & os, PageElement & e)
     return os;
 }
 
-class ExtendibleHash;
+
 
 typedef int (*HASH)(const Slice & key);
 
@@ -94,8 +96,9 @@ private:
 class ExtendibleHash : public Factory
 {
 public:
-    ExtendibleHash(HASH hashFunc = defaultHashFunc);
-    ~ ExtendibleHash();
+    ExtendibleHash(HASH hashFunc = defaultHashFunc) :\
+        hashFunc(hashFunc), gd(0), pn(1), fb(-1) { }
+    ~ExtendibleHash() { if(idxfs) idxfs.close(); if(datfs) datfs.close();}
 
 public:
     bool     put(const Slice & key,const Slice & value);
@@ -105,7 +108,7 @@ public:
 
 private:
     void     recycle(int offset, int size);
-    void     writeToFile(); /**Initialization, so write something into file**/
+    void     writeToIdxFile(); /**Initialization, so write something into file**/
     void     readFromFile();/**Read the Index information**/
     int      findSuitableOffset(int size);
 
