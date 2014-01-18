@@ -1,72 +1,125 @@
 #ifndef _SLICE_H
 #define _SLICE_H
 
-#include <assert.h>
-#include <stddef.h>
-#include <string.h>
 #include <string>
 #include <iostream>
 using namespace std;
 
+#include <assert.h>
+#include <stddef.h>
+#include <string.h>
+
 class Slice
 {
 public:
-    Slice() :
-        _data(""), _size(0) {}
+    Slice() : m_data(""), m_size(0) { }
 
-    Slice(const char* d, size_t n) :
-        _data(d), _size(n) {}
+    Slice(const char* d, size_t n) : m_size(n)
+    {
+        char * data =  new char[m_size];
+        
+        memcpy(data, d, m_size);
 
-    Slice(const std::string& s) :
-        _data(s.data()), _size(s.size()) {}
+        m_data = data;
+    }
 
-    Slice(const char* s) :
-        _data(s), _size(strlen(s)) {}
+    Slice(const string& s) : m_data(s.data()), m_size(s.size()) {}
+
+    Slice(const char* s) : m_size(strlen(s))
+    {
+        char * data = new char[m_size + 1];
+        memset(data, 0, m_size + 1);
+        memcpy(data, s, m_size + 1);
+
+        m_data = data;
+    }
+
+    Slice(const Slice & s1) : m_size(s1.m_size)
+    {
+        char * data = new char[m_size];
+        memcpy(data, s1.m_data, m_size);
+        m_data = data;
+    }
+
+    Slice & operator=(const Slice & s1)
+    {
+        this -> m_size = s1.m_size;
+        char * data = new char[m_size];
+        memcpy(data, s1.m_data, m_size);
+        this -> m_data = data;
+        return *this;
+    }
 
 public:
     const char* tochars()  const
     {
-        return _data;
+        return m_data;
     }
 
-    std::string toString() const
+    string toString() const
     {
-        return std::string(_data, _size);
+        return string(m_data, m_size);
     }
 
     size_t size() const
     {
-        return _size;
+        return m_size;
     }
 
     bool  empty() const
     {
-        return _size == 0;
+        return m_size == 0;
     }
 
     void clear()
     {
-        _data = "";
-        _size = 0;
+        m_data = "";
+        m_size = 0;
     }
 
 public:
     char operator[](size_t n) const
     {
         assert(n < size());
-        return _data[n];
+        return m_data[n];
     }
 
     Slice& operator+=(const Slice&s1);
 
 private:
-    const char * _data;
-    size_t       _size;
+    const char * m_data;
+    size_t       m_size;
 };
 
-bool operator==(const Slice&s1, const Slice&s2);
-bool operator< (const Slice&s1, const Slice&s2);
-bool operator> (const Slice&s1, const Slice&s2);
+inline bool operator==(const Slice & s1, const Slice & s2)
+{
+    if(s1.size() != s2.size()) return false;
+    
+    int i = 0;
+    
+    while(i < s1.size() && s1[i] == s2[i]) i++;
+  
+    if(i == s1.size()) return true;
+    
+    return false;
+}
+
+inline bool operator< (const Slice & s1, const Slice & s2)
+{
+    int i = 0;
+    while(i < s1.size() && i < s2.size() && s1[i] == s2[i]) 
+        i++;
+
+    if(i == s2.size()) return false;
+    else if(i == s1.size()) return true;
+    else if(s1[i] < s2[i]) return true;
+    else return false;    
+}
+
+inline bool operator> (const Slice & s1, const Slice & s2)
+{
+    return s2 < s1;
+}
 
 inline ostream & operator << (ostream & os, const Slice & sl)
 {
