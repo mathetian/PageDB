@@ -13,13 +13,18 @@ class Slice
 {
 public:
     Slice() : m_data(""), m_size(0) { }
-
+    
+    Slice(size_t n) : m_size(n)
+    {
+        char * data = new char[m_size];
+        memset(data, 0, m_size);
+        m_data = data;
+    }
+    
     Slice(const char* d, size_t n) : m_size(n)
     {
         char * data =  new char[m_size];
-        
         memcpy(data, d, m_size);
-
         m_data = data;
     }
 
@@ -49,7 +54,12 @@ public:
         this -> m_data = data;
         return *this;
     }
-
+    
+    ~Slice()
+    {
+        if(m_size != 0) delete [] m_data;
+        m_size = 0; m_data = NULL;
+    }
 public:
     const char* tochars()  const
     {

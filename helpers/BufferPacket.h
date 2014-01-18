@@ -5,7 +5,8 @@
 using namespace std;
 
 #include <string.h>
-#include "Log.h"
+#include "../include/Log.h"
+#include "../include/Slice.h"
 
 typedef unsigned long long uint64_t;
 
@@ -17,16 +18,23 @@ public:
 public:
 	BufferPacket & operator << (int ivalue);
 	BufferPacket & operator << (size_t st);
-	BufferPacket & operator << (string str);
-	void		   write       (char * str, int len);
-	void		   write       (BufferPacket packet);
+	BufferPacket & operator << (const string & str);
+	BufferPacket & operator << (const Slice & slice);
+	BufferPacket & operator << (const char * str);
+	BufferPacket & operator << (const BufferPacket & packet);
 
 public:
-	BufferPacket & operator >> (int&ivalue);
-	BufferPacket & operator >> (size_t&st);
-	BufferPacket & operator >> (string&str);
-	void 		   read        (char * str, int len);
-	
+	BufferPacket & operator >> (int    & ivalue);
+	BufferPacket & operator >> (size_t & st);
+	BufferPacket & operator >> (string & str);
+	BufferPacket & operator >> (Slice  & slice);
+	BufferPacket & operator >> (char * str);
+
+public:
+	/**Sorry for that**/
+	BufferPacket & write(const char * str, int len);
+	BufferPacket & read (char * str, int len);
+
 public:
 	char * getData() { return data;}
 	int    getSize() { return size;}
@@ -37,11 +45,5 @@ private:
 	int    size, cur;
 	Log  * log;
 };
-
-/*inline istream & operator << (istream & is, const BufferPacket & packet)
-{
-	cout<<"what?"<<endl;
-	return is;
-}*/
 
 #endif

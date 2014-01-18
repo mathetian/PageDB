@@ -1,8 +1,8 @@
 #include <sys/stat.h>
 #include <string.h>
 
-#include "EHash.h"
-#include "BufferPacket.h"
+#include "../include/EHash.h"
+#include "../helpers/BufferPacket.h"
 
 #define FILEMODE1 (fstream::in | fstream::out)
 
@@ -21,50 +21,63 @@ bool EEmptyBlock::checkSuitable(int size, int & pos)
 EEmptyBlock EEmptyBlock::split()
 {
     EEmptyBlock newblock;
-    int index = 0; int cn2 = 0, cn3 = 0;
-    for(;index < curNum;index++)
+    
+    int cn1 = 0, cn2 = 0;
+
+    for(int index = 0;index < curNum;index++)
     {
-        if(index & 1) newblock.eles[cn3++] = eles[index];
+        if(index & 1) newblock.eles[cn1++] = eles[index];
         else eles[cn2++] = eles[index];
     }
+
+    newblock.curNum = cn1; 
+    this -> curNum = cn2;
+    
     return newblock;
 }
 
 BufferPacket Page::getPacket()
 {
     BufferPacket packet(SINT * 2 + sizeof(elements));
-    packet << d << curNum;
-    packet.write((char*)&elements[0], sizeof(elements));
+    
+    Slice slice((char*)&elements[0], sizeof(elements));
+    
+    packet << d << curNum << slice;
+    
     return packet;
 }
 
-void  Page::setBucket(BufferPacket & packet)
+void  Page::setByBucket(BufferPacket & packet)
 {
     packet.setBeg(); 
     packet >> d >> curNum;
+    
     packet.read((char*)&elements[0],SPELEMENT*(PAGESIZE + 5));
 }
 
-bool Page::put(const string&key, const string&value, int hashVal)
+bool Page::put(const Slice & key, const Slice & value, int hashVal)
 {
-    int index;
-    for(index = 0; index < curNum; index++)
+    for(int index = 0; index < curNum; index++)
     {
         PageElement element = elements[index];
-        if(element.hash_value != -1 && element.hash_value == hashVal)
+        if(element.m_hashVal == hashVal && element.m_keySize == \
+                 key.size() && element.m_datSize == value.size())
         {
-            if(element.key_size == key.size() && element.data_size == value.size())
-            {
-                /**
-                  Read From File, check it whether double
-                **/
-                eHash -> datfs.seekg(element.data_pointer, ios_base::beg);
-                BufferPacket packet(element.key_size);
-                eHash -> datfs.read(packet.getData(), packet.getSize());
-                packet.setBeg();string str1(element.key_size,0);
-                packet >> str1;
-                if(str1 == key) return 0;
-            }
+            /**
+              Read From File, check it whether double
+            **/
+            
+            BufferPacket packet(element.m_keySize);
+            Slice        slice(element.m_keySize);
+
+            eHash -> datfs.seekg(element.m_datPos, ios_base::beg);
+            eHash -> datfs.read(packet.getData(), packet.getSize());
+            
+            packet.setBeg(); 
+            packet >> slice;
+            
+            if(slice == key) 
+                return 0;
         }
     }
 
@@ -74,7 +87,8 @@ bool Page::put(const string&key, const string&value, int hashVal)
     BufferPacket packet(key.size() + value.size());
     packet << key << value;
     
-    int offset = eHash -> findSuitable(packet.getSize());
+    int offset = eHash -> findSuitableOffset(packet.getSize());
+    
     eHash -> datfs.seekg(offset, ios_base::beg);
     eHash -> datfs.write(packet.getData(), packet.getSize());
 
@@ -82,58 +96,64 @@ bool Page::put(const string&key, const string&value, int hashVal)
         Modify the page index
     **/
 
-    elements[curNum].hash_value = hashVal;
-    elements[curNum].data_pointer = offset;
-    elements[curNum].key_size = key.size();
-    elements[curNum++].data_size = value.size();
+    elements[curNum].m_hashVal   = hashVal;
+    elements[curNum].m_datPos    = offset;
+    elements[curNum].m_keySize   = key.size();
+    elements[curNum++].m_datSize = value.size();
 
     return 1;
 }
 
-string Page::get(const string&key, int hashVal)
+Slice Page::get(const Slice & key, int hashVal)
 {
-    int index;
-    for(index = 0; index < curNum; index++)
+    for(int index = 0; index < curNum; index++)
     {
-        if(elements[index].hash_value == hashVal && elements[index].key_size == key.size())
+        if(elements[index].m_hashVal == hashVal && elements[index].m_keySize == key.size())
         {
-            eHash -> datfs.seekg(elements[index].data_pointer + elements[index].key_size, ios_base::beg);
-            BufferPacket packet(elements[index].data_size);
+            BufferPacket packet(elements[index].m_datSize);
+            Slice slice(elements[index].m_datSize);
+
+            eHash -> datfs.seekg(elements[index].m_datPos + elements[index].m_keySize, ios_base::beg);
             eHash -> datfs.read(packet.getData(), packet.getSize());
-            string value(packet.getSize(),0);
-            packet >> value;
-            return value;
+            
+            packet >> slice;
+            return slice;
         }
     }
     return "";
 }
 
-bool Page::remove(const string&key, int hashVal)
+bool Page::remove(const Slice & key, int hashVal)
 {
     int index, rindex;
     for(index = 0; index < curNum; index++)
     {
-        if(elements[index].hash_value == hashVal && elements[index].key_size == key.size())
+        if(elements[index].m_hashVal == hashVal && elements[index].m_keySize == key.size())
         {
-            eHash -> datfs.seekg(elements[index].data_pointer, ios_base::beg);
-            BufferPacket packet(elements[index].key_size);
+            BufferPacket packet(elements[index].m_keySize);
+            Slice slice(elements[index].m_keySize);
+
+            eHash -> datfs.seekg(elements[index].m_datPos, ios_base::beg);
             eHash -> datfs.read(packet.getData(), packet.getSize());
-            string str(packet.getSize(),0); packet.setBeg();
-            packet >> str;
-            if(str == key) break;
+            
+            packet >> slice;
+
+            if(slice == key) break;
         }
     }
+
     if(index == curNum) return false;
 
     /**
       Attach the space to the emptryBlock
     **/
-    eHash -> cycle(elements[index].data_pointer, elements[index].key_size + elements[index].data_size);
-
+    eHash -> recycle(elements[index].m_datPos, elements[index].m_keySize + elements[index].m_datSize);
 
     for(;index < curNum - 1; index++)
         elements[index] = elements[index + 1];
     
+    curNum --;
+
     return true;
 }
 

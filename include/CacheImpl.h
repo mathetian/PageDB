@@ -96,7 +96,7 @@ public:
     FIFOLimitedMemoryCache(int cacheLimitInMB = LimitedMemoryCache::defaultCacheSizeInMB):\
         LimitedMemoryCache(cacheLimitInMB) { }
     
-    ~ FIFOLimitedMemoryCache() { }
+    ~FIFOLimitedMemoryCache() { }
 
 public:
     bool    put(const Slice & key, const Slice & value);

@@ -1,4 +1,4 @@
-#include "../include/BaseCache.h"
+#include "CacheImpl.h"
 
 const int LimitedMemoryCache::defaultCacheSizeInMB=16;
 const int LimitedMemoryCache::defaultCacheSize = defaultCacheSizeInMB * 1024 * 1024;
