@@ -65,7 +65,6 @@ public:
     {
         if(cacheLimit > defaultCacheSize)
             log -> _Warn("LimitedMemoryCache: defaultCacheSize\n");
-        printf("LimitedMemoryCache\n");
     }
     
     virtual ~ LimitedMemoryCache() { }
@@ -94,8 +93,9 @@ private:
 class FIFOLimitedMemoryCache : public LimitedMemoryCache
 {
 public:
-    FIFOLimitedMemoryCache(int cacheLimitInMB = LimitedMemoryCache::defaultCacheSizeInMB)
-         { printf("FIFOLimitedMemoryCache\n"); }
+    FIFOLimitedMemoryCache(int cacheLimitInMB = LimitedMemoryCache::defaultCacheSizeInMB) :\
+        LimitedMemoryCache(cacheLimitInMB)
+         { }
     
     ~FIFOLimitedMemoryCache() { }
 

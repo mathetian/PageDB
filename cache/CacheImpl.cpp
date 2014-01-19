@@ -39,8 +39,11 @@ Slice LimitedMemoryCache::get(const Slice & key)
 bool LimitedMemoryCache::remove(const Slice & key)
 {
     const Slice & removedValue = BaseCache::get(key);
+    
     if(removedValue.size() == 0) return false;
     
+    BaseCache::remove(key);
+
     cacheSize -= removedValue.size();
     
     return hardCache.erase(key);
@@ -67,7 +70,7 @@ bool FIFOLimitedMemoryCache::put(const Slice & key,const Slice & value)
 {
     if(LimitedMemoryCache::put(key,value) == true)
     {
-        sQue.push_back(value);
+        sQue.push_back(key);
         return true;
     }
     return false;
@@ -86,10 +89,10 @@ bool FIFOLimitedMemoryCache::remove(const Slice & key)
 
     list <Slice>::iterator itDq = sQue.begin();
     
-    while(itDq != sQue.end() && *itDq == key) itDq++;
+    while(itDq != sQue.end() && *itDq != key) itDq++;
    
     if(itDq == sQue.end())
-        log -> _Warn("Not exist in FIFOLimitedMemoryCache remove\n");
+        log -> _Warn("Not exist in FIFOLimitedMemoryCache remove");
     else   
         sQue.erase(itDq);
    
@@ -117,7 +120,7 @@ bool  LRULimitedMemoryCache::put(const Slice & key, const Slice & value)
 {
     if(LimitedMemoryCache::put(key,value) == true)
     {
-        sQue.push_front(value);
+        sQue.push_front(key);
         return true;
     }
     return false;
@@ -129,7 +132,7 @@ Slice LRULimitedMemoryCache::get(const Slice & key)
     
     list <Slice>::iterator itDq = sQue.begin();
 
-    while(itDq != sQue.end() && *itDq == key) itDq++;
+    while(itDq != sQue.end() && *itDq != key) itDq++;
     
     if(itDq != sQue.end())
     {
@@ -147,7 +150,7 @@ bool   LRULimitedMemoryCache::remove(const Slice & key)
     if(flag == false) return false;
 
     list <Slice>::iterator itDq = sQue.begin();
-    while(itDq != sQue.end() && *itDq == key) itDq++;
+    while(itDq != sQue.end() && *itDq != key) itDq++;
 
     if(itDq == sQue.end())
         log -> _Warn("Not exist in LRULimitedMemoryCache remove?\n");

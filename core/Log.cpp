@@ -76,20 +76,18 @@ void Log::GetCurrentTm(int tag, size_t size, char * buf)
     
     struct tm *ptime = NULL;
     ptime = localtime(&now);
-    
-    buf = NULL;
 
     if(ptime != NULL)
     {
         switch(tag)
         {
         case TIME_FULL :
-            snprintf(buf,size,TM_FORMAT_FULL,(ptime->tm_year + 1900),(ptime->tm_mon + 1),ptime->tm_mday
+            sprintf(buf,TM_FORMAT_FULL,(ptime->tm_year + 1900),(ptime->tm_mon + 1),ptime->tm_mday
                      ,ptime->tm_hour,ptime->tm_min,ptime->tm_sec);
             break;
         case TIME_SHORT :
         default:
-            snprintf(buf,size,TM_FORMAT_SHORT,(ptime->tm_year + 1900),(ptime->tm_mon + 1),ptime->tm_mday);
+            sprintf(buf,TM_FORMAT_SHORT,(ptime->tm_year + 1900),(ptime->tm_mon + 1),ptime->tm_mday);
             break;
         }
     }
@@ -102,7 +100,8 @@ void Log::WriteLog(LOG_TYPE outLevel,const char* format,va_list args)
     **/
 
     const char * str = getStrFromType(outLevel);
-    char buf[256]; memset(buf, 0, sizeof(buf));
+    char buf[256];memset(buf, 0, sizeof(buf));
+    
     GetCurrentTm(TIME_FULL, 32, buf);
 
     char fformat[1000];

@@ -14,7 +14,23 @@ class BufferPacket{
 public:
 	BufferPacket(int size);
    ~BufferPacket();
+    BufferPacket(const BufferPacket & packet)
+    {
+    	data = new char[packet.size];
+    	size = packet.size;
+    	cur  = packet.cur;
+    }
 
+    BufferPacket & operator=(const BufferPacket & packet)
+    {
+    	if(size != 0) delete [] data;
+    	
+    	data = new char[packet.size];
+    	size = packet.size;
+    	cur  = packet.cur;
+
+    	return *this;
+    }
 public:
 	BufferPacket & operator << (int ivalue);
 	BufferPacket & operator << (size_t st);

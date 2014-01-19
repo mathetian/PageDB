@@ -17,14 +17,12 @@ using namespace std;
 class CustomDB
 {
 public:
-    CustomDB() { }
+    CustomDB() : factory(NULL), cache(NULL) {  }
 
     virtual ~CustomDB()
     {
         if(factory) delete factory;
         if(cache)   delete cache;
-        if(idxFile) fclose(idxFile);
-        if(datFile) fclose(datFile);
 
         factory = NULL; cache = NULL;
     }
@@ -46,10 +44,6 @@ private:
 
 public:
     bool init();
-
-private:
-    FILE	 * idxFile;
-    FILE     * datFile;
 };
 
 #endif

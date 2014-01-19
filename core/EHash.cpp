@@ -374,7 +374,8 @@ bool ExtendibleHash::remove(const Slice & key)
 
     if(rb == 1)
     {
-        BufferPacket npacket(2*SINT + SPELEMENT*(PAGESIZE + 5));
+        BufferPacket npacket = page -> getPacket();
+        
         datfs.seekg(entries.at(cur), ios_base::beg);
         datfs.write(npacket.getData(), npacket.getSize());
     }

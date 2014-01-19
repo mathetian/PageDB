@@ -101,6 +101,10 @@ public:
 
     Slice& operator+=(const Slice&s1);
 
+    string operator()(int i=1)
+    {
+        return string(m_data, m_size);
+    }
 private:
     const char * m_data;
     size_t       m_size;
@@ -119,6 +123,10 @@ inline bool operator==(const Slice & s1, const Slice & s2)
     return false;
 }
 
+inline bool operator!=(const Slice & s1, const Slice & s2)
+{
+    return !(s1 == s2);
+}
 inline bool operator< (const Slice & s1, const Slice & s2)
 {
     int i = 0;

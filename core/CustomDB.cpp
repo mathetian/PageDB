@@ -19,7 +19,6 @@ bool CustomDB::open(const Options & option)
         log -> _Fatal("CustomDB::open::cacheType error\n");
         break;
     }
-    printf("123\n");
     if(cache == NULL)
         log -> _Fatal("CustomDB::open::new cache error\n");
 
@@ -34,13 +33,12 @@ bool CustomDB::open(const Options & option)
     default:
         log -> _Fatal("CustomDB::open::factory error\n");
     }
-    printf("123\n");
     if(factory == NULL)
         log -> _Fatal("CustomDB::open::new factory error\n");
-    printf("123\n");
+    
     if(factory -> init(option.fileOption.fileName) == false)
         log -> _Fatal("CustomDB::open::init factory error\n");
-    printf("123\n");
+    
     log -> _Trace("CustomDB::open initialization successfully\n");
 }
 
@@ -75,9 +73,10 @@ Slice CustomDB::get(const Slice & key)
         errorStatus = SUCCE;
     else
     {
+        log -> _Trace("CustomDB::get::factory not in cache, %s\n",key.c_str());
         rs = factory -> get(key);
         if(rs.size() == 0)
-            log -> _Warn("CustomDB::get::factory get error, %s\n",key.c_str());
+            log -> _Warn("CustomDB::get::factory get warning, %s\n",key.c_str());
         else
         {
             cache -> put(key,rs);
@@ -100,7 +99,9 @@ bool CustomDB::remove(const Slice & key)
             log -> _Error("CustomDB::remove::cache remove error\n");
             return errorStatus;
         }
+        else log -> _Trace("CustomDB::remove::cache remove successfully\n");
     }
+
     if((factory -> remove(key)) == 0)
         log -> _Error("CustomDB::remove::factory remove error\n");
     
