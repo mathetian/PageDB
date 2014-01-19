@@ -1,17 +1,6 @@
-#include "CHash.h"
-#include <sys/stat.h>
+#include "FactoryImpl.h"
 
-#include "BufferPacket.h"
-
-EmptyBlock::EmptyBlock() : curNum(0), nextBlock(-1)
-{
-}
-
-EmptyBlock::~EmptyBlock()
-{
-}
-
-bool EmptyBlock::checkSuitable(int size, int & pos)
+bool CEmptyBlock::checkSuitable(int size, int & pos)
 {
     for(pos = curNum - 1; pos >= 0; pos--)
     {
@@ -21,29 +10,38 @@ bool EmptyBlock::checkSuitable(int size, int & pos)
     return false;
 }
 
-Chain::Chain(ChainHash * cHash, int defaultFirstOffset)
+CEmptyBlock CEmptyBlock::split()
 {
-    this -> cHash = cHash;
-    firstoffset = defaultFirstOffset;
+    CEmptyBlock newblock;
+    
+    int cn1 = 0, cn2 = 0;
+
+    for(int index = 0;index < curNum;index++)
+    {
+        if(index & 1) newblock.eles[cn1++] = eles[index];
+        else eles[cn2++] = eles[index];
+    }
+
+    newblock.curNum = cn1; 
+    this -> curNum = cn2;
+    
+    return newblock;
 }
 
-Chain::~Chain()
-{
-}
-
-bool Chain::put(const string&key,const string&value, int hashVal)
+bool Chain::put(const Slice & key,const Slice & value, int hashVal)
 {
     if(check(key, hashVal) != 0)
         return false;
 
-    Elem elem(firstoffset, key.size(), value.size());
+    CElement elem(firstoffset, key.size(), value.size(), hashVal);
 
-    int offset = cHash -> findSuitable(key.size() + value.size() + SELEM);
+    int offset = cHash -> findSuitableOffset(key.size() + value.size() + SELEM);
 
     cHash -> datfs.seekg(offset, ios_base::beg);
 
-    BufferPacket packet(SELEM + sizeof(key) + sizeof(value));
-    packet << ((char*)&elem) << key << value;
+    BufferPacket packet(SELEM + key.size() + value.size());
+    Slice slice((char*)&elem, SELEM); /**Need to record hashVal?**/
+    packet << slice << key << value;
     
     cHash -> datfs.write(packet.getData(),packet.getSize());
     
@@ -52,31 +50,38 @@ bool Chain::put(const string&key,const string&value, int hashVal)
     return true;
 }
 
-string   Chain::get(const string&key, int hashVal)
+Slice   Chain::get(const Slice & key, int hashVal)
 {
     int offset = firstoffset;
-    Elem elem;
+    CElement elem;
+
     while(offset != -1)
     {
         cHash -> datfs.seekg(offset, ios_base::beg);
         cHash -> datfs.read ((char*)&elem, SELEM);
+        
         offset = elem.nextOffset;
+        
         if(elem.hashVal != hashVal || elem.keySize != key.size())
             continue;
         
         BufferPacket packet(elem.keySize + elem.valueSize);
+        Slice key1(elem.keySize), value1(elem.valueSize);
+
         cHash -> datfs.read(packet.getData(), packet.getSize());
-        string key1,value1;
+        
         packet >> key1 >> value1;
+
         if(key == key1) return value1;
     }
     return "";
 }
 
-bool   Chain::check(const string&key, int hashVal)
+bool   Chain::check(const Slice & key, int hashVal)
 {
     int offset = firstoffset;
-    Elem elem;
+    CElement elem;
+
     while(offset != -1)
     {
         cHash -> datfs.seekg(offset, ios_base::beg);
@@ -87,235 +92,262 @@ bool   Chain::check(const string&key, int hashVal)
        
         BufferPacket packet(elem.keySize);
         cHash -> datfs.read(packet.getData(),packet.getSize());
-        string key1(elem.keySize,0);
-        packet >> key1;
-        if(key == key1) return true;
+
+        Slice slice(elem.keySize);
+        if(key == slice) return true;
     }
+
     return false;
 }
 
-bool Chain::remove(const string&key, int hashVal)
+bool Chain::remove(const Slice & key, int hashVal)
 {
-    int offset = firstoffset;
-    Elem elem;
-    int oldoffset = firstoffset;
+    int offset = firstoffset, oldoffset = offset;
+    CElement elem;
+
     while(offset != -1)
     {
         cHash -> datfs.seekg(offset, ios_base::beg);
         cHash -> datfs.read ((char*)&elem, SELEM);
+
         oldoffset = offset;
         offset = elem.nextOffset;
         if(elem.hashVal != hashVal || elem.keySize != key.size())
             continue;
+        
         BufferPacket packet(elem.keySize);
         cHash -> datfs.read(packet.getData(), packet.getSize());
-        string key1(packet.getSize(), 0);
-        packet >> key1;
-        if(key == key1)
+        
+        Slice slice(elem.keySize);
+        packet >> slice;
+
+        if(key == slice)
         {
             /**
             	Storage the emptry space into the the header linklist
             **/
-            cHash -> cycle(oldoffset, SELEM + elem.keySize + elem.valueSize);
+            cHash -> recycle(oldoffset, SELEM + elem.keySize + elem.valueSize);
             return true;
         }
     }
     return false;
 }
 
-ChainHash::ChainHash(int chainCount, HASH hashFunc)
-{
-    this -> chainCount = chainCount;
-    this -> hashFunc = hashFunc;
-}
-
 ChainHash::~ChainHash()
 {
     datfs.close();
-    int index = 0;
-    for(; index < chainCount; index++)
+    
+    for(int index = 0;index < chainCount; index++)
     {
         delete headers[index];
         headers[index] = NULL;
     }
 }
 
-bool ChainHash::init(const string & filename)
+bool ChainHash::init(const char * filename)
 {
     struct stat buf;
-    string datFileName = filename + ".dat";
+    string datFileName = filename;
+    datFileName += ".dat";
 
+    /**Need process it like EHash**/
     datfs.open (datFileName.c_str(), std::fstream::in | std::fstream::out | std::fstream::app);
 
     if((stat(datFileName.c_str(), &buf) == -1) || buf.st_size == 0)
     {
-        entries.push_back(0);
         entries = vector<int>(chainCount, -1);
-        datfs.seekg(0,ios_base::beg);
+
         writeToFile();
     }
     else readFromFile();
 
     headers = vector <Chain*> (chainCount, NULL);
-    int index = 0;
-    for(; index < chainCount; index++)
+
+    for(int index = 0;index < chainCount;index++)
         headers[index] = new Chain(this, entries.at(index));
 }
 
 void ChainHash::writeToFile()
 {
     BufferPacket packet(SINT * 2 + SINT * chainCount);
-    packet << chainCount << fb;
-    packet.write((char*)&entries[0], SINT * chainCount);
+    Slice slice((char*)&entries[0], SINT * chainCount);
 
+    packet << chainCount << fb << slice;
+
+    datfs.seekg(0,ios_base::beg);
     datfs.write(packet.getData(), packet.getSize());
 }
 
 void ChainHash::readFromFile()
 {
-    datfs.seekg(0, ios_base::beg);
     BufferPacket packet(SINT * 2 + SINT * chainCount);
     packet >> chainCount >> fb;
     
     entries = vector<int>(chainCount, -1);
     
+    datfs.seekg(0, ios_base::beg);
     packet.read((char*)&entries[0],SINT * chainCount);
 }
 
-bool ChainHash::put(const string&key,const string&value)
+bool ChainHash::put(const Slice & key,const Slice & value)
 {
-    int hashVal = hashFunc(key);
+    int hashVal   = hashFunc(key);
     Chain * chain = headers.at(hashVal % chainCount);
+    /**Problem ?**/
     return chain -> put(key, value, hashVal);
 }
 
-string ChainHash::get(const string&key)
+Slice ChainHash::get(const Slice & key)
 {
     int hashVal = hashFunc(key);
     Chain * chain = headers.at(hashVal % chainCount);
+    /**Problem ?**/
     return chain -> get(key, hashVal);
 }
 
-bool ChainHash::remove(const string&key)
+bool ChainHash::remove(const Slice & key)
 {
     int hashVal = hashFunc(key);
     Chain * chain = headers.at(hashVal % chainCount);
+     /**Problem ?**/
     return chain -> remove(key, hashVal);
 }
 
-int ChainHash::findSuitable(int size)
+int ChainHash::findSuitableOffset(int size)
 {
-    EmptyBlock block;
-    int offset, pos;
-    int blockDir;
+    CEmptyBlock block;
+
+    int offset, pos, blockDir;
 
     if(fb == -1)
     {
-        block.curNum = 1;
-        block.eles[0].pos = datfs.tellg();
-        block.eles[0].size = size;
-        offset = datfs.tellg();
-        offset += size;
-        datfs.seekg(2*size,ios_base::end);
-        datfs.write((char*)&block, sizeof(EmptyBlock));
-        return offset;
-    }
-
-    datfs.seekg(fb, ios_base::cur);
-    datfs.write((char*)&block, sizeof(EmptyBlock));
-
-    blockDir = fb;
-    while(block.checkSuitable(size, pos) == false)
-    {
-        if(block.nextBlock == -1) break;
-        blockDir = block.nextBlock;
-        datfs.seekg(block.nextBlock, ios_base::beg);
-        datfs.read((char*)&block, sizeof(EmptyBlock));
-    }
-
-    if(block.nextBlock == -1)
-    {
-        EmptyBlock nBlock;
-        nBlock.curNum = 1;
-        block.eles[0].pos = datfs.tellg();
-        block.eles[0].size = size;
-        offset = datfs.tellg();
-        offset += size;
-        datfs.seekg(2 * size, ios_base::end);
-        datfs.write((char*)&block, SEBLOCK);
-    }
-    else
-    {
-        if(block.eles[pos].size == size)
-        {
-            block.curNum --;
-            offset = block.eles[pos].pos;
-            if(block.curNum == 0)
-            {
-                block.curNum ++;
-                block.eles[0].pos = datfs.tellg();
-                block.eles[0].size = size;
-            }
-            datfs.seekg(blockDir, ios_base::beg);
-            datfs.write((char*)&block, SEBLOCK);
-        }
-        else
-        {
-            offset = block.eles[pos].pos;
-            block.eles[pos].size -= size;
-            datfs.seekg(blockDir, ios_base::beg);
-            datfs.write((char*)&block, SEBLOCK);
-        }
-    }
-    return offset;
-}
-
-void ChainHash::cycle(int offset, int size)
-{
-    EmptyBlock block;
-
-    if(fb == -1)
-    {
-        block.curNum = 1;
-        block.eles[0].pos = offset;
-        block.eles[0].size = size;
-        fb = datfs.tellg();
         datfs.seekg(0, ios_base::end);
-        datfs.write((char*)&block, sizeof(EmptyBlock));
-        return;
+        
+        this -> fb = datfs.tellg();
+
+        block.eles[0].pos  = fb + SCEBLOCK;
+        block.eles[0].size = size;
+        block.curNum       = 1;
+
+        datfs.write((char*)&block, SCEBLOCK);
+
+        datfs.seekg(SINT, ios_base::beg);
+        datfs.write((char*)&fb, SINT);
+
+        return fb + SCEBLOCK + size;
     }
 
     datfs.seekg(fb, ios_base::beg);
-    datfs.read((char*)&block, SEBLOCK);
-    while(block.curNum == PAGESIZE && block.nextBlock != -1)
+    datfs.read((char*)&block, SCEBLOCK);
+    
+    if(block.nextBlock != -1)
     {
-        datfs.seekg(block.nextBlock, ios_base::beg);
-        datfs.read((char*)&block, SEBLOCK);
+        if(block.curNum < PAGESIZE/2)
+        {
+            CEmptyBlock nnBlock;
+            
+            int old = block.nextBlock, index = 0, bnum = block.curNum;
+
+            datfs.seekg(block.nextBlock, ios_base::beg);
+            datfs.read((char*)&nnBlock, SCEBLOCK);
+                        
+            block.nextBlock = nnBlock.nextBlock;
+
+            datfs.seekg(0, ios_base::end);
+
+            for(;index < nnBlock.curNum;index++)
+            {
+                block.eles[block.curNum++] = nnBlock.eles[index];
+                if(block.curNum == PAGESIZE) 
+                {
+                    CEmptyBlock nnn = block.split();
+                    nnn.nextBlock   = block.nextBlock;
+                    block.nextBlock = datfs.tellg();
+                    
+                    datfs.write((char*)&nnn, SCEBLOCK);
+                }
+            }
+            if(block.curNum == PAGESIZE)
+            {
+                CEmptyBlock nnn = block.split();
+                nnn.nextBlock   = block.nextBlock;
+                block.nextBlock = datfs.tellg();
+                
+                datfs.write((char*)&nnn, SCEBLOCK);
+            }
+            block.eles[block.curNum].pos    = old;
+            block.eles[block.curNum++].size = SCEBLOCK;
+        }
     }
 
-    if(block.curNum < PAGESIZE)
+    if(block.checkSuitable(size, pos) == true)
     {
-        block.eles[block.curNum].pos = offset;
-        block.eles[block.curNum].size = size;
-        block.curNum++;
-        datfs.seekg( -SEBLOCK, ios_base::cur);
-        datfs.write((char*)&block, SEBLOCK);
+        CEmptyBlock::CEmptyEle ele = block.eles[pos];
+
+        offset = ele.pos; ele.pos += size;
+
+        for(int index = pos + 1;index < block.curNum;index++)
+            block.eles[index - 1] = block.eles[index];
+
+        if(ele.size == size) block.curNum--;
+        else block.eles[block.curNum - 1] = ele;
     }
     else
     {
-        EmptyBlock block2;
-        block2.eles[0].pos = offset;
-        block2.eles[0].size = size;
-        block2.curNum++;
-        int curPos = datfs.tellg();
+        if(block.curNum == PAGESIZE)
+        {
+            datfs.seekg(0, ios_base::end);
+            
+            CEmptyBlock nnn = block.split();
+            nnn.nextBlock   = block.nextBlock;
+            block.nextBlock = datfs.tellg();
+            
+            datfs.write((char*)&nnn, SCEBLOCK);
+        }
 
-        datfs.seekg(0, ios_base::end);
-        datfs.write((char*)&block, SEBLOCK);
+        datfs.seekg(2 * size,ios_base::end);
+        
+        offset = datfs.tellg(); offset -= size;
 
-        block.nextBlock = datfs.tellg();
-        block.nextBlock -= SEBLOCK;
+        block.eles[block.curNum].pos    = offset - size;
+        block.eles[block.curNum++].size = size;
+    }   
 
-        datfs.seekg(curPos - SEBLOCK, ios_base::beg);
-        datfs.write((char*)&block, SEBLOCK);
+    datfs.seekg(fb, ios_base::beg);
+    datfs.write((char*)&block, SCEBLOCK);
+
+    return offset;
+}
+
+void ChainHash::recycle(int offset, int size)
+{
+    CEmptyBlock block;
+
+    if(fb == -1)
+    {
+        log -> _Fatal("There must be some fatal error\n");
+        return;
     }
+
+    datfs.seekg(fb,      ios_base::beg);
+    datfs.read((char*)&block, SCEBLOCK);
+    
+    if(block.curNum == PAGESIZE)
+    {
+        datfs.seekg(0, ios_base::end);
+
+        int nn = block.nextBlock;
+        
+        CEmptyBlock nnBlock = block.split();
+        nnBlock.nextBlock   = nn;
+        block.nextBlock     = datfs.tellg();
+
+        datfs.write((char*)&nnBlock, SCEBLOCK);
+    }
+
+    block.eles[block.curNum].pos    = offset;
+    block.eles[block.curNum++].size = size;
+
+    datfs.seekg(fb, ios_base::beg);
+    datfs.write((char*)&block,SCEBLOCK);
 }

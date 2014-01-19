@@ -2,3 +2,10 @@
 *.o
 test
 *test
+CHash
+EHash
+Factory
+FactoryImpl
+Log
+Option
+CustomDB

@@ -2,9 +2,11 @@
 #define _CUSTOM_DB_H
 
 #include "Log.h"
+#include "Slice.h"
 #include "Option.h"
 #include "Factory.h"
-#include "BaseCache.h"
+#include "CacheImpl.h"
+#include "FactoryImpl.h"
 
 #include <string>
 using namespace std;
@@ -15,14 +17,24 @@ using namespace std;
 class CustomDB
 {
 public:
-    CustomDB();
-    virtual ~ CustomDB();
+    CustomDB() { }
+
+    virtual ~CustomDB()
+    {
+        if(factory) delete factory;
+        if(cache)   delete cache;
+        if(idxFile) fclose(idxFile);
+        if(datFile) fclose(datFile);
+
+        factory = NULL; cache = NULL;
+    }
 
 public:
-    bool 	open(const Options&option);
-    bool 	put(const string&key,const string&value);
-    string  get(const string&key);
-    bool 	remove(const string&key);
+    bool 	open(const Options & option);
+    bool 	put(const Slice & key,const Slice & value);
+    Slice   get(const Slice & key);
+    bool 	remove(const Slice & key);
+    
     bool	getError();
 
 private:

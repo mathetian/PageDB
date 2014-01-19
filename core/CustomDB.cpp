@@ -1,39 +1,20 @@
 #include "CustomDB.h"
-#include "FFLMC.h"
-#include "EHash.h"
-#include "CHash.h"
 
-CustomDB::CustomDB()
-{
-}
-
-CustomDB::~CustomDB()
-{
-    if(factory)
-    {
-        delete factory;
-        factory = NULL;
-    }
-
-    if(cache)
-    {
-        delete cache;
-        cache=NULL;
-    }
-}
-
-bool CustomDB::open(const Options&option)
+bool CustomDB::open(const Options & option)
 {
     this -> option = option;
 
     log = Log::GetInstance();
     
-    log -> SetLogInfo(option.logPrefix, option.logLevel);
+    log -> SetLogInfo(option.logOption.logLevel, option.logOption.logPrefix);
 
     switch(option.cacheOption.cacheType)
     {
     case FIFO:
         cache = new FIFOLimitedMemoryCache();
+        break;
+    case LRU:
+        cache = new LRULimitedMemoryCache();
         break;
     default:
         log -> _Fatal("CustomDB::open::cacheType error\n");
@@ -46,10 +27,10 @@ bool CustomDB::open(const Options&option)
     switch(option.factoryOption.factoryType)
     {
     case EHASH:
-        factory = new ExtendibleHash();
+        factory = new ExtendibleHash;
         break;
     case CHASH:
-        factory = new ChainHash();
+        factory = new ChainHash;
         break;
     default:
         log -> _Fatal("CustomDB::open::factory error\n");
@@ -58,15 +39,16 @@ bool CustomDB::open(const Options&option)
     if(factory == NULL)
         log -> _Fatal("CustomDB::open::new factory error\n");
 
-    if(factory -> init(option.dbFilePrefix) == false)
+    if(factory -> init(option.fileOption.fileName) == false)
         log -> _Fatal("CustomDB::open::init factory error\n");
 
     log -> _Trace("CustomDB::open initialization successfully\n");
 }
 
-bool CustomDB::put(const string&key,const string&value)
+bool CustomDB::put(const Slice & key,const Slice & value)
 {
     errorStatus = ERROR;
+
     if((cache -> get(key)).size() != 0)
         log -> _Warn("CustomDB::put::exist in cache, %s %s\n", key.c_str(), value.c_str());
     else
@@ -85,11 +67,13 @@ bool CustomDB::put(const string&key,const string&value)
     return errorStatus;
 }
 
-string CustomDB::get(const string&key)
+Slice CustomDB::get(const Slice & key)
 {
     errorStatus = ERROR;
-    string rs = cache -> get(key);
-    if(rs.size() != 0) errorStatus = SUCCE;
+    Slice rs = cache -> get(key);
+
+    if(rs.size() != 0) 
+        errorStatus = SUCCE;
     else
     {
         rs = factory -> get(key);
@@ -101,13 +85,15 @@ string CustomDB::get(const string&key)
             errorStatus = SUCCE;
         }
     }
+
     return rs;
 }
 
-bool CustomDB::remove(const string&key)
+bool CustomDB::remove(const Slice & key)
 {
     errorStatus = ERROR;
-    string rs = cache -> get(key);
+
+    Slice rs = cache -> get(key);
     if(rs.size() != 0)
     {
         if((cache -> remove(key)) == 0)

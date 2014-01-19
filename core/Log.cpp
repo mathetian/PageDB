@@ -1,6 +1,6 @@
 #include "Log.h"
 
-#include  <time.h>
+#include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -18,7 +18,8 @@ LOG_TYPE Log::m_logLevel;
 string   Log::m_prefix;
 FILE  *  Log::pfile;
 
-ostream& operator<<(ostream& out, const LOG_TYPE value){
+const char * getStrFromType(const LOG_TYPE & value)
+{
 #define MAPENTRY(p) {p, #p}
     const struct MapEntry{
         LOG_TYPE value;
@@ -27,7 +28,7 @@ ostream& operator<<(ostream& out, const LOG_TYPE value){
         MAPENTRY(LOG_DEBUG),
         MAPENTRY(LOG_TRACE),
         MAPENTRY(LOG_WARN),
-         MAPENTRY(LOG_ERROR),
+        MAPENTRY(LOG_ERROR),
         MAPENTRY(LOG_FATAL),
         {LOG_DEBUG, 0}//doesn't matter what is used instead of ErrorA here...
     };
@@ -39,11 +40,10 @@ ostream& operator<<(ostream& out, const LOG_TYPE value){
             break;
         }
     }
-
-    return out << s;
+    return s;
 }
 
-void Log::SetLogInfo(const string & prefix,LOG_TYPE level)
+void Log::SetLogInfo(LOG_TYPE level, const char * prefix)
 {
     if(_pTheLogs == NULL) 
         _pTheLogs = new Log;
@@ -70,12 +70,14 @@ string Log::GetLogFileName()
     return log;
 }
 
-char* Log::GetCurrentTm(int tag,char* buf,size_t size)
+void Log::GetCurrentTm(int tag, size_t size, char * buf)
 {
-    time_t now;
+    time_t now; time(&now);
+    
     struct tm *ptime = NULL;
-    time(&now);
     ptime = localtime(&now);
+    
+    buf = NULL;
 
     if(ptime != NULL)
     {
@@ -90,45 +92,31 @@ char* Log::GetCurrentTm(int tag,char* buf,size_t size)
             snprintf(buf,size,TM_FORMAT_SHORT,(ptime->tm_year + 1900),(ptime->tm_mon + 1),ptime->tm_mday);
             break;
         }
-        return buf;
     }
-
-    return NULL;
 }
 
 void Log::WriteLog(LOG_TYPE outLevel,const char* format,va_list args)
 {    
-    if(outLevel > m_logLevel)
-    {
-        vprintf(format,args);
-        exit(1);
-    }
-
     /**
         Need advanced solution
     **/
-   /* if(outLevel ==  m_logLevel)
-        vprintf(format,args1);*/
 
-    char buf[32]= {0x00};
-    
-    GetCurrentTm(TIME_FULL, buf, 32);
-    
-    fprintf (pfile,"%s\t",buf);
+    const char * str = getStrFromType(outLevel);
+    char buf[256]; memset(buf, 0, sizeof(buf));
+    GetCurrentTm(TIME_FULL, 32, buf);
 
-    switch(outLevel)
-    {
-    case LOG_TRACE: fprintf(pfile,"LOG_TRACE---"); break;
-    case LOG_DEBUG: fprintf(pfile,"LOG_DEBUG---"); break;
-    case LOG_WARN : fprintf(pfile,"LOG_WARN ---"); break;
-    case LOG_ERROR: fprintf(pfile,"LOG_ERROR---"); break;
-    case LOG_FATAL: fprintf(pfile,"LOG_FATAL---"); break;
-    }
-    vfprintf(pfile,format,args);
+    char fformat[1000];
+    sprintf(fformat,"%s\t%s--%s\n",buf,str,format);
 
-    fprintf (pfile, "\n");
+    va_list old; va_copy(old,args);
     
-    fflush(pfile);
+    vfprintf(pfile,fformat,args);
+
+    if(m_logLevel <= outLevel)
+        vprintf(fformat,old);
+    
+    if(m_logLevel < outLevel)
+        exit(1);
 }
 
 void Log::_Trace(const char* format,...)

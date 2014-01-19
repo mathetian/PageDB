@@ -7,6 +7,7 @@ using namespace std;
 int main()
 {
     Options option;
+    
     CustomDB * db = new CustomDB;
     db -> open(option);
     printf("open successful\n");

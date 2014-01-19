@@ -17,7 +17,7 @@ class Log
 {
 public:
     static Log * GetInstance();
-    void    SetLogInfo(const string & fileName,LOG_TYPE level);
+    void    SetLogInfo(LOG_TYPE level, const char * fileName);
 
 public:
     ~Log()  { }
@@ -37,7 +37,7 @@ private:
     Log() {}
     string GetLogFileName();
     void   WriteLog(LOG_TYPE outLevel,const char* format,va_list args);
-    char * GetCurrentTm(int tag,char* buf,size_t size);
+    void   GetCurrentTm(int tag, size_t size, char * buf);
 
 };
 

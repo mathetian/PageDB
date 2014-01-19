@@ -66,6 +66,11 @@ public:
         return m_data;
     }
 
+    const char* c_str() const
+    {
+        return m_data;
+    }
+    
     string toString() const
     {
         return string(m_data, m_size);

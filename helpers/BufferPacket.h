@@ -5,8 +5,8 @@
 using namespace std;
 
 #include <string.h>
-#include "../include/Log.h"
-#include "../include/Slice.h"
+#include "Log.h"
+#include "Slice.h"
 
 typedef unsigned long long uint64_t;
 

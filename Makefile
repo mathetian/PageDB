@@ -3,7 +3,7 @@ AR	    = ar
 LIBMISC	= libcustomDB.a
 RANLIB  = ranlib
 HEADER  = -I./include -I./helpers
-SOURCES = cache/*.cpp core/*.cpp helpers/*.cpp
+SOURCES = cache/*.cpp core/*.cpp helpers/BufferPacket.cpp
 
 TESTS   = tests/dp_test.cpp
 
@@ -21,8 +21,8 @@ compile:
 thread:
 	${CXX}  ${HEADER} helpers/ThreadPool.cpp -o thread -std=c++0x
 
-test: ${TESTS}
-	$(CXX) ${HEADER} $^ -o $@ ${LDLIBS}
+test: 
+	$(CXX) ${HEADER} tests/db_test.cpp -o $@ ${LDLIBS}
 
 mp_test: ${MPTEST}
 	$(CXX) ${HEADER} $^ -o $@ ${LDLIBS}

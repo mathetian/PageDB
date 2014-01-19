@@ -1,64 +1,77 @@
 #ifndef _OPTION_H
 #define _OPTION_H
 
-#define CUSTOMDB_W  0
-#define CUSTOMDB_R  2
-#define CUSTOMDB_C  4
-
 #include <string>
 using namespace std;
 
 #include "Log.h"
 
-typedef struct
+/******************************/
+#define CUSTOMDB_W  0
+#define CUSTOMDB_R  1
+#define CUSTOMDB_C  3
+
+struct FileOption_t
 {
-    string fileName;
     unsigned int read_write : 2;
-    unsigned int creat     : 1;
-} FileOption;
+    unsigned int creat      : 1;
+    const char * fileName;
+    FileOption_t() : read_write(3), creat(1), \
+        fileName("demo") { }
+};
 
-typedef struct
-{
-    FileOption foption;
-} EnvOption;
-
+/******************************/
 #define FIFO 0
 #define  LRU 1
 
-typedef struct _tCacheOption{
+struct CacheOption_t
+{
     int cacheType;
-    int sizeLimit;
-    _tCacheOption()
+    int cacheLimitInMB;
+    CacheOption_t()
     {
-        sizeLimit = 4; 
+        cacheLimitInMB = 4; 
         cacheType = FIFO;
     }
-} CacheOption;
+};
 
+/******************************/
 #define EHASH 0
 #define CHASH 1
 
-typedef struct _tFactoryOption{
-    int factoryType;
-    _tFactoryOption()
-    { factoryType = EHASH; }
-} FactoryOption;
-
-typedef struct _tOptions
+struct FactoryOption_t
 {
-    LOG_TYPE 	  logLevel;
-    string 	      logPrefix, dbFilePrefix;
-    EnvOption     envOption;
-    CacheOption   cacheOption;
-    FactoryOption factoryOption;
-
-    _tOptions()
+    int factoryType;
+    FactoryOption_t() { factoryType = EHASH; }
+};
+/******************************/
+struct LogOption_t
+{
+    LOG_TYPE logLevel;
+    const char * logPrefix;
+    LogOption_t()
     {
         logLevel = LOG_WARN;
         logPrefix = "demo";
-        dbFilePrefix = "demo";
-    } 
-}Options;
+    }
+};
 
+/******************************/
+
+typedef struct FileOption_t    FileOption;
+typedef struct CacheOption_t   CacheOption;
+typedef struct FactoryOption_t FactoryOption;
+typedef struct LogOption_t     LogOption;
+
+/*******************************/
+struct Options_t
+{
+    CacheOption   cacheOption;
+    FactoryOption factoryOption;
+    LogOption     logOption;
+    FileOption    fileOption;
+};
+
+typedef struct Options_t Options;
 
 #endif

@@ -1,8 +1,4 @@
-#include <sys/stat.h>
-#include <string.h>
-
-#include "../include/EHash.h"
-#include "../helpers/BufferPacket.h"
+#include "FactoryImpl.h"
 
 #define FILEMODE1 (fstream::in | fstream::out)
 
@@ -452,16 +448,15 @@ int ExtendibleHash::findSuitableOffset(int size)
                 block.nextBlock = datfs.tellg();
                 
                 datfs.write((char*)&nnn, SEEBLOCK);
-
-                block.eles[block.curNum].pos    = old;
-                block.eles[block.curNum++].size = SEEBLOCK;
             }
+            block.eles[block.curNum].pos    = old;
+            block.eles[block.curNum++].size = SEEBLOCK;
         }
     }
 
     if(block.checkSuitable(size, pos) == true)
     {
-        EEmptyEle ele = block.eles[pos];
+        EEmptyBlock::EEmptyEle ele = block.eles[pos];
 
         offset = ele.pos; ele.pos += size;
 
