@@ -3,8 +3,8 @@
 
 #include <map>
 #include <set>
+#include <list>
 #include <queue>
-#include <string>
 #include <vector>
 #include <algorithm>
 using namespace std;
@@ -15,7 +15,7 @@ using namespace std;
 class BaseCache
 {
 public:
-    BaseCache() { log = Log::GetInstance(); }
+    BaseCache() {  log = Log::GetInstance();  }
     virtual ~ BaseCache() { }
     
 public:
@@ -63,8 +63,9 @@ public:
     LimitedMemoryCache(int cacheLimitInMB = defaultCacheSizeInMB):\
         cacheLimit(cacheLimitInMB * 1024 * 1024), cacheSize(0), BaseCache()
     {
-        if(cacheSize > defaultCacheSize)
+        if(cacheLimit > defaultCacheSize)
             log -> _Warn("LimitedMemoryCache: defaultCacheSize\n");
+        printf("LimitedMemoryCache\n");
     }
     
     virtual ~ LimitedMemoryCache() { }
@@ -79,7 +80,7 @@ public:
     virtual Slice  removeNext() = 0;
 
 protected:
-    void           clearZero(deque <Slice> &q);
+    void           clearZero(list <Slice> &q);
 
 protected:
     const static int defaultCacheSize;
@@ -93,8 +94,8 @@ private:
 class FIFOLimitedMemoryCache : public LimitedMemoryCache
 {
 public:
-    FIFOLimitedMemoryCache(int cacheLimitInMB = LimitedMemoryCache::defaultCacheSizeInMB):\
-        LimitedMemoryCache(cacheLimitInMB) { }
+    FIFOLimitedMemoryCache(int cacheLimitInMB = LimitedMemoryCache::defaultCacheSizeInMB)
+         { printf("FIFOLimitedMemoryCache\n"); }
     
     ~FIFOLimitedMemoryCache() { }
 
@@ -108,7 +109,7 @@ public:
     Slice   removeNext();
 
 private:
-    deque <Slice> sQue;
+    list <Slice> sQue;
 };
 
 class LRULimitedMemoryCache : public LimitedMemoryCache
@@ -129,7 +130,7 @@ public:
     Slice   removeNext();
 
 private:
-    deque <Slice> sQue;
+    list <Slice> sQue;
 };
 
 #endif

@@ -16,13 +16,13 @@ lib:compile
 	${RANLIB} ${LIBMISC}
 
 compile:
-	${CXX} ${HEADER} -c ${SOURCES} 
+	${CXX} -g -O0 ${HEADER} -c ${SOURCES} 
 
 thread:
 	${CXX}  ${HEADER} helpers/ThreadPool.cpp -o thread -std=c++0x
 
 test: 
-	$(CXX) ${HEADER} tests/db_test.cpp -o $@ ${LDLIBS}
+	$(CXX) -g -O0 ${HEADER} tests/db_test.cpp -o $@ ${LDLIBS}
 
 mp_test: ${MPTEST}
 	$(CXX) ${HEADER} $^ -o $@ ${LDLIBS}

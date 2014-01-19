@@ -3,11 +3,10 @@
 bool CustomDB::open(const Options & option)
 {
     this -> option = option;
-
-    log = Log::GetInstance();
     
+    log = Log::GetInstance();
     log -> SetLogInfo(option.logOption.logLevel, option.logOption.logPrefix);
-
+    
     switch(option.cacheOption.cacheType)
     {
     case FIFO:
@@ -20,7 +19,7 @@ bool CustomDB::open(const Options & option)
         log -> _Fatal("CustomDB::open::cacheType error\n");
         break;
     }
-
+    printf("123\n");
     if(cache == NULL)
         log -> _Fatal("CustomDB::open::new cache error\n");
 
@@ -35,13 +34,13 @@ bool CustomDB::open(const Options & option)
     default:
         log -> _Fatal("CustomDB::open::factory error\n");
     }
-
+    printf("123\n");
     if(factory == NULL)
         log -> _Fatal("CustomDB::open::new factory error\n");
-
+    printf("123\n");
     if(factory -> init(option.fileOption.fileName) == false)
         log -> _Fatal("CustomDB::open::init factory error\n");
-
+    printf("123\n");
     log -> _Trace("CustomDB::open initialization successfully\n");
 }
 

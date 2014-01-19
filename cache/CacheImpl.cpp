@@ -53,9 +53,9 @@ void LimitedMemoryCache::clear()
     BaseCache::clear();
 }
 
-void LimitedMemoryCache::clearZero(deque <Slice> &q )
+void LimitedMemoryCache::clearZero(list <Slice> &q )
 {
-    deque <Slice> empty;
+    list <Slice> empty;
     swap(q, empty);
 }
 
@@ -84,7 +84,7 @@ bool FIFOLimitedMemoryCache::remove(const Slice & key)
 
     if(flag == false) return false;
 
-    deque <Slice>::iterator itDq = sQue.begin();
+    list <Slice>::iterator itDq = sQue.begin();
     
     while(itDq != sQue.end() && *itDq == key) itDq++;
    
@@ -127,7 +127,7 @@ Slice LRULimitedMemoryCache::get(const Slice & key)
 {
     Slice value = LimitedMemoryCache::get(key);
     
-    deque <Slice>::iterator itDq = sQue.begin();
+    list <Slice>::iterator itDq = sQue.begin();
 
     while(itDq != sQue.end() && *itDq == key) itDq++;
     
@@ -146,7 +146,7 @@ bool   LRULimitedMemoryCache::remove(const Slice & key)
     bool flag = LimitedMemoryCache::remove(key);
     if(flag == false) return false;
 
-    deque <Slice>::iterator itDq = sQue.begin();
+    list <Slice>::iterator itDq = sQue.begin();
     while(itDq != sQue.end() && *itDq == key) itDq++;
 
     if(itDq == sQue.end())
