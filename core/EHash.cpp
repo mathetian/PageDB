@@ -48,7 +48,7 @@ void  Page::setByBucket(BufferPacket & packet)
     packet.setBeg(); 
     packet >> d >> curNum;
     
-    packet.read((char*)&elements[0],SPELEMENT*(PAGESIZE + 5));
+    packet.read((char*)&elements[0],sizeof(elements));
 }
 
 bool Page::put(const Slice & key, const Slice & value, int hashVal)
@@ -200,22 +200,26 @@ bool ExtendibleHash::init(const char * filename)
 
 void ExtendibleHash::writeToIdxFile()
 {
+    idxfs.seekg(0,ios_base::beg);
     BufferPacket packet(SINT * 3 + entries.size()*SINT);
     packet << gd << pn << fb;
 
     packet.write((char*)&entries[0], entries.size()*SINT);
 
     idxfs.write(packet.getData(),packet.getSize());
+
+    idxfs.flush();
 }
 
 void ExtendibleHash::readFromFile()
 {
+    idxfs.seekg(0,ios_base::beg);
+
     BufferPacket packet(SINT * 3);
     
     idxfs.read(packet.getData(), packet.getSize());
     
     packet >> gd >> pn >> fb;
-
     entries = vector<int> (1 << gd, 0);
 
     idxfs.read((char*)&entries[0], entries.size()*SINT);
@@ -244,15 +248,17 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
         for(int i = 0; i < oldSize; i++)
             entries.push_back(entries.at(i));
         writeToIdxFile();
+        cout << "double-entries" << endl;
     }
 
     if(page -> full() && page -> d < gd)
     {
         log -> _Trace("ExtendibleHash :: put :: split \n");
-
+        cout << "put::split" << endl;
         if((page -> put(key, value, hashVal)) == 1)
         {
             datfs.seekg(entries.at(cur), ios_base::beg);
+            
             BufferPacket packet = page -> getPacket();
             datfs.write(packet.getData(), packet.getSize());
         }
@@ -263,31 +269,29 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
         }
 
         Page * p1 = new Page(this);
+        Page * p2 = new Page(this);
 
         int index = 0, curNum2 = 0, curNum3 = 0;
 
         for(index = 0; index < page -> curNum; index++)
         {
             PageElement element = page -> elements[index];
-            BufferPacket packet(element.m_keySize);
             
-            datfs.seekg(element.m_datPos, ios_base::cur);
-            datfs.read(packet.getData(),packet.getSize());
-            
-            Slice slice(packet.getSize());
-            packet >> slice;
-
-            int id = hashFunc(slice);
+            int id = element.m_hashVal;
 
             int flag = (id & ((1 << gd) - 1));
+            
             if(((flag >> (page -> d)) & 1) == 1)
-                p1 -> elements[curNum3++] = page -> elements[index];
+                p2 -> elements[curNum3++] = page -> elements[index];
             else
-                page -> elements[curNum2++] = page -> elements[index];
+                p1 -> elements[curNum2++] = page -> elements[index];
         }
 
-        page -> curNum = curNum2;
-        p1   -> curNum = curNum3;
+       /* for(index = curNum2;index < page -> curNum;index++)
+            page -> elements[index].clear();*/
+        
+        p1   -> curNum = curNum2;
+        p2   -> curNum = curNum3;
 
         datfs.seekg(0, ios_base::end);
 
@@ -295,24 +299,35 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
         {
             if(entries.at(index) == entries.at(cur))
             {
-                /**Problem ?**/
+                /**Problem ?**//**Must !!! **/
                 if(((index >> (page -> d)) & 1) == 1)
                     entries[index] = datfs.tellg();
+                else
+                    entries[index] = entries.at(cur);
             }
         }
 
-        page -> d = p1 -> d = (page -> d) + 1;
+        p1 -> d = p2 -> d = (page -> d) + 1;
 
-        datfs.seekg(entries.at(cur),ios_base::beg);
+       /* datfs.seekg(entries.at(cur),ios_base::beg);
         datfs.write((char*)page, sizeof(Page));
 
         datfs.seekg(0, ios_base::end);
-        datfs.write((char*)p1, sizeof(Page));
+        datfs.write((char*)p1, sizeof(Page));*/
+        BufferPacket packe1 = p1 -> getPacket();
+        BufferPacket packe2 = p2 -> getPacket();
 
+        datfs.seekg(entries.at(cur), ios_base::beg);
+        datfs.write(packe1.getData(), packe1.getSize());
+
+        datfs.seekg(0, ios_base::end);
+        datfs.write(packe2.getData(), packe2.getSize());
+       
         /**Sometime it would write too much**/
+       
         writeToIdxFile();
 
-        delete p1; p1 = NULL;
+        delete p1; p1 = NULL; delete p2; p2 = NULL;
     }
     else
     {
@@ -320,7 +335,7 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
         {
             BufferPacket packet = page -> getPacket();
 
-            datfs.seekg(0, ios_base::beg); 
+            datfs.seekg(entries.at(cur),  ios_base::beg); 
             datfs.write(packet.getData(), packet.getSize());
         }
         else
@@ -406,6 +421,7 @@ int ExtendibleHash::findSuitableOffset(int size)
 
         idxfs.seekg(2 * SINT, ios_base::beg);
         idxfs.write((char*)&fb, SINT);
+        
 
         return fb + SEEBLOCK + size;
     }
@@ -525,4 +541,40 @@ void ExtendibleHash::recycle(int offset, int size)
 
     datfs.seekg(fb, ios_base::beg);
     datfs.write((char*)&block,SEEBLOCK);
+}
+
+void ExtendibleHash::dump()
+{
+    Page * page = new Page(this);
+
+    for(int cur = 0;cur < entries.size();cur++)
+    {
+        int j;
+        for(j = 0;j < cur;j++)
+        {
+            if(entries[j] ==  cur) break;
+        }
+        if(j != cur) continue;
+
+        BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
+        datfs.seekg(entries.at(cur), ios_base::beg);
+        datfs.read(packet.getData(), packet.getSize());
+
+        page -> setByBucket(packet);
+
+        cout << "Page(size:"<<page -> curNum <<") " << cur <<":";
+
+        for(j = 0;j < page -> curNum;j++)
+        {
+            datfs.seekg(page -> elements[j].m_datPos, ios_base::beg);
+            BufferPacket packet(2*SINT);
+            datfs.read(packet.getData(),packet.getSize());
+            int a, b;
+            packet >> a >> b;
+            cout << a <<" ";
+        }
+        cout << endl;
+    }
+
+    delete [] page; page = NULL;
 }

@@ -105,14 +105,17 @@ void Log::WriteLog(LOG_TYPE outLevel,const char* format,va_list args)
     GetCurrentTm(TIME_FULL, 32, buf);
 
     char fformat[1000];
-    sprintf(fformat,"%s\t%s--%s\n",buf,str,format);
+    sprintf(fformat,"%s\t%s--%s",buf,str,format);
 
     va_list old; va_copy(old,args);
     
     vfprintf(pfile,fformat,args);
+    fprintf(pfile,"\n");
 
     if(m_logLevel <= outLevel)
         vprintf(fformat,old);
+    
+    fflush(pfile);
     
     if(m_logLevel < outLevel)
         exit(1);

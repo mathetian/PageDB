@@ -27,6 +27,19 @@ public:
         factory = NULL; cache = NULL;
     }
 
+    void    close()
+    {
+        if(factory) delete factory;
+        if(cache)   delete cache;
+
+        factory = NULL; cache = NULL;
+    }
+
+    void    dump()
+    {
+        /**Todo List**/
+        factory -> dump();
+    }
 public:
     bool 	open(const Options & option);
     bool 	put(const Slice & key,const Slice & value);

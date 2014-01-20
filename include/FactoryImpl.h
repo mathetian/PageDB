@@ -19,9 +19,9 @@ using namespace std;
 /**Two samples to describe how to use it**/
 inline int defaultHashFunc(const Slice & key)
 {
-    int index;
     int value = 0x238F13AF * key.size();
-    for(index = 0; index < key.size(); index++)
+    
+    for(int index = 0; index < key.size(); index++)
         value = (value + (key[index] << (index*5 % 24))) & 0x7FFFFFFF;
     return value;
 }
@@ -100,6 +100,11 @@ public:
     bool     remove(const Slice & key);
     bool	 init(const char * filename);
 
+    void     dump()
+    {
+        //Todo list
+    }
+    
 private:
     void     recycle(int offset, int size);
 
@@ -152,7 +157,11 @@ class PageElement
 {
 public:
     PageElement(): m_hashVal(-1), m_datPos(-1), m_keySize(-1), m_datSize(-1){}
-
+    void  clear()
+    {
+        m_hashVal = -1; m_datPos = -1; m_keySize = -1; m_datSize = -1;
+    }
+    
 private:
     int   m_hashVal, m_datPos;
     int   m_keySize, m_datSize;
@@ -202,13 +211,18 @@ class ExtendibleHash : public Factory
 public:
     ExtendibleHash(HASH hashFunc = defaultHashFunc) :\
         hashFunc(hashFunc), gd(0), pn(1), fb(-1) { }
-    virtual ~ExtendibleHash() { if(idxfs) idxfs.close(); if(datfs) datfs.close();}
+    virtual ~ExtendibleHash() 
+    { 
+        if(idxfs) idxfs.close(); 
+        if(datfs) datfs.close();
+    }
 
 public:
     virtual bool     put(const Slice & key,const Slice & value);
     virtual Slice    get(const Slice & key);
     virtual bool     remove(const Slice & key);
     virtual bool     init(const char * filename);
+    virtual void     dump();
 
 private:
     void     recycle(int offset, int size);

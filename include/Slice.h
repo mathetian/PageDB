@@ -85,7 +85,7 @@ public:
     {
         return m_size == 0;
     }
-
+    
     void clear()
     {
         m_data = "";

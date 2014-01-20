@@ -21,7 +21,8 @@ public:
     virtual Slice  get(const Slice & key) = 0;
     virtual bool   remove(const Slice & key) = 0;
     virtual bool   init(const char * filename) = 0;
-
+    virtual void   dump() = 0;
+    
 protected:
 	Log  *  log;
 };

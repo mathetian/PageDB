@@ -24,6 +24,9 @@ thread:
 test: 
 	$(CXX) -g -O0 ${HEADER} tests/db_test.cpp -o $@ ${LDLIBS}
 
+test2:
+	$(CXX) -g -O0 ${HEADER} tests/db_test2.cpp -o $@ ${LDLIBS}
+	
 mp_test: ${MPTEST}
 	$(CXX) ${HEADER} $^ -o $@ ${LDLIBS}
 
