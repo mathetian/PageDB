@@ -40,6 +40,12 @@ public:
         /**Todo List**/
         factory -> dump();
     }
+
+    void   cleanCACHE()
+    {
+        cache -> clear();
+    }
+
 public:
     bool 	open(const Options & option);
     bool 	put(const Slice & key,const Slice & value);

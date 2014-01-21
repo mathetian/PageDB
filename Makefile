@@ -21,10 +21,10 @@ compile:
 thread:
 	${CXX}  ${HEADER} helpers/ThreadPool.cpp -o thread -std=c++0x
 
-test: 
+db_test: 
 	$(CXX) -g -O0 ${HEADER} tests/db_test.cpp -o $@ ${LDLIBS}
 
-test2:
+db_test2:
 	$(CXX) -g -O0 ${HEADER} tests/db_test2.cpp -o $@ ${LDLIBS}
 	
 mp_test: ${MPTEST}
@@ -32,6 +32,9 @@ mp_test: ${MPTEST}
 
 aio_test: 
 	${CXX} helpers/AIO.h -o aio -std=c++0x -lrt
+
+slice_test:
+	$(CXX) -g -O0 ${HEADER} tests/slice_test.cpp -o $@ ${LDLIBS}
 
 clean: 
 	rm -f *.o *.idx *.dat test demo* mp_test thread

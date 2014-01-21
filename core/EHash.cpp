@@ -106,14 +106,18 @@ Slice Page::get(const Slice & key, int hashVal)
     {
         if(elements[index].m_hashVal == hashVal && elements[index].m_keySize == key.size())
         {
-            BufferPacket packet(elements[index].m_datSize);
-            Slice slice(elements[index].m_datSize);
+            BufferPacket packet(elements[index].m_datSize + elements[index].m_keySize);
+            
+            Slice slice1(elements[index].m_datSize); Slice slice2(elements[index].m_keySize);
 
-            eHash -> datfs.seekg(elements[index].m_datPos + elements[index].m_keySize, ios_base::beg);
+            eHash -> datfs.seekg(elements[index].m_datPos, ios_base::beg);
+
             eHash -> datfs.read(packet.getData(), packet.getSize());
             
-            packet >> slice;
-            return slice;
+            packet >> slice2 >> slice1;
+
+            if(slice2 == key)
+                return slice1;
         }
     }
     return "";
@@ -255,12 +259,14 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
     {
         log -> _Trace("ExtendibleHash :: put :: split \n");
         cout << "put::split" << endl;
+       // dump();
+
         if((page -> put(key, value, hashVal)) == 1)
         {
-            datfs.seekg(entries.at(cur), ios_base::beg);
+            //datfs.seekg(entries.at(cur), ios_base::beg);
             
-            BufferPacket packet = page -> getPacket();
-            datfs.write(packet.getData(), packet.getSize());
+           // BufferPacket packet = page -> getPacket();
+           // datfs.write(packet.getData(), packet.getSize());
         }
         else
         {
@@ -292,18 +298,20 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
         
         p1   -> curNum = curNum2;
         p2   -> curNum = curNum3;
-
+        cout << "curNUm: "<<curNum2 <<" "<<curNum3<<endl;
         datfs.seekg(0, ios_base::end);
 
+        int oldpos = entries.at(cur);
         for(index = 0; index < entries.size(); index++)
         {
             if(entries.at(index) == entries.at(cur))
             {
                 /**Problem ?**//**Must !!! **/
+                cout << index << " "<<((index >> (page -> d)) & 1)<<endl;
                 if(((index >> (page -> d)) & 1) == 1)
                     entries[index] = datfs.tellg();
                 else
-                    entries[index] = entries.at(cur);
+                    entries[index] = oldpos;
             }
         }
 
@@ -316,18 +324,20 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
         datfs.write((char*)p1, sizeof(Page));*/
         BufferPacket packe1 = p1 -> getPacket();
         BufferPacket packe2 = p2 -> getPacket();
-
-        datfs.seekg(entries.at(cur), ios_base::beg);
+        cout << cur <<endl;
+        datfs.seekg(oldpos, ios_base::beg);
         datfs.write(packe1.getData(), packe1.getSize());
 
         datfs.seekg(0, ios_base::end);
         datfs.write(packe2.getData(), packe2.getSize());
-       
         /**Sometime it would write too much**/
        
         writeToIdxFile();
 
         delete p1; p1 = NULL; delete p2; p2 = NULL;
+
+       // cout << "After Split" << endl;
+      //  dump();
     }
     else
     {
@@ -353,9 +363,11 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
 
 Slice ExtendibleHash::get(const Slice & key)
 {
+    int vvvv = key.returnAsInt();
+    
     int hashVal = hashFunc(key);
     int cur     = hashVal & ((1 << gd) -1);
-    
+
     Page * page = new Page(this);
     BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
     
@@ -364,10 +376,15 @@ Slice ExtendibleHash::get(const Slice & key)
 
     page -> setByBucket(packet);
 
+   /* printThisPage(page);*/
+
     Slice rs = page -> get(key, hashVal);
 
     delete page;
     page = NULL;
+
+    if(vvvv == 32)
+        rs.printAsInt();
 
     return rs;
 }
@@ -552,7 +569,7 @@ void ExtendibleHash::dump()
         int j;
         for(j = 0;j < cur;j++)
         {
-            if(entries[j] ==  cur) break;
+            if(entries[j] ==  entries[cur]) break;
         }
         if(j != cur) continue;
 
@@ -571,10 +588,24 @@ void ExtendibleHash::dump()
             datfs.read(packet.getData(),packet.getSize());
             int a, b;
             packet >> a >> b;
-            cout << a <<" ";
+            cout << a <<" " << b << " ";
         }
         cout << endl;
     }
 
-    delete [] page; page = NULL;
+    delete page; page = NULL;
+}
+
+void ExtendibleHash::printThisPage(Page * page)
+{
+    for(int j = 0;j < page -> curNum;j++)
+    {
+        datfs.seekg(page -> elements[j].m_datPos, ios_base::beg);
+        BufferPacket packet(2*SINT);
+        datfs.read(packet.getData(),packet.getSize());
+        int a, b;
+        packet >> a >> b;
+        cout << a <<" " << b << " ";
+    }
+    cout << endl;
 }

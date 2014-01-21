@@ -230,6 +230,8 @@ private:
     void     readFromFile();/**Read the Index information**/
     int      findSuitableOffset(int size);
 
+    void     printThisPage(Page * page);
+
 private:
     HASH      hashFunc;
     bool      updated, eupdated; /**two files update status**/

@@ -75,6 +75,27 @@ public:
     {
         return string(m_data, m_size);
     }
+    
+    void   printAsInt()
+    {    
+        cout << returnAsInt() << endl;
+    }
+
+    int  returnAsInt() const
+    {
+        int r = 0;
+        for(int i = 0;i < m_size;i++)
+        {
+            int a = m_data[i];
+
+            for(int j = 0;j < 8;j++)
+            {
+                int flag = ((a & (1 << j)) >> j);
+                r += (flag << (i*8 + j));
+            }
+        }
+        return r;
+    }
 
     size_t size() const
     {

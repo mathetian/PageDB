@@ -3,7 +3,9 @@ using namespace std;
 
 #include "CustomDB.h"
 #include "Option.h"
+#include <assert.h>
 
+#define SIZE 1000
 
 int main()
 {
@@ -13,7 +15,7 @@ int main()
     db -> open(option);
     printf("open successful\n");
 
-    for(int i=53;i>=1;i--)
+    for(int i=SIZE;i>=1;i--)
     {
         BufferPacket packet(sizeof(int));
         packet << i;
@@ -25,8 +27,9 @@ int main()
     }
 
     db -> dump();
+    db -> cleanCACHE();
 
-/*    for(int i = 1;i <= 200;i++)
+    for(int i=SIZE;i>=1;i--)
     {
         BufferPacket packet(sizeof(int)); packet << i;
         
@@ -37,12 +40,12 @@ int main()
         BufferPacket packet2(sizeof(int));
         
         packet2 << value; packet2.setBeg();
-       	
-       	int num = -1; packet2 >> num;
-       	cout << i << " " << num << endl;
-    }*/
-
-
+        
+        int num = -1; packet2 >> num;
+        if(i!=num)
+            cout << i <<" "<<num <<" ) ";
+    }
+   //db -> dump();
     delete db;
 }
     
