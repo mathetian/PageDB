@@ -26,7 +26,10 @@ db_test:
 
 db_test2:
 	$(CXX) -g -O0 ${HEADER} tests/db_test2.cpp -o $@ ${LDLIBS}
-	
+
+db_test3:
+	$(CXX) -g -O0 ${HEADER} tests/db_test3.cpp -o $@ ${LDLIBS}
+
 mp_test: ${MPTEST}
 	$(CXX) ${HEADER} $^ -o $@ ${LDLIBS}
 
@@ -37,4 +40,4 @@ slice_test:
 	$(CXX) -g -O0 ${HEADER} tests/slice_test.cpp -o $@ ${LDLIBS}
 
 clean: 
-	rm -f *.o *.idx *.dat test demo* mp_test thread
+	rm -f *.o *.idx *.dat test demo* mp_test thread *_test*

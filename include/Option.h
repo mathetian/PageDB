@@ -47,7 +47,7 @@ struct FactoryOption_t
 /******************************/
 struct LogOption_t
 {
-    LOG_TYPE logLevel;
+    LOG_TYPE     logLevel;
     const char * logPrefix;
     LogOption_t()
     {

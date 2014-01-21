@@ -3,17 +3,21 @@ using namespace std;
 
 #include "CustomDB.h"
 #include "Option.h"
+#include "TimeStamp.h"
+
 #include <assert.h>
 
-#define SIZE 1000
+
+#define SIZE 100000
 
 int main()
 {
 	Options option;
-    	
     CustomDB * db = new CustomDB;
     db -> open(option);
     printf("open successful\n");
+
+    TimeStamp::StartTime();
 
     for(int i=SIZE;i>=1;i--)
     {
@@ -21,13 +25,16 @@ int main()
         packet << i;
         Slice key(packet.getData(),sizeof(int));
         Slice value(packet.getData(),sizeof(int));
-        cout << "begin put:" << i << endl;
         if(db -> put(key, value) == false)
             cout << "error put:" << i << endl;
     }
+    
+    TimeStamp::StopTime("PutTime: ");
 
     db -> dump();
     db -> cleanCACHE();
+
+    TimeStamp::StartTime();
 
     for(int i=SIZE;i>=1;i--)
     {
@@ -45,7 +52,8 @@ int main()
         if(i!=num)
             cout << i <<" "<<num <<" ) ";
     }
-   //db -> dump();
+
+    TimeStamp::StopTime("GetTime(Without Cache): ");
     delete db;
 }
     

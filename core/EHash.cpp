@@ -252,14 +252,11 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
         for(int i = 0; i < oldSize; i++)
             entries.push_back(entries.at(i));
         writeToIdxFile();
-        cout << "double-entries" << endl;
     }
 
     if(page -> full() && page -> d < gd)
     {
         log -> _Trace("ExtendibleHash :: put :: split \n");
-        cout << "put::split" << endl;
-       // dump();
 
         if((page -> put(key, value, hashVal)) == 1)
         {
@@ -298,7 +295,6 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
         
         p1   -> curNum = curNum2;
         p2   -> curNum = curNum3;
-        cout << "curNUm: "<<curNum2 <<" "<<curNum3<<endl;
         datfs.seekg(0, ios_base::end);
 
         int oldpos = entries.at(cur);
@@ -307,7 +303,6 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
             if(entries.at(index) == entries.at(cur))
             {
                 /**Problem ?**//**Must !!! **/
-                cout << index << " "<<((index >> (page -> d)) & 1)<<endl;
                 if(((index >> (page -> d)) & 1) == 1)
                     entries[index] = datfs.tellg();
                 else
@@ -324,7 +319,6 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
         datfs.write((char*)p1, sizeof(Page));*/
         BufferPacket packe1 = p1 -> getPacket();
         BufferPacket packe2 = p2 -> getPacket();
-        cout << cur <<endl;
         datfs.seekg(oldpos, ios_base::beg);
         datfs.write(packe1.getData(), packe1.getSize());
 
@@ -336,8 +330,6 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
 
         delete p1; p1 = NULL; delete p2; p2 = NULL;
 
-       // cout << "After Split" << endl;
-      //  dump();
     }
     else
     {
@@ -382,9 +374,6 @@ Slice ExtendibleHash::get(const Slice & key)
 
     delete page;
     page = NULL;
-
-    if(vvvv == 32)
-        rs.printAsInt();
 
     return rs;
 }
@@ -579,7 +568,6 @@ void ExtendibleHash::dump()
 
         page -> setByBucket(packet);
 
-        cout << "Page(size:"<<page -> curNum <<") " << cur <<":";
 
         for(j = 0;j < page -> curNum;j++)
         {
@@ -588,9 +576,7 @@ void ExtendibleHash::dump()
             datfs.read(packet.getData(),packet.getSize());
             int a, b;
             packet >> a >> b;
-            cout << a <<" " << b << " ";
         }
-        cout << endl;
     }
 
     delete page; page = NULL;
