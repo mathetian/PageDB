@@ -1,12 +1,19 @@
 #include "Slice.h"
 #include "BufferPacket.h"
 
-int main()
+#include <assert.h>
+
+#define EXPECT_EQ(a,b) assert(a == b)
+
+void Test()
 {
 	BufferPacket packet(sizeof(int)); packet << 15545;
 	Slice slice(packet.getData(), packet.getSize());
 	
-	slice.printAsInt();
+	EXPECT_EQ(slice.returnAsInt(), 15545);
+}
 
-	return 0;
+int main()
+{
+	Test();
 }

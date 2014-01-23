@@ -84,11 +84,11 @@ public:
     int  returnAsInt() const
     {
         int r = 0;
-        for(int i = 0;i < m_size;i++)
+        for(unsigned int i = 0;i < m_size;i++)
         {
             int a = m_data[i];
 
-            for(int j = 0;j < 8;j++)
+            for(unsigned int j = 0;j < 8;j++)
             {
                 int flag = ((a & (1 << j)) >> j);
                 r += (flag << (i*8 + j));
@@ -124,6 +124,7 @@ public:
 
     string operator()(int i=1)
     {
+        i++;
         return string(m_data, m_size);
     }
 private:
@@ -135,7 +136,7 @@ inline bool operator==(const Slice & s1, const Slice & s2)
 {
     if(s1.size() != s2.size()) return false;
     
-    int i = 0;
+    unsigned i = 0;
     
     while(i < s1.size() && s1[i] == s2[i]) i++;
   
@@ -150,7 +151,7 @@ inline bool operator!=(const Slice & s1, const Slice & s2)
 }
 inline bool operator< (const Slice & s1, const Slice & s2)
 {
-    int i = 0;
+    unsigned int i = 0;
     while(i < s1.size() && i < s2.size() && s1[i] == s2[i]) 
         i++;
 
