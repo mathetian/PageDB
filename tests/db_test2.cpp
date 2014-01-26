@@ -8,7 +8,7 @@ using namespace std;
 #include <assert.h>
 
 
-#define SIZE 100000
+#define SIZE 1000000
 
 int main()
 {
@@ -27,11 +27,12 @@ int main()
         Slice value(packet.getData(),sizeof(int));
         if(db -> put(key, value) == false)
             cout << "error put:" << i << endl;
+        if(i%10000==0) cout<<i<<endl;
     }
     
     TimeStamp::StopTime("PutTime: ");
 
-    db -> dump();
+   // db -> dump();
     db -> cleanCACHE();
 
     TimeStamp::StartTime();

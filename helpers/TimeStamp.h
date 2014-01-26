@@ -41,6 +41,17 @@ public:
         }
     }
 
+    static double GetCurTimeAsDouble()
+    {
+        struct timeval cur;
+        gettimeofday(&cur,NULL);
+        double rs = 0;
+        rs = cur.tv_sec;
+        rs += (cur.tv_usec/1000000.0);
+        
+        return rs;        
+    }
+
 private:
     static int timeval_subtract (struct timeval *result, struct timeval *x, struct timeval *y)
     {

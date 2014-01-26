@@ -26,6 +26,18 @@ BufferPacket & BufferPacket::operator << (int ivalue)
 	return *this;
 }
 
+BufferPacket & BufferPacket::operator << (const uint32_t ivalue)
+{
+	if(cur + sizeof(uint32_t) > size)
+		log -> _Error("BufferPacket error << int\n");
+	else
+	{
+		*(uint32_t*)(data + cur) = ivalue;
+		cur += sizeof(uint32_t);
+	}
+	return *this;
+}
+
 BufferPacket & BufferPacket::operator << (size_t st)
 {
 	if(cur + sizeof(size_t) > size)
@@ -59,6 +71,18 @@ BufferPacket & BufferPacket::operator >> (int&ivalue)
 	{
 		ivalue = *(int*)(data + cur);
 		cur += sizeof(ivalue);
+	}
+	return *this;
+}
+
+BufferPacket & BufferPacket::operator >> (uint32_t & ivalue)
+{
+	if(cur + sizeof(ivalue) > size) 
+		log -> _Error("BufferPacket >> int overflow\n");
+	else
+	{
+		ivalue = *(uint32_t*)(data + cur);
+		cur += sizeof(uint32_t);
 	}
 	return *this;
 }

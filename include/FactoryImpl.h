@@ -9,24 +9,15 @@ using namespace std;
 
 #include "Factory.h"
 #include "BufferPacket.h"
+#include "HashFunction.h"
 
-#define PAGESIZE 25
+#define PAGESIZE 50
 #define SINT     sizeof(int)
 
 #define SCEBLOCK sizeof(CEmptyBlock)
 #define SELEM    sizeof(CElement)
 
-/**Two samples to describe how to use it**/
-inline int defaultHashFunc(const Slice & key)
-{
-    int value = 0x238F13AF * key.size();
-    
-    for(int index = 0; index < key.size(); index++)
-        value = (value + (key[index] << (index*5 % 24))) & 0x7FFFFFFF;
-    return value;
-}
-
-typedef int (*HASH)(const Slice & key);
+typedef uint32_t (*HASH)(const Slice & key);
 
 class CEmptyBlock
 {
@@ -56,12 +47,12 @@ class ChainHash;
 class CElement
 {
 public:
-    CElement(int nextOffset = -1, int keySize = 0, int valueSize = 0, int hashVal = -1) \
+    CElement(int nextOffset = -1, int keySize = 0, int valueSize = 0, uint32_t hashVal = 0) \
         : nextOffset(nextOffset), keySize(keySize), valueSize(valueSize), hashVal(hashVal) { }
 
 private:
     int nextOffset, keySize;
-    int valueSize, hashVal;
+    uint32_t valueSize, hashVal;
 
     friend class Chain;
     friend class ChainHash;
@@ -74,10 +65,10 @@ public:
              firstoffset(defaultFirstOffset) { }
              
 private:
-    bool     put(const Slice & key,const Slice & value, int hashVal);
-    Slice    get(const Slice & key, int hashVal);
-    bool     remove(const Slice & key, int hashVal);
-    bool     check(const Slice & key, int hashVal); /**???**/
+    bool     put(const Slice & key,const Slice & value, uint32_t hashVal);
+    Slice    get(const Slice & key, uint32_t hashVal);
+    bool     remove(const Slice & key, uint32_t hashVal);
+    bool     check(const Slice & key, uint32_t hashVal); /**???**/
 
 private:
     friend   class ChainHash;
@@ -90,7 +81,7 @@ private:
 class ChainHash : public Factory
 {
 public:
-    ChainHash(int chainCount = 100, HASH hashFunc = defaultHashFunc) :\
+    ChainHash(int chainCount = 100, HASH hashFunc = MurmurHash3) :\
         chainCount(chainCount), hashFunc(hashFunc) { }
     virtual ~ChainHash();
 
@@ -99,7 +90,7 @@ public:
     Slice    get(const Slice & key);
     bool     remove(const Slice & key);
     bool	 init(const char * filename);
-
+    void     removeAll(const char * filename) { }
     void     dump()
     {
         //Todo list
@@ -156,14 +147,14 @@ class ExtendibleHash;
 class PageElement
 {
 public:
-    PageElement(): m_hashVal(-1), m_datPos(-1), m_keySize(-1), m_datSize(-1){}
+    PageElement(): m_hashVal(0), m_datPos(-1), m_keySize(-1), m_datSize(-1){}
     void  clear()
     {
         m_hashVal = -1; m_datPos = -1; m_keySize = -1; m_datSize = -1;
     }
     
 private:
-    int   m_hashVal, m_datPos;
+    uint32_t   m_hashVal, m_datPos;
     int   m_keySize, m_datSize;
 
     friend ostream & operator << (ostream & os, PageElement & e);
@@ -189,9 +180,9 @@ public:
 
 private:
     bool   full() { return curNum >= PAGESIZE; }
-    bool   put(const Slice & key,const Slice & value, int hashVal);
-    Slice  get(const Slice & key, int hashVal);
-    bool   remove(const Slice & key, int hashVal);
+    bool   put(const Slice & key,const Slice & value, uint32_t hashVal);
+    Slice  get(const Slice & key, uint32_t hashVal);
+    bool   remove(const Slice & key, uint32_t hashVal);
 
 private:
     friend class ExtendibleHash;
@@ -209,7 +200,7 @@ private:
 class ExtendibleHash : public Factory
 {
 public:
-    ExtendibleHash(HASH hashFunc = defaultHashFunc) :\
+    ExtendibleHash(HASH hashFunc = MurmurHash3) :\
         hashFunc(hashFunc), gd(0), pn(1), fb(-1) { }
     virtual ~ExtendibleHash() 
     { 
@@ -218,11 +209,22 @@ public:
     }
 
 public:
-    virtual bool     put(const Slice & key,const Slice & value);
-    virtual Slice    get(const Slice & key);
-    virtual bool     remove(const Slice & key);
-    virtual bool     init(const char * filename);
-    virtual void     dump();
+    bool     put(const Slice & key,const Slice & value);
+    Slice    get(const Slice & key);
+    bool     remove(const Slice & key);
+    bool     init(const char * filename);
+    void     dump();
+    void     removeAll(const char * filename)
+    {  
+        string sfilename(filename, filename + strlen(filename));
+        string idxName = sfilename + ".idx";
+        string datName = sfilename +  ".dat";
+
+        idxName = "rm " + idxName;
+        datName = "rm " + datName;
+        system(idxName.c_str());
+        system(datName.c_str());
+    }
 
 private:
     void     recycle(int offset, int size);

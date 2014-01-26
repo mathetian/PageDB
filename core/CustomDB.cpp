@@ -40,6 +40,7 @@ bool CustomDB::open(const Options & option)
         log -> _Fatal("CustomDB::open::init factory error\n");
     
     log -> _Trace("CustomDB::open initialization successfully\n");
+    return true;
 }
 
 bool CustomDB::put(const Slice & key,const Slice & value)

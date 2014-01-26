@@ -7,8 +7,9 @@ using namespace std;
 #include <string.h>
 #include "Log.h"
 #include "Slice.h"
+#include <stdint.h>
 
-typedef unsigned long long uint64_t;
+//typedef unsigned long long uint64_t;
 
 class BufferPacket{
 public:
@@ -38,6 +39,7 @@ public:
 	BufferPacket & operator << (const Slice & slice);
 	BufferPacket & operator << (const char * str);
 	BufferPacket & operator << (const BufferPacket & packet);
+	BufferPacket & operator << (const uint32_t value);
 
 public:
 	BufferPacket & operator >> (int    & ivalue);
@@ -45,6 +47,7 @@ public:
 	BufferPacket & operator >> (string & str);
 	BufferPacket & operator >> (Slice  & slice);
 	BufferPacket & operator >> (char * str);
+	BufferPacket & operator >> (uint32_t & value);
 
 public:
 	/**Sorry for that**/

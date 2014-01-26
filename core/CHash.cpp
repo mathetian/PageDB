@@ -28,7 +28,7 @@ CEmptyBlock CEmptyBlock::split()
     return newblock;
 }
 
-bool Chain::put(const Slice & key,const Slice & value, int hashVal)
+bool Chain::put(const Slice & key,const Slice & value, uint32_t hashVal)
 {
     if(check(key, hashVal) != 0)
         return false;
@@ -50,7 +50,7 @@ bool Chain::put(const Slice & key,const Slice & value, int hashVal)
     return true;
 }
 
-Slice   Chain::get(const Slice & key, int hashVal)
+Slice   Chain::get(const Slice & key, uint32_t hashVal)
 {
     int offset = firstoffset;
     CElement elem;
@@ -77,7 +77,7 @@ Slice   Chain::get(const Slice & key, int hashVal)
     return "";
 }
 
-bool   Chain::check(const Slice & key, int hashVal)
+bool   Chain::check(const Slice & key, uint32_t hashVal)
 {
     int offset = firstoffset;
     CElement elem;
@@ -100,7 +100,7 @@ bool   Chain::check(const Slice & key, int hashVal)
     return false;
 }
 
-bool Chain::remove(const Slice & key, int hashVal)
+bool Chain::remove(const Slice & key, uint32_t hashVal)
 {
     int offset = firstoffset, oldoffset = offset;
     CElement elem;
@@ -191,7 +191,7 @@ void ChainHash::readFromFile()
 
 bool ChainHash::put(const Slice & key,const Slice & value)
 {
-    int hashVal   = hashFunc(key);
+    uint32_t hashVal   = hashFunc(key);
     Chain * chain = headers.at(hashVal % chainCount);
     /**Problem ?**/
     return chain -> put(key, value, hashVal);
@@ -199,7 +199,7 @@ bool ChainHash::put(const Slice & key,const Slice & value)
 
 Slice ChainHash::get(const Slice & key)
 {
-    int hashVal = hashFunc(key);
+    uint32_t hashVal = hashFunc(key);
     Chain * chain = headers.at(hashVal % chainCount);
     /**Problem ?**/
     return chain -> get(key, hashVal);
@@ -207,7 +207,7 @@ Slice ChainHash::get(const Slice & key)
 
 bool ChainHash::remove(const Slice & key)
 {
-    int hashVal = hashFunc(key);
+    uint32_t hashVal = hashFunc(key);
     Chain * chain = headers.at(hashVal % chainCount);
      /**Problem ?**/
     return chain -> remove(key, hashVal);

@@ -51,7 +51,7 @@ void  Page::setByBucket(BufferPacket & packet)
     packet.read((char*)&elements[0],sizeof(elements));
 }
 
-bool Page::put(const Slice & key, const Slice & value, int hashVal)
+bool Page::put(const Slice & key, const Slice & value, uint32_t hashVal)
 {
     for(int index = 0; index < curNum; index++)
     {
@@ -100,7 +100,7 @@ bool Page::put(const Slice & key, const Slice & value, int hashVal)
     return 1;
 }
 
-Slice Page::get(const Slice & key, int hashVal)
+Slice Page::get(const Slice & key, uint32_t hashVal)
 {
     for(int index = 0; index < curNum; index++)
     {
@@ -123,7 +123,7 @@ Slice Page::get(const Slice & key, int hashVal)
     return "";
 }
 
-bool Page::remove(const Slice & key, int hashVal)
+bool Page::remove(const Slice & key, uint32_t hashVal)
 {
     int index, rindex;
     for(index = 0; index < curNum; index++)
@@ -177,6 +177,7 @@ bool ExtendibleHash::init(const char * filename)
     if(!idxfs || !datfs)
     {
         log -> _Fatal("ExtendibleHash::init::open error\n");
+       
         return false;
     }
 
@@ -231,7 +232,8 @@ void ExtendibleHash::readFromFile()
 
 bool ExtendibleHash::put(const Slice & key,const Slice & value)
 {
-    int hashVal = hashFunc(key);
+    uint32_t hashVal = hashFunc(key);
+
     int cur     = hashVal & ((1 << gd) -1);
 
     /**Can use MemoryPool here**/
@@ -247,7 +249,7 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
     if(page -> full() && page -> d == gd)
     {
         log -> _Trace("ExtendibleHash :: put :: full, so double-entries\n");
-        this -> gd++; 
+        this -> gd++; pn = 2*pn;
         int oldSize = entries.size();
         for(int i = 0; i < oldSize; i++)
             entries.push_back(entries.at(i));
@@ -300,7 +302,7 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
         int oldpos = entries.at(cur);
         for(index = 0; index < entries.size(); index++)
         {
-            if(entries.at(index) == entries.at(cur))
+            if(entries.at(index) == oldpos)
             {
                 /**Problem ?**//**Must !!! **/
                 if(((index >> (page -> d)) & 1) == 1)
@@ -355,11 +357,8 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
 
 Slice ExtendibleHash::get(const Slice & key)
 {
-    int vvvv = key.returnAsInt();
-    
-    int hashVal = hashFunc(key);
-    int cur     = hashVal & ((1 << gd) -1);
-
+    uint32_t hashVal = hashFunc(key);
+    int cur = hashVal & ((1 << gd) -1);
     Page * page = new Page(this);
     BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
     
@@ -367,11 +366,12 @@ Slice ExtendibleHash::get(const Slice & key)
     datfs.read(packet.getData(), packet.getSize());
 
     page -> setByBucket(packet);
-
+    
    /* printThisPage(page);*/
 
     Slice rs = page -> get(key, hashVal);
 
+   
     delete page;
     page = NULL;
 
@@ -380,8 +380,8 @@ Slice ExtendibleHash::get(const Slice & key)
 
 bool ExtendibleHash::remove(const Slice & key)
 {
-    int hashVal = hashFunc(key);
-    int cur     = hashVal & ((1 << gd) -1);
+    uint32_t hashVal = hashFunc(key);
+    int cur   = hashVal & ((1 << gd) -1);
     
     Page * page = new Page(this);
     BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
@@ -552,14 +552,15 @@ void ExtendibleHash::recycle(int offset, int size)
 void ExtendibleHash::dump()
 {
     Page * page = new Page(this);
-
-    for(int cur = 0;cur < entries.size();cur++)
+    cout << gd << " " << pn << " " << entries.size() << endl;
+    for(int cur = 0, index = 0;cur < entries.size();cur++)
     {
         int j;
         for(j = 0;j < cur;j++)
         {
             if(entries[j] ==  entries[cur]) break;
         }
+
         if(j != cur) continue;
 
         BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
@@ -568,15 +569,19 @@ void ExtendibleHash::dump()
 
         page -> setByBucket(packet);
 
+        cout << "Page(size:"<<page -> curNum <<") " << index++ <<" "<<cur <<" "<<page -> d<<":";
 
         for(j = 0;j < page -> curNum;j++)
         {
             datfs.seekg(page -> elements[j].m_datPos, ios_base::beg);
             BufferPacket packet(2*SINT);
             datfs.read(packet.getData(),packet.getSize());
-            int a, b;
+            int a, b; uint32_t hashVal = page -> elements[j].m_hashVal;
             packet >> a >> b;
+            cout << a <<" " << b << " "<<hashVal<<" ";
         }
+
+        cout << endl;
     }
 
     delete page; page = NULL;

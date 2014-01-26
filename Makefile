@@ -5,7 +5,7 @@ RANLIB  = ranlib
 HEADER  = -I./include -I./helpers
 CXXFLAGS = -g -O0
 
-SOURCES = cache/*.cpp core/*.cpp helpers/BufferPacket.cpp
+SOURCES = cache/*.cpp core/*.cpp helpers/BufferPacket.cpp helpers/HashFunction.cpp
 
 LDLIBS  = -L. -lcustomDB
 
@@ -37,5 +37,8 @@ mp_test:
 aio_test: 
 	${CXX} helpers/AIO.h -o aio -std=c++0x -lrt
 
+db_bench: tests/db_bench.cpp
+	$(CXX) ${CXXFLAGS} ${HEADER} $^ -o $@ ${LDLIBS}
+	
 clean: 
 	rm -f *.o *.idx *.dat test demo* mp_test thread *_test*

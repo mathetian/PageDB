@@ -35,15 +35,20 @@ public:
         factory = NULL; cache = NULL;
     }
 
-    void    dump()
-    {
-        /**Todo List**/
-        factory -> dump();
-    }
+    void    dump() { factory -> dump(); }
 
-    void   cleanCACHE()
+    void   cleanCACHE() { cache -> clear(); }
+
+    void   destoryDB(const char * filename)
     {
-        cache -> clear();
+        string sfilename(filename, filename + strlen(filename));
+        string idxName = sfilename + ".idx";
+        string datName = sfilename +  ".dat";
+
+        idxName = "rm " + idxName;
+        datName = "rm " + datName;
+        system(idxName.c_str());
+        system(datName.c_str());
     }
 
 public:

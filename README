@@ -1,6 +1,124 @@
-A light-weight JSONBased Database System
-
+A light-weight Key-Value Database System
 ------------------------------------------
+This work is mainly inspired by LevelDB and yodb.
+------------------------------------------
+Design Principle,
+In our work, we use chain-hash and extensible hash as the internal structure of this system. This system is constructed by three parts, internal structure, cache and elements managment.
+------------------------------------------
+Compilation
+CustomDB use GNU Make to handle compilation, you can find detail information from this url, www.gnu.com/Make/.
+
+I have just tested it on Ubuntu 13.10, so if you have any problem, please send email to me.
+
+On my computer, the compilation progree
+
+$ make
+$ make test
+$ sudo make install
+
+After make install, the libCustomDB will be moved into /usr/local and all header files will be copied to /usr/include/CustomDB.
+
+---------------------------------------------
+Open CustomDB files,
+
+```c++
+#include <CustomDB/Option.h>
+#include <CustomDB/CustomDB.h>
+
+int main()
+{
+	Option option; //User can just use the default option, for further selection, please refer for Option parts.
+
+	CustomDB db = new CustomDB;
+	
+	db -> init(option);	
+
+	db -> close();
+	
+	delete db;
+}
+```
+---------------------------------------------
+Dump Database files into terminal,
+
+```c++
+#include <CustomDB/Option.h>
+#include <CustomDB/CustomDB.h>
+
+int main()
+{
+	Option option;
+	CustomDB db = new CustomDB;
+	db -> init(option);	
+	
+	db -> dump();
+	
+	db -> close();
+	delete db;
+}
+```
+-------------------------------------
+Put elements in the Database
+
+```c++
+Slice key("slice"); //Slice is used to manpiate the item in the database
+Slice value("123213");
+
+db -> put(key, value); // Return value will give out whether we put it successfully.
+
+db -> put("123213","iipppp"); //Another way to Put elements in it.
+```
+
+--------------------------------------
+Get elements in the Database
+
+```c++
+Slice key("slice"); 
+
+Slice value = db -> get(key); 
+
+/**
+	if(value.size() == 0) we didn't find the key in the database
+	if(value.size() != 0) the return value is the corspond value of the key.
+**/
+
+-----------------------------------
+Remove elements in the Database
+
+```c++
+Slice key("slice");
+bool successful = db -> remove(key); // same return value as put
+```
+-------------------------------------
+Option selection,
+-------------------------------------
+The simplest demo for this project
+--------------------------------------------------------------------------
+Prerequisite:
+
+GTest for Test in this project.
+C++0x, as I use thread and other property in C++0x.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 TODO List:
 
 1. Test
