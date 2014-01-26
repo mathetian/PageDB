@@ -11,6 +11,9 @@ void Test()
 	Slice slice(packet.getData(), packet.getSize());
 	
 	EXPECT_EQ(slice.returnAsInt(), 15545);
+
+	Slice slice2("");
+	EXPECT_EQ(slice2.size(),0);
 }
 
 int main()

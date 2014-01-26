@@ -48,13 +48,13 @@ bool CustomDB::put(const Slice & key,const Slice & value)
     errorStatus = ERROR;
 
     if((cache -> get(key)).size() != 0)
-        log -> _Warn("CustomDB::put::exist in cache, %s %s\n", key.c_str(), value.c_str());
+        log -> _Warn("CustomDB::put::exist in cache\n");
     else
     {
         log -> _Trace("CustomDB::put::not exist in cache\n");
         
         if(!factory -> put(key,value))
-            log -> _Warn("CustomDB::put::factory put error, %s %s\n",key.c_str(), value.c_str());
+            log -> _Warn("CustomDB::put::factory put error\n");
         else
         {
             log -> _Trace("CustomDB::put::factory put successfully\n");
@@ -69,15 +69,14 @@ Slice CustomDB::get(const Slice & key)
 {
     errorStatus = ERROR;
     Slice rs = cache -> get(key);
-
     if(rs.size() != 0) 
         errorStatus = SUCCE;
     else
     {
-        log -> _Trace("CustomDB::get::factory not in cache, %s\n",key.c_str());
+        log -> _Trace("CustomDB::get::factory not in cache\n");
         rs = factory -> get(key);
         if(rs.size() == 0)
-            log -> _Warn("CustomDB::get::factory get warning, %s\n",key.c_str());
+            log -> _Warn("CustomDB::get::factory get warning\n");
         else
         {
             cache -> put(key,rs);

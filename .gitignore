@@ -1,6 +1,5 @@
 *.a
 *.o
-demo*
 test
 *test
 CHash
@@ -11,3 +10,7 @@ Log
 Option
 CustomDB
 *_test*
+db_bench
+*idx
+*log
+*dat

@@ -17,6 +17,21 @@ $ make test
 $ sudo make install
 
 After make install, the libCustomDB will be moved into /usr/local and all header files will be copied to /usr/include/CustomDB.
+---------------------------------------------
+Basic Performance Test,
+
+CustomDB:   version 0.1
+Date:       Sun Jan 26 23:12:29 2014
+CPU:        4 * Intel(R) Core(TM) i5-3317U CPU @ 1.70GHz
+CPUCache:   3072 KB
+Keys:       16 bytes each
+Values:     100 bytes each (100 bytes after compression)
+Entries:    100000
+RawSize:    11.1 MB (estimated)
+FileSize:   11.1 MB (estimated)
+WARNING: Optimization is disabled: benchmarks unnecessarily slow
+WARNING: Assertions are enabled; benchmarks unnecessarily slow
+
 
 ---------------------------------------------
 Open CustomDB files,

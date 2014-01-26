@@ -19,7 +19,7 @@ using namespace std;
 static const char* FLAGS_benchmarks = "fillrandom,readrandom";
 
 // Number of key/values to place in database
-static int FLAGS_num = 1000000;
+static int FLAGS_num = 100000;
 
 // Size of each value
 static int FLAGS_value_size = 100;
@@ -335,8 +335,8 @@ class Benchmark {
         RunBenchmark(name, method);
       }
 
-      db_ -> close();
     }
+    db_ -> close();
   }
 
  private:
@@ -366,30 +366,31 @@ class Benchmark {
     }
     RandomGenerator gen;
 
-    int64_t bytes = 0;
-    Random rand1(31);
+    int64_t bytes = 0; 
+
+    Random rnd(31); char key1[100];
     
     for(int i = 0;i < num_;i++)
     {
       if(i%10000 == 0) cout<<i<<endl;
-      int k = rand1.Next() & ((1<<16)-1);
-      char key1[100];
+      int k = rnd.Next() & ((1<<19)-1);
       snprintf(key1, sizeof(key1), "%016d", k);
-
       Slice key(key1,16);
       Slice value(gen.Generate(FLAGS_value_size));
       db_->put(key,value);
     }
+
   }
 
   void ReadRandom() {
+    db_ -> cleanCACHE();
     int found = 0;
     
-    Random rnd(31);
+    Random rnd(32); char key1[100];
 
     for (int i = 0; i < reads_; i++) {
-      char key1[100];
-      const int k = rnd.Next() & ((1<<16)-1);
+      if(i%10000==0) cout<<i<<endl;
+      const int k = rnd.Next() & ((1<<19)-1);
       snprintf(key1, sizeof(key1), "%016d", k);
       Slice key(key1,16);Slice value;
       value = db_ -> get(key);
@@ -398,6 +399,7 @@ class Benchmark {
 
     char msg[100];
     snprintf(msg, sizeof(msg), "(%d of %d found)", found, num_);
+    cout<<msg<<endl;
   }
 
   void DestroyDB()

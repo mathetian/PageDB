@@ -41,4 +41,4 @@ db_bench: tests/db_bench.cpp
 	$(CXX) ${CXXFLAGS} ${HEADER} $^ -o $@ ${LDLIBS}
 	
 clean: 
-	rm -f *.o *.idx *.dat test demo* mp_test thread *_test*
+	rm -f *.o *.idx *.dat test demo* mp_test thread *_test* db_bench
