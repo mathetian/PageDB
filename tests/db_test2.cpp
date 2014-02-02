@@ -37,7 +37,7 @@ int main()
 
     TimeStamp::StartTime();
 
-    for(int i=SIZE;i>=1;i--)
+   /* for(int i=SIZE;i>=1;i--)
     {
         BufferPacket packet(sizeof(int)); packet << i;
         
@@ -52,7 +52,7 @@ int main()
         int num = -1; packet2 >> num;
         if(i!=num)
             cout << i <<" "<<num <<" ) ";
-    }
+    }*/
 
     TimeStamp::StopTime("GetTime(Without Cache): ");
     delete db;

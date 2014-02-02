@@ -139,3 +139,13 @@ Are very import in this project.
 Basic performance, put 65s/1M, read 33s/1M. Without any external cache. 33% usage.
 -------------------------------------------------------------
 V0.02, add page-cache feature, performance is bad than previous experiment.
+
+Got it why the result looks good in previous failed experiment(Almost not change page, -1).
+
+Advice: use background thread to save page or pageelement into files.
+--------------------------------------------------------------
+V0.03, add batch mode
+--------------------------------------------------------------
+V0.04, add multiple-threading programming technology
+--------------------------------------------------------------
+V0.05, add async-w/r technology.

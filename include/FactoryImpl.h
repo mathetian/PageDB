@@ -252,7 +252,7 @@ private:
     vector <int>  entries; /**Page entries, just offset for each page**/
 };
 
-#define CACHESIZE 1000
+#define CACHESIZE 10
 
 typedef struct _tCacheElem{
     Page * page;
@@ -265,6 +265,9 @@ typedef struct _tCacheElem{
 
 }CacheElem;
 
+/**
+    Can use a background thread write the data into files !!! Todo list.
+**/
 class PageCache{
 public:
     PageCache(ExtendibleHash * eHash) : cur(0), eHash(eHash) { }
@@ -298,11 +301,28 @@ public:
             }
         }
 
+        /**use binary search**/
+/*        int low = 0, high = CACHESIZE -1;
+        while(low <= high)
+        {
+            int mid = (low + high)/2;
+            if(cacheElems[mid].entry == addr) 
+            {
+                index = mid; cur = (index + 1)%CACHESIZE;
+                return cacheElems[mid].page;
+            } 
+            else if(cacheElems[mid].entry < addr)
+                low = mid + 1;
+            else high = mid -1;
+        }*/
         return NULL;
     }
 
     int putInto(Page * page, int pos)
     {
+        int low = 0, high = CACHESIZE -1;
+        int flag = 0;
+
         if(cacheElems[cur].updated == true)
         {
             Page * page1 = cacheElems[cur].page;
@@ -311,6 +331,7 @@ public:
             eHash -> datfs.write(packet.getData(),packet.getSize());
             cacheElems[cur].reset();
         }
+        
         cacheElems[cur].page = page;
         cacheElems[cur].entry = pos;
         

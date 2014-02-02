@@ -321,7 +321,7 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
        /* for(index = curNum2;index < page -> curNum;index++)
             page -> elements[index].clear();*/
         
-        page   -> curNum = curNum2;
+        page -> curNum = curNum2;
         p2   -> curNum = curNum3;
         datfs.seekg(0, ios_base::end);
 
