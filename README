@@ -151,3 +151,5 @@ Speed performance, 25s/100M, and the speed will be slow enough with the increasi
 V0.04, add multiple-threading programming technology
 --------------------------------------------------------------
 V0.05, add async-w/r technology.
+--------------------------------------------------------------
+V0.06, add compact feature

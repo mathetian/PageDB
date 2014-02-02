@@ -4,6 +4,8 @@
 
 #define FILEMODE2 (fstream::out | fstream::app)
 
+static uint32_t datfileLen = 0;
+
 bool EEmptyBlock::checkSuitable(int size, int & pos)
 {
     for(pos = curNum - 1; pos >= 0; pos--)
@@ -88,6 +90,8 @@ bool Page::put(const Slice & key, const Slice & value, uint32_t hashVal)
     eHash -> datfs.seekg(offset, ios_base::beg);
     eHash -> datfs.write(packet.getData(), packet.getSize());
 
+    assert(eHash -> datfs.tellg() == datfileLen);
+
     /**
         Modify the page index
     **/
@@ -157,7 +161,7 @@ Slice Page::get(const Slice & key, uint32_t hashVal)
 
 bool Page::remove(const Slice & key, uint32_t hashVal)
 {
-    int index, rindex;
+    int index;
     for(index = 0; index < curNum; index++)
     {
         if(elements[index].m_hashVal == hashVal && elements[index].m_keySize == key.size())
@@ -190,10 +194,11 @@ bool Page::remove(const Slice & key, uint32_t hashVal)
 }
 
 ExtendibleHash::ExtendibleHash(HASH hashFunc) :\
-        hashFunc(hashFunc), gd(0), pn(1), fb(-1), datfileLen(0) { pcache = new PageCache(this);}
+        hashFunc(hashFunc), gd(0), pn(1), fb(-1) { pcache = new PageCache(this);}
 
 ExtendibleHash::~ExtendibleHash()
 { 
+    if(idxfs) writeToIdxFile();
     if(idxfs) idxfs.close(); 
     if(datfs) datfs.close();
     if(pcache) delete pcache;
@@ -251,8 +256,12 @@ bool ExtendibleHash::init(const char * filename)
         datfileLen = datfs.tellg();
         pcache -> putInto(page, pos);
     }
-    else 
+    else
+    {
         readFromFile();
+        datfs.seekg(0, ios_base::end);
+        datfileLen = datfs.tellg();
+    }
 
     return true;
 }
@@ -260,14 +269,12 @@ bool ExtendibleHash::init(const char * filename)
 void ExtendibleHash::writeToIdxFile()
 {
     idxfs.seekg(0,ios_base::beg);
+    
     BufferPacket packet(SINT * 3 + entries.size()*SINT);
     packet << gd << pn << fb;
-
     packet.write((char*)&entries[0], entries.size()*SINT);
 
     idxfs.write(packet.getData(),packet.getSize());
-
-    idxfs.flush();
 }
 
 void ExtendibleHash::readFromFile()
@@ -275,7 +282,6 @@ void ExtendibleHash::readFromFile()
     idxfs.seekg(0,ios_base::beg);
 
     BufferPacket packet(SINT * 3);
-    
     idxfs.read(packet.getData(), packet.getSize());
     
     packet >> gd >> pn >> fb;
@@ -292,7 +298,8 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
     /**Can use MemoryPool here**/
     int index = 0;
     Page * page = pcache -> find(entries.at(cur), index);
-    
+    bool entriesUpdate = false;
+
     if(page == NULL) 
     {
         page = new Page(this);
@@ -309,11 +316,16 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
     if(page -> full() && page -> d == gd)
     {
         log -> _Trace("ExtendibleHash :: put :: full, so double-entries\n");
-        this -> gd++; pn = 2*pn;
+        
+        gd += 1; pn = 2*pn;
+        
         int oldSize = entries.size();
         for(int i = 0; i < oldSize; i++)
             entries.push_back(entries.at(i));
-        writeToIdxFile();
+        entriesUpdate = true;
+        /**        
+            writeToIdxFile();
+        **/
     }
 
     if(page -> full() && page -> d < gd)
@@ -361,6 +373,8 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
         int oldpos = entries.at(cur);
         int oldpos2 = datfs.tellg();
 
+        assert(oldpos2 == datfileLen);
+        
         for(index = 0; index < entries.size(); index++)
         {
             if(entries.at(index) == oldpos)
@@ -387,6 +401,9 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
         /**As I have move the pointer to the end of file, so just write**/
         datfs.write(packe2.getData(), packe2.getSize());
         datfileLen = oldpos2 + packe2.getSize();
+        assert(datfileLen == datfs.tellg());
+
+        entriesUpdate = true;
         /*
             datfs.seekg(oldpos, ios_base::beg);
             datfs.write(packe1.getData(), packe1.getSize());
@@ -395,9 +412,9 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
         /**Must write p1 and p2 into files? bad style.**/
 
         /**Sometime it would write too much**/
-       
-        writeToIdxFile();
-
+        /**
+           writeToIdxFile();
+        **/
         /**must reset it at the end of this part**/
         /*
             pcache -> putInto(p1, oldpos);
@@ -419,6 +436,8 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
         }
     }
 
+    writeToIdxFile();
+    
     return true;
 }
 
@@ -503,10 +522,10 @@ int ExtendibleHash::findSuitableOffset(int size)
         block.curNum       = 1;
 
         datfs.write((char*)&block, SEEBLOCK);
-
-        idxfs.seekg(2 * SINT, ios_base::beg);
-        idxfs.write((char*)&fb, SINT);
         
+        datfileLen = fb + SEEBLOCK + 2*size;
+
+        writeToIdxFile();
 
         return fb + SEEBLOCK + size;
     }
@@ -553,6 +572,7 @@ int ExtendibleHash::findSuitableOffset(int size)
             }
             block.eles[block.curNum].pos    = old;
             block.eles[block.curNum++].size = SEEBLOCK;
+            datfileLen = datfs.tellg();
         }
     }
 
@@ -579,6 +599,8 @@ int ExtendibleHash::findSuitableOffset(int size)
             block.nextBlock = datfs.tellg();
             
             datfs.write((char*)&nnn,SEEBLOCK);
+            assert(datfileLen + SEEBLOCK == datfs.tellg());
+            datfileLen += SEEBLOCK;
         }
 
         datfs.seekg(2 * size,ios_base::end);
@@ -587,6 +609,8 @@ int ExtendibleHash::findSuitableOffset(int size)
 
         block.eles[block.curNum].pos    = offset - size;
         block.eles[block.curNum++].size = size;
+        
+        datfileLen = datfs.tellg();
     }   
 
     datfs.seekg(fb, ios_base::beg);
@@ -619,6 +643,7 @@ void ExtendibleHash::recycle(int offset, int size)
         block.nextBlock     = datfs.tellg();
 
         datfs.write((char*)&nnBlock, SEEBLOCK);
+        datfileLen = datfs.tellg();
     }
 
     block.eles[block.curNum].pos    = offset;
@@ -639,7 +664,7 @@ void ExtendibleHash::dump()
         int j;
         for(j = 0;j < cur;j++)
         {
-            if(entries[j] ==  entries[cur]) break;
+            if(entries.at(j) ==  entries.at(cur)) break;
         }
 
         if(j != cur) continue;
@@ -698,10 +723,13 @@ void ExtendibleHash::runBatch(const WriteBatch & batch)
 
         datfs.write((char*)&block, SEEBLOCK);
         datfs.write((char*)&block, SEEBLOCK);
+        assert(datfileLen + 2*SEEBLOCK == datfs.tellg());
+        datfileLen += 2*SEEBLOCK;
     }
 
     datfs.seekg(0, ios_base::end);
     uint32_t curpos = datfs.tellg();
+    assert(curpos == datfileLen);
     BufferPacket phyPacket(batch.getTotalSize());
     datfs.write(phyPacket.getData(), phyPacket.getSize());
 
@@ -775,7 +803,8 @@ void ExtendibleHash::runBatch(const WriteBatch & batch)
 
             int oldpos = entries.at(cur);
             int oldpos2 = datfs.tellg();
-
+            /**what's wrong with this line**/
+            /*assert(datfileLen == oldpos2);*/
             for(index = 0; index < entries.size(); index++)
             {
                 if(entries.at(index) == oldpos)
@@ -791,6 +820,7 @@ void ExtendibleHash::runBatch(const WriteBatch & batch)
       
             BufferPacket packe2 = p2 -> getPacket();
             datfs.write(packe2.getData(), packe2.getSize());
+            datfileLen = datfs.tellg();
         }
         else
         {

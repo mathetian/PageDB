@@ -21,10 +21,9 @@ int main()
     int round = SIZE/BATCHSIZE;
     if(SIZE % BATCHSIZE != 0) round++;
 
-        TimeStamp::StartTime();
-
     for(int i = 0;i < round;i++)
     {
+    	TimeStamp::StartTime();
     	
     	WriteBatch batch(BATCHSIZE);
 
@@ -43,8 +42,8 @@ int main()
     	db -> write(batch);
 
     	sprintf(str, "In round %d, PutTime: ", i);
+    	TimeStamp::StopTime(str);
     }
-        TimeStamp::StopTime("fdfdf:");
 
 
     TimeStamp::StartTime();

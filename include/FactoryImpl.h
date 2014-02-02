@@ -11,7 +11,7 @@ using namespace std;
 #include "BufferPacket.h"
 #include "HashFunction.h"
 
-#define PAGESIZE 50
+#define PAGESIZE 100
 #define SINT     sizeof(int)
 
 #define SCEBLOCK sizeof(CEmptyBlock)
@@ -262,8 +262,6 @@ private:
     int           gd, pn, fb;
     vector <int>  entries; /**Page entries, just offset for each page**/
 
-private:
-    int         datfileLen;
 };
 
 #define CACHESIZE 10
