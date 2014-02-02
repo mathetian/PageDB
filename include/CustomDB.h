@@ -2,6 +2,7 @@
 #define _CUSTOM_DB_H
 
 #include "Log.h"
+#include "Batch.h"
 #include "Slice.h"
 #include "Option.h"
 #include "Factory.h"
@@ -27,7 +28,7 @@ public:
         factory = NULL; cache = NULL;
     }
 
-    void    close()
+    void   close()
     {
         if(factory) delete factory;
         if(cache)   delete cache;
@@ -35,7 +36,7 @@ public:
         factory = NULL; cache = NULL;
     }
 
-    void    dump() { factory -> dump(); }
+    void   dump() { factory -> dump(); }
 
     void   cleanCACHE() { cache -> clear(); }
 
@@ -64,13 +65,15 @@ public:
     
     bool	getError();
 
+    void    write(const WriteBatch & batch) { factory -> runBatch(batch); }
+
 private:
     Options   	option;
     Factory   * factory;
     BaseCache * cache;
     Log       * log;
     int         errorStatus;
-
+    
 public:
     bool init();
 };

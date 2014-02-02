@@ -39,6 +39,12 @@ aio_test:
 
 db_bench: tests/db_bench.cpp
 	$(CXX) ${CXXFLAGS} ${HEADER} $^ -o $@ ${LDLIBS}
-	
+
+db_batch: tests/db_batch.cpp libcustomDB.a
+	$(CXX) ${CXXFLAGS} ${HEADER} tests/db_batch.cpp -o $@ ${LDLIBS}
+
+db_batch2: tests/db_batch2.cpp libcustomDB.a
+	$(CXX) ${CXXFLAGS} ${HEADER} tests/db_batch2.cpp -o $@ ${LDLIBS}
+
 clean: 
-	rm -f *.o *.idx *.dat test demo* mp_test thread *_test* db_bench
+	rm -f *.o *.idx *.dat test demo* mp_test thread *_test* db_bench db_*

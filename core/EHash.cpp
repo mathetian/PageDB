@@ -100,6 +100,38 @@ bool Page::put(const Slice & key, const Slice & value, uint32_t hashVal)
     return 1;
 }
 
+void Page::replaceQ(const Slice & key, const Slice & value, uint32_t hashVal, int offset)
+{
+    for(int index = 0; index < curNum; index++)
+    {
+        PageElement element = elements[index];
+        if(element.m_hashVal == hashVal && element.m_keySize == \
+                 key.size() && element.m_datSize == value.size())
+        {
+
+            BufferPacket packet(element.m_keySize);
+            Slice        slice(element.m_keySize);
+
+            eHash -> datfs.seekg(element.m_datPos, ios_base::beg);
+            eHash -> datfs.read(packet.getData(), packet.getSize());
+            
+            packet.setBeg(); 
+            packet >> slice;
+            
+            eHash -> recycle(elements[index].m_datPos, key.size() + value.size());
+
+            elements[index].m_datPos  = offset;
+            elements[index].m_datSize = value.size();
+            return;
+        }
+    }
+
+    elements[curNum].m_hashVal   = hashVal;
+    elements[curNum].m_datPos    = offset;
+    elements[curNum].m_keySize   = key.size();
+    elements[curNum++].m_datSize = value.size();
+}
+
 Slice Page::get(const Slice & key, uint32_t hashVal)
 {
     for(int index = 0; index < curNum; index++)
@@ -158,13 +190,13 @@ bool Page::remove(const Slice & key, uint32_t hashVal)
 }
 
 ExtendibleHash::ExtendibleHash(HASH hashFunc) :\
-        hashFunc(hashFunc), gd(0), pn(1), fb(-1) { pcache = new PageCache(this);}
+        hashFunc(hashFunc), gd(0), pn(1), fb(-1), datfileLen(0) { pcache = new PageCache(this);}
 
 ExtendibleHash::~ExtendibleHash()
 { 
-        if(idxfs) idxfs.close(); 
-        if(datfs) datfs.close();
-        if(pcache) delete pcache;
+    if(idxfs) idxfs.close(); 
+    if(datfs) datfs.close();
+    if(pcache) delete pcache;
 }
 
 void ExtendibleHash::fflush()
@@ -215,7 +247,8 @@ bool ExtendibleHash::init(const char * filename)
 
         BufferPacket packet = page -> getPacket();
         datfs.write(packet.getData(),packet.getSize());
-        
+
+        datfileLen = datfs.tellg();
         pcache -> putInto(page, pos);
     }
     else 
@@ -353,7 +386,7 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
         BufferPacket packe2 = p2 -> getPacket();
         /**As I have move the pointer to the end of file, so just write**/
         datfs.write(packe2.getData(), packe2.getSize());
-
+        datfileLen = oldpos2 + packe2.getSize();
         /*
             datfs.seekg(oldpos, ios_base::beg);
             datfs.write(packe1.getData(), packe1.getSize());
@@ -647,4 +680,114 @@ void ExtendibleHash::printThisPage(Page * page)
         cout << a <<" " << b << " ";
     }
     cout << endl;
+}
+
+void ExtendibleHash::runBatch(const WriteBatch & batch)
+{
+    datfs.seekg(0, ios_base::end);
+    uint32_t curpos = datfs.tellg();
+    BufferPacket phyPacket(batch.getTotalSize());
+    datfs.write(phyPacket.getData(), phyPacket.getSize());
+
+    uint32_t totalSize = 0;
+    typedef pair<Slice, Slice> Node;    
+    WriteBatch::Iterator iterator(&batch);
+    
+    for(const Node * node = iterator.first();node != iterator.end();node = iterator.next())
+    {
+        Slice key   = node -> first;
+        Slice value = node -> second;
+        
+        uint32_t hashVal = hashFunc(key);
+        int cur   = hashVal & ((1 << gd) -1);
+        int index = 0;
+        Page * page = pcache -> find(entries.at(cur), index);
+
+        if(page == NULL) 
+        {
+            page  = new Page(this);
+            index = pcache -> putInto(page, entries.at(cur));
+
+            BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
+
+            datfs.seekg(entries.at(cur), ios_base::beg);
+            datfs.read(packet.getData(), packet.getSize());
+
+            page -> setByBucket(packet);
+        }
+
+        if(page -> full() && page -> d == gd)
+        {
+            gd++; pn = 2*pn;
+            int oldSize = entries.size();
+            for(int i = 0; i < oldSize; i++)
+                entries.push_back(entries.at(i));
+        }
+
+        if(page -> full() && page -> d < gd)
+        {
+            page -> replaceQ(key, value, hashVal, totalSize);
+            phyPacket << key << value;
+            totalSize += key.size() + value.size();
+
+            pcache -> setUpdated(index);
+
+            Page * p2 = new Page(this);
+
+            int index = 0, curNum2 = 0, curNum3 = 0;
+
+            for(index = 0; index < page -> curNum; index++)
+            {
+                PageElement element = page -> elements[index];
+            
+                int id = element.m_hashVal;
+
+                int flag = (id & ((1 << gd) - 1));
+            
+                if(((flag >> (page -> d)) & 1) == 1)
+                    p2 -> elements[curNum3++] = page -> elements[index];
+                else
+                    page -> elements[curNum2++] = page -> elements[index];
+            }
+        
+            page -> curNum = curNum2;
+            p2   -> curNum = curNum3;
+            
+            /**Can focus on whether it can be reduced to zero**/
+            datfs.seekg(0, ios_base::end);
+
+            int oldpos = entries.at(cur);
+            int oldpos2 = datfs.tellg();
+
+            for(index = 0; index < entries.size(); index++)
+            {
+                if(entries.at(index) == oldpos)
+                {
+                    if(((index >> (page -> d)) & 1) == 1)
+                        entries[index] = oldpos2;
+                    else
+                        entries[index] = oldpos;
+                }
+            }
+
+            page -> d = p2 -> d = (page -> d) + 1;
+      
+            BufferPacket packe2 = p2 -> getPacket();
+            datfs.write(packe2.getData(), packe2.getSize());
+        }
+        else
+        {
+            page -> replaceQ(key, value, hashVal, totalSize);
+            phyPacket << key << value;
+            totalSize += key.size() + value.size();
+           
+            pcache -> setUpdated(index);
+        }
+    }
+
+    datfs.seekg(curpos, ios_base::beg);
+    datfs.write(phyPacket.getData(), phyPacket.getSize());
+    
+    writeToIdxFile();
+    pcache -> free();
 }

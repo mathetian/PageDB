@@ -55,6 +55,7 @@ public:
         return *this;
     }
     
+    /**Have some problem, must check it out**/
     ~Slice()
     {
         if(m_size != 0) delete [] m_data;

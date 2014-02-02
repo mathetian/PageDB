@@ -101,6 +101,11 @@ public:
         //Todo list
     }
     
+    void    runBatch(const WriteBatch & batch)
+    {
+        //Todo list
+    }
+
 private:
     void     recycle(int offset, int size);
 
@@ -188,6 +193,7 @@ private:
     bool   put(const Slice & key,const Slice & value, uint32_t hashVal);
     Slice  get(const Slice & key, uint32_t hashVal);
     bool   remove(const Slice & key, uint32_t hashVal);
+    void   replaceQ(const Slice & key, const Slice & value, uint32_t hashVal, int offset);
 
 private:
     friend class ExtendibleHash;
@@ -230,6 +236,9 @@ public:
 
     void    fflush();
 
+    /**To speed up the batch progress, we use replace instead of put(that means we don't check whether it will be successful)**/
+    void    runBatch(const WriteBatch & batch);
+
 private:
     void     recycle(int offset, int size);
     void     writeToIdxFile(); /**Initialization, so write something into file**/
@@ -237,19 +246,24 @@ private:
     int      findSuitableOffset(int size);
 
     void     printThisPage(Page * page);
-
+    
 private:
     HASH      hashFunc;
     bool      updated, eupdated; /**two files update status**/
     fstream   idxfs, datfs;
     PageCache * pcache;
+
 private:   
     friend class Page;
     friend class PageCache;
+
 private:
     /**Need read from file**/
     int           gd, pn, fb;
     vector <int>  entries; /**Page entries, just offset for each page**/
+
+private:
+    int         datfileLen;
 };
 
 #define CACHESIZE 10
@@ -287,6 +301,7 @@ public:
             }
         }
         cur = 0;
+        eHash -> datfs.flush();
     }
 
     Page * find(uint32_t addr, int & index)
@@ -378,4 +393,5 @@ private:
     CacheElem cacheElems[CACHESIZE];
     int cur;
 };
+
 #endif

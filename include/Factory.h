@@ -8,6 +8,7 @@ using namespace std;
 
 #include "Log.h"
 #include "Slice.h"
+#include "Batch.h"
 
 class Factory
 {
@@ -24,6 +25,8 @@ public:
     virtual void   dump() = 0;
     virtual void   removeAll(const char * filename) = 0;
     virtual void   fflush() = 0;
+    virtual void   runBatch(const WriteBatch & batch) = 0;
+
 protected:
 	Log  *  log;
 };

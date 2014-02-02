@@ -4,6 +4,7 @@ BufferPacket::BufferPacket(int size)
 {
 	this -> size = size;
 	this -> data = new char[size];
+	memset(this -> data, 0xff, size);
 	this -> cur  = 0;
 	log = Log::GetInstance();
 }
