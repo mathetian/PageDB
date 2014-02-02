@@ -51,6 +51,11 @@ public:
         system(datName.c_str());
     }
 
+    void fflush()
+    {
+        factory -> fflush();
+    }
+    
 public:
     bool 	open(const Options & option);
     bool 	put(const Slice & key,const Slice & value);

@@ -113,27 +113,7 @@ Prerequisite:
 
 GTest for Test in this project.
 C++0x, as I use thread and other property in C++0x.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+---------------------------------------------------------
 TODO List:
 
 1. Test
@@ -154,3 +134,8 @@ Also,
 9. AIO, IOCP
 
 Are very import in this project.
+
+-------------------------------------------------------------
+Basic performance, put 65s/1M, read 33s/1M. Without any external cache. 33% usage.
+-------------------------------------------------------------
+V0.02, add page-cache feature, performance is bad than previous experiment.

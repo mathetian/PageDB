@@ -157,6 +157,23 @@ bool Page::remove(const Slice & key, uint32_t hashVal)
     return true;
 }
 
+ExtendibleHash::ExtendibleHash(HASH hashFunc) :\
+        hashFunc(hashFunc), gd(0), pn(1), fb(-1) { pcache = new PageCache(this);}
+
+ExtendibleHash::~ExtendibleHash()
+{ 
+        if(idxfs) idxfs.close(); 
+        if(datfs) datfs.close();
+        if(pcache) delete pcache;
+}
+
+void ExtendibleHash::fflush()
+{
+    pcache -> free();
+    idxfs.flush();
+    datfs.flush();
+}
+
 bool ExtendibleHash::init(const char * filename)
 {
     struct stat buf;
@@ -187,19 +204,23 @@ bool ExtendibleHash::init(const char * filename)
         
         entries.push_back(0);
         /**Can use MemoryPool here**/
+
         Page * page = new Page(this);
 
         idxfs.seekg(0,ios_base::beg);
         writeToIdxFile();
 
         datfs.seekg(0,ios_base::beg);
+        uint32_t pos = datfs.tellg();
+
         BufferPacket packet = page -> getPacket();
         datfs.write(packet.getData(),packet.getSize());
-
-        delete page; page = NULL;
+        
+        pcache -> putInto(page, pos);
     }
     else 
         readFromFile();
+
     return true;
 }
 
@@ -235,17 +256,23 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
     uint32_t hashVal = hashFunc(key);
 
     int cur     = hashVal & ((1 << gd) -1);
-
     /**Can use MemoryPool here**/
-    Page * page = new Page(this);
-
-    BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
+    int index = 0;
+    Page * page = pcache -> find(entries.at(cur), index);
     
-    datfs.seekg(entries.at(cur), ios_base::beg);
-    datfs.read(packet.getData(), packet.getSize());
+    if(page == NULL) 
+    {
+        page = new Page(this);
+        index = pcache -> putInto(page, entries.at(cur));
 
-    page -> setByBucket(packet);
-    
+        BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
+
+        datfs.seekg(entries.at(cur), ios_base::beg);
+        datfs.read(packet.getData(), packet.getSize());
+
+        page -> setByBucket(packet);
+    }
+
     if(page -> full() && page -> d == gd)
     {
         log -> _Trace("ExtendibleHash :: put :: full, so double-entries\n");
@@ -259,21 +286,20 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
     if(page -> full() && page -> d < gd)
     {
         log -> _Trace("ExtendibleHash :: put :: split \n");
-
         if((page -> put(key, value, hashVal)) == 1)
         {
             //datfs.seekg(entries.at(cur), ios_base::beg);
             
            // BufferPacket packet = page -> getPacket();
            // datfs.write(packet.getData(), packet.getSize());
+            pcache -> setUpdated(index);
         }
         else
         {
             log -> _Warn("ExtendibleHash :: put :: HAS been in the file\n");
-            delete page; page = NULL; return false;
+            return false;
         }
 
-        Page * p1 = new Page(this);
         Page * p2 = new Page(this);
 
         int index = 0, curNum2 = 0, curNum3 = 0;
@@ -289,68 +315,76 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
             if(((flag >> (page -> d)) & 1) == 1)
                 p2 -> elements[curNum3++] = page -> elements[index];
             else
-                p1 -> elements[curNum2++] = page -> elements[index];
+                page -> elements[curNum2++] = page -> elements[index];
         }
 
        /* for(index = curNum2;index < page -> curNum;index++)
             page -> elements[index].clear();*/
         
-        p1   -> curNum = curNum2;
+        page   -> curNum = curNum2;
         p2   -> curNum = curNum3;
         datfs.seekg(0, ios_base::end);
 
         int oldpos = entries.at(cur);
+        int oldpos2 = datfs.tellg();
+
         for(index = 0; index < entries.size(); index++)
         {
             if(entries.at(index) == oldpos)
             {
                 /**Problem ?**//**Must !!! **/
                 if(((index >> (page -> d)) & 1) == 1)
-                    entries[index] = datfs.tellg();
+                    entries[index] = oldpos2;
                 else
                     entries[index] = oldpos;
             }
         }
 
-        p1 -> d = p2 -> d = (page -> d) + 1;
+        page -> d = p2 -> d = (page -> d) + 1;
 
        /* datfs.seekg(entries.at(cur),ios_base::beg);
         datfs.write((char*)page, sizeof(Page));
 
         datfs.seekg(0, ios_base::end);
         datfs.write((char*)p1, sizeof(Page));*/
-        BufferPacket packe1 = p1 -> getPacket();
+/*        
+        BufferPacket packe1 = page -> getPacket();
+*/        
         BufferPacket packe2 = p2 -> getPacket();
-        datfs.seekg(oldpos, ios_base::beg);
-        datfs.write(packe1.getData(), packe1.getSize());
-
-        datfs.seekg(0, ios_base::end);
+        /**As I have move the pointer to the end of file, so just write**/
         datfs.write(packe2.getData(), packe2.getSize());
+
+        /*
+            datfs.seekg(oldpos, ios_base::beg);
+            datfs.write(packe1.getData(), packe1.getSize());
+        */
+       
+        /**Must write p1 and p2 into files? bad style.**/
+
         /**Sometime it would write too much**/
        
         writeToIdxFile();
 
-        delete p1; p1 = NULL; delete p2; p2 = NULL;
-
+        /**must reset it at the end of this part**/
+        /*
+            pcache -> putInto(p1, oldpos);
+            pcache -> putInto(p2, oldpos2);
+        */
+        /**Soooorry, bad style as I don't have good idea to hidden the delete method**/
+        /*pcache -> specil();*/
     }
     else
     {
         if((page -> put(key, value, hashVal)) == 1)
         {
-            BufferPacket packet = page -> getPacket();
-
-            datfs.seekg(entries.at(cur),  ios_base::beg); 
-            datfs.write(packet.getData(), packet.getSize());
+            pcache -> setUpdated(index);
         }
         else
         {
-            delete page; page = NULL;
             log -> _Warn("ExtendibleHash :: put :: HAS been in the file\n");
             return false;
         }
     }
-        
-    delete page; page = NULL;
 
     return true;
 }
@@ -359,21 +393,26 @@ Slice ExtendibleHash::get(const Slice & key)
 {
     uint32_t hashVal = hashFunc(key);
     int cur = hashVal & ((1 << gd) -1);
-    Page * page = new Page(this);
-    BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
-    
-    datfs.seekg(entries.at(cur), ios_base::beg);
-    datfs.read(packet.getData(), packet.getSize());
 
-    page -> setByBucket(packet);
+    int index = 0;
+    Page * page = pcache -> find(entries.at(cur), index);
     
+    if(page == NULL) 
+    {
+        page = new Page(this);
+        pcache -> putInto(page, entries.at(cur));
+
+        BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
+
+        datfs.seekg(entries.at(cur), ios_base::beg);
+        datfs.read(packet.getData(), packet.getSize());
+
+        page -> setByBucket(packet);
+    }
+
    /* printThisPage(page);*/
 
     Slice rs = page -> get(key, hashVal);
-
-   
-    delete page;
-    page = NULL;
 
     return rs;
 }
@@ -383,13 +422,21 @@ bool ExtendibleHash::remove(const Slice & key)
     uint32_t hashVal = hashFunc(key);
     int cur   = hashVal & ((1 << gd) -1);
     
-    Page * page = new Page(this);
-    BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
+    int index = 0;
+    Page * page = pcache -> find(entries.at(cur), index);
     
-    datfs.seekg(entries.at(cur), ios_base::beg);
-    datfs.read(packet.getData(), packet.getSize());
+    if(page == NULL) 
+    {
+        page = new Page(this);
+        index = pcache -> putInto(page, entries.at(cur));
 
-    page -> setByBucket(packet);
+        BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
+
+        datfs.seekg(entries.at(cur), ios_base::beg);
+        datfs.read(packet.getData(), packet.getSize());
+
+        page -> setByBucket(packet);
+    }
 
     int rb = page -> remove(key, hashVal);
 
@@ -399,12 +446,11 @@ bool ExtendibleHash::remove(const Slice & key)
         
         datfs.seekg(entries.at(cur), ios_base::beg);
         datfs.write(npacket.getData(), npacket.getSize());
+
+        pcache -> setUpdated(index);
     }
     else
-        log -> _Trace("ExtendibleHash :: remove failed(maybe not exist?");
-
-    delete page;
-    page = NULL;
+        log -> _Trace("ExtendibleHash :: remove failed(maybe not exist?)");
     
     return rb;
 }
@@ -551,6 +597,8 @@ void ExtendibleHash::recycle(int offset, int size)
 
 void ExtendibleHash::dump()
 {
+    pcache -> fflush();
+
     Page * page = new Page(this);
     cout << gd << " " << pn << " " << entries.size() << endl;
     for(int cur = 0, index = 0;cur < entries.size();cur++)

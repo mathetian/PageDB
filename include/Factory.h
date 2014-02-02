@@ -23,6 +23,7 @@ public:
     virtual bool   init(const char * filename) = 0;
     virtual void   dump() = 0;
     virtual void   removeAll(const char * filename) = 0;
+    virtual void   fflush() = 0;
 protected:
 	Log  *  log;
 };

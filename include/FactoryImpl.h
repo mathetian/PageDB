@@ -95,6 +95,11 @@ public:
     {
         //Todo list
     }
+
+    void     fflush()
+    {
+        //Todo list
+    }
     
 private:
     void     recycle(int offset, int size);
@@ -197,16 +202,13 @@ private:
     PageElement elements[PAGESIZE + 5];
 };
 
+class PageCache;
+
 class ExtendibleHash : public Factory
 {
 public:
-    ExtendibleHash(HASH hashFunc = MurmurHash3) :\
-        hashFunc(hashFunc), gd(0), pn(1), fb(-1) { }
-    virtual ~ExtendibleHash() 
-    { 
-        if(idxfs) idxfs.close(); 
-        if(datfs) datfs.close();
-    }
+    ExtendibleHash(HASH hashFunc = MurmurHash3);
+    virtual ~ExtendibleHash();
 
 public:
     bool     put(const Slice & key,const Slice & value);
@@ -226,6 +228,8 @@ public:
         system(datName.c_str());
     }
 
+    void    fflush();
+
 private:
     void     recycle(int offset, int size);
     void     writeToIdxFile(); /**Initialization, so write something into file**/
@@ -238,12 +242,119 @@ private:
     HASH      hashFunc;
     bool      updated, eupdated; /**two files update status**/
     fstream   idxfs, datfs;
+    PageCache * pcache;
+private:   
     friend class Page;
-
+    friend class PageCache;
 private:
     /**Need read from file**/
     int           gd, pn, fb;
     vector <int>  entries; /**Page entries, just offset for each page**/
 };
 
+#define CACHESIZE 1000
+
+typedef struct _tCacheElem{
+    Page * page;
+    uint32_t entry;
+    bool   updated;
+
+    _tCacheElem() : page(NULL) { reset(); }
+
+    void reset() { if(page != NULL) delete page; page = NULL; entry = -1; updated = false; }
+
+}CacheElem;
+
+class PageCache{
+public:
+    PageCache(ExtendibleHash * eHash) : cur(0), eHash(eHash) { }
+    ~PageCache() { free(); }
+    void    free()
+    {
+        int i;
+        for(i = 0;i < CACHESIZE;i++)
+        {
+            if(cacheElems[i].updated == true)
+            {
+                Page * page = cacheElems[i].page;
+                eHash -> datfs.seekg(cacheElems[i].entry, ios_base::beg);
+                BufferPacket packet = page -> getPacket();
+                eHash -> datfs.write(packet.getData(),packet.getSize());
+                cacheElems[i].reset();
+            }
+        }
+        cur = 0;
+    }
+
+    Page * find(uint32_t addr, int & index)
+    {
+        int i;
+        for(i = 0;i < CACHESIZE;i++)
+        {
+            if(cacheElems[i].entry == addr)
+            {
+                index = i; cur = (i+1)%CACHESIZE;
+                return cacheElems[i].page;
+            }
+        }
+
+        return NULL;
+    }
+
+    int putInto(Page * page, int pos)
+    {
+        if(cacheElems[cur].updated == true)
+        {
+            Page * page1 = cacheElems[cur].page;
+            eHash -> datfs.seekg(cacheElems[cur].entry, ios_base::beg);
+            BufferPacket packet = page1 -> getPacket();
+            eHash -> datfs.write(packet.getData(),packet.getSize());
+            cacheElems[cur].reset();
+        }
+        cacheElems[cur].page = page;
+        cacheElems[cur].entry = pos;
+        
+        int oldcur = cur;
+        cur = (cur + 1)%CACHESIZE;
+        
+        return oldcur;
+    }
+
+    void setUpdated(int index) { cacheElems[index].updated = true; }
+
+    void reset(int index)
+    {
+        if(cacheElems[index].updated == true)
+        {
+            Page * page1 = cacheElems[index].page;
+            eHash -> datfs.seekg(cacheElems[index].entry, ios_base::beg);
+            BufferPacket packet = page1 -> getPacket();
+            eHash -> datfs.write(packet.getData(),packet.getSize());
+            cacheElems[index].reset();
+            cur = index;
+        }
+    }
+
+    void fflush()
+    {
+        int i;
+        for(i = 0;i < CACHESIZE;i++)
+        {
+            if(cacheElems[i].updated == true)
+            {
+                Page * page = cacheElems[i].page;
+                eHash -> datfs.seekg(cacheElems[i].entry, ios_base::beg);
+                BufferPacket packet = page -> getPacket();
+                eHash -> datfs.write(packet.getData(),packet.getSize());
+                cacheElems[i].updated = false;
+            }
+        }
+        cur = 0;
+    }
+
+private:
+    ExtendibleHash * eHash;
+    CacheElem cacheElems[CACHESIZE];
+    int cur;
+};
 #endif

@@ -12,11 +12,11 @@ int main()
     db -> open(option);
     printf("open successful\n");
 
-/*{
+{
     db -> put("hello","world");
     db -> put("hello1","world1");
     db -> put("hello12","world123");
-}*/
+}
 {
     cout<< "get hello:"<< db -> get("hello") <<endl;
     cout<< "get hello1:"<< db -> get("hello1") <<endl;
