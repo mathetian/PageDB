@@ -31,6 +31,9 @@ db_test3: tests/db_test3.cpp
 slice_test: tests/slice_test.cpp
 	$(CXX) ${CXXFLAGS} ${HEADER} $^ -o $@ ${LDLIBS}
 
+batch_test: tests/batch_test.cpp libcustomDB.a
+	$(CXX) ${CXXFLAGS} ${HEADER} tests/batch_test.cpp -o $@ ${LDLIBS}
+
 mp_test: 
 	$(CXX) ${HEADER} $^ -o $@ ${LDLIBS}
 

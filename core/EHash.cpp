@@ -684,6 +684,22 @@ void ExtendibleHash::printThisPage(Page * page)
 
 void ExtendibleHash::runBatch(const WriteBatch & batch)
 {
+
+    if(fb == -1)
+    {
+        datfs.seekg(0, ios_base::end);
+        fb = datfs.tellg();
+        
+        EEmptyBlock block;
+
+        block.eles[0].pos  = fb + SEEBLOCK;
+        block.eles[0].size = SEEBLOCK;
+        block.curNum       = 1;
+
+        datfs.write((char*)&block, SEEBLOCK);
+        datfs.write((char*)&block, SEEBLOCK);
+    }
+
     datfs.seekg(0, ios_base::end);
     uint32_t curpos = datfs.tellg();
     BufferPacket phyPacket(batch.getTotalSize());
@@ -692,15 +708,16 @@ void ExtendibleHash::runBatch(const WriteBatch & batch)
     uint32_t totalSize = 0;
     typedef pair<Slice, Slice> Node;    
     WriteBatch::Iterator iterator(&batch);
-    
+
     for(const Node * node = iterator.first();node != iterator.end();node = iterator.next())
     {
         Slice key   = node -> first;
         Slice value = node -> second;
-        
+
         uint32_t hashVal = hashFunc(key);
         int cur   = hashVal & ((1 << gd) -1);
         int index = 0;
+
         Page * page = pcache -> find(entries.at(cur), index);
 
         if(page == NULL) 
@@ -726,7 +743,7 @@ void ExtendibleHash::runBatch(const WriteBatch & batch)
 
         if(page -> full() && page -> d < gd)
         {
-            page -> replaceQ(key, value, hashVal, totalSize);
+            page -> replaceQ(key, value, hashVal, totalSize + curpos);
             phyPacket << key << value;
             totalSize += key.size() + value.size();
 
@@ -777,9 +794,9 @@ void ExtendibleHash::runBatch(const WriteBatch & batch)
         }
         else
         {
-            page -> replaceQ(key, value, hashVal, totalSize);
+            page -> replaceQ(key, value, hashVal, totalSize + curpos);
             phyPacket << key << value;
-            totalSize += key.size() + value.size();
+            totalSize = totalSize + key.size() + value.size();
            
             pcache -> setUpdated(index);
         }

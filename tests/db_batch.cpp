@@ -19,31 +19,37 @@ int main()
     printf("open successful\n");
 
     int round = SIZE/BATCHSIZE;
+    if(SIZE % BATCHSIZE != 0) round++;
+
+        TimeStamp::StartTime();
 
     for(int i = 0;i < round;i++)
     {
-    	TimeStamp::StartTime();
     	
-    	 WriteBatch batch;
+    	WriteBatch batch(BATCHSIZE);
 
     	for(int j = 0;j < BATCHSIZE;j++)
     	{
+            int k = i*BATCHSIZE + j;
+            if(k >= SIZE) break;
+
     		BufferPacket packet(sizeof(int));
-	        packet << (i*BATCHSIZE + j);
+	        packet << k;
 	        Slice key(packet.getData(),sizeof(int));
 	        Slice value(packet.getData(),sizeof(int));
     		batch.put(key, value);	
     	}
     	
-    	db ->write(batch);
+    	db -> write(batch);
 
     	sprintf(str, "In round %d, PutTime: ", i);
-    	TimeStamp::StopTime(str);
     }
+        TimeStamp::StopTime("fdfdf:");
+
 
     TimeStamp::StartTime();
 
-   /* for(int i=SIZE;i>=1;i--)
+    for(int i=SIZE-1;i>=0;i--)
     {
         BufferPacket packet(sizeof(int)); packet << i;
         
@@ -58,7 +64,7 @@ int main()
         int num = -1; packet2 >> num;
         if(i!=num)
             cout << i <<" "<<num <<" ) ";
-    }*/
+    }
 
     TimeStamp::StopTime("GetTime(Without Cache): ");
     delete db;

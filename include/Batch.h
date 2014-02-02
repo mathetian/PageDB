@@ -76,8 +76,7 @@ public:
 
     const Node * end()
     {
-      seekToEnd();
-      return next();
+      return NULL;
     }
     
   private:

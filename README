@@ -145,6 +145,8 @@ Got it why the result looks good in previous failed experiment(Almost not change
 Advice: use background thread to save page or pageelement into files.
 --------------------------------------------------------------
 V0.03, add batch mode(maybe slient batch)
+
+Speed performance, 25s/100M, and the speed will be slow enough with the increasing of the test data.
 --------------------------------------------------------------
 V0.04, add multiple-threading programming technology
 --------------------------------------------------------------
