@@ -153,3 +153,9 @@ V0.04, add multiple-threading programming technology
 V0.05, add async-w/r technology.
 --------------------------------------------------------------
 V0.06, add compact feature
+
+
+--------------------------------------------------------------
+Best practise in coding life,
+1. Build it
+2. Write(find) a basic test to testify it
