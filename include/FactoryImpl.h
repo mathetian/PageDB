@@ -10,6 +10,7 @@ using namespace std;
 #include "Factory.h"
 #include "BufferPacket.h"
 #include "HashFunction.h"
+#include "ThreadPosix.h"
 
 #define PAGESIZE 100
 #define SINT     sizeof(int)
@@ -261,7 +262,15 @@ private:
     /**Need read from file**/
     int           gd, pn, fb;
     vector <int>  entries; /**Page entries, just offset for each page**/
+    struct Writer;
 
+private:
+    vector<Writer*> m_writers;
+    Mutex           m_mutex;
+    WriteBatch * BuildBatchGroup(WriteBatch ** ppbatch);
+
+public:
+    void   write(WriteBatch* my_batch);
 };
 
 #define CACHESIZE 10
@@ -270,9 +279,7 @@ typedef struct _tCacheElem{
     Page * page;
     uint32_t entry;
     bool   updated;
-
     _tCacheElem() : page(NULL) { reset(); }
-
     void reset() { if(page != NULL) delete page; page = NULL; entry = -1; updated = false; }
 
 }CacheElem;
@@ -313,21 +320,7 @@ public:
                 return cacheElems[i].page;
             }
         }
-
-        /**use binary search**/
-/*        int low = 0, high = CACHESIZE -1;
-        while(low <= high)
-        {
-            int mid = (low + high)/2;
-            if(cacheElems[mid].entry == addr) 
-            {
-                index = mid; cur = (index + 1)%CACHESIZE;
-                return cacheElems[mid].page;
-            } 
-            else if(cacheElems[mid].entry < addr)
-                low = mid + 1;
-            else high = mid -1;
-        }*/
+        
         return NULL;
     }
 

@@ -709,7 +709,6 @@ void ExtendibleHash::printThisPage(Page * page)
 
 void ExtendibleHash::runBatch(const WriteBatch & batch)
 {
-
     if(fb == -1)
     {
         datfs.seekg(0, ios_base::end);
@@ -837,4 +836,97 @@ void ExtendibleHash::runBatch(const WriteBatch & batch)
     
     writeToIdxFile();
     pcache -> free();
+}
+
+struct ExtendibleHash::Writer {
+  WriteBatch* batch;
+  bool sync;
+  bool done;
+  CondVar cv;
+  explicit Writer(Mutex* mu) : cv(mu) { }
+};
+
+void ExtendibleHash::write(WriteBatch * my_batch)
+{
+    if(my_batch == NULL) return;
+
+    Writer w(&m_mutex);
+    w.batch = my_batch;
+    w.sync = options.sync;
+    w.done = false;
+
+    ScopeMutex l(&m_mutex);
+    m_writers.push_back(&w);
+    while (!w.done && &w != m_writers.front()) { w.cv.Wait(); }
+    if (w.done) { return; }
+    
+    Writer* last_writer = &w;
+    WriteBatch* updates = BuildBatchGroup(&last_writer);
+    
+    {
+        m_mutex.unlock();
+        /**When it is directed to here, only one thread can access it at any time.**/
+        runBatch(*updates);
+        m_mutex.lock();
+    }
+
+    while (true) {
+        Writer* ready = m_writers.front();
+        m_writers.pop_front();
+        if (ready != &w) {
+            ready->done = true;
+            ready->cv.Signal();
+        }
+        if (ready == last_writer) break;
+    }
+
+    if (!m_writers.empty()) {
+        m_writers.front()->cv.Signal();
+    }
+}
+
+WriteBatch* BuildBatchGroup(WriteBatch ** ppbatch)
+{
+    Writer* first = writers_.front();
+    WriteBatch* result = first->batch;
+
+  size_t size = WriteBatchInternal::ByteSize(first->batch);
+
+  // Allow the group to grow up to a maximum size, but if the
+  // original write is small, limit the growth so we do not slow
+  // down the small write too much.
+  size_t max_size = 1 << 20;
+  if (size <= (128<<10)) {
+    max_size = size + (128<<10);
+  }
+
+  *last_writer = first;
+  std::deque<Writer*>::iterator iter = writers_.begin();
+  ++iter;  // Advance past "first"
+  for (; iter != writers_.end(); ++iter) {
+    Writer* w = *iter;
+    if (w->sync && !first->sync) {
+      // Do not include a sync write into a batch handled by a non-sync write.
+      break;
+    }
+
+    if (w->batch != NULL) {
+      size += WriteBatchInternal::ByteSize(w->batch);
+      if (size > max_size) {
+        // Do not make batch too big
+        break;
+      }
+
+      // Append to *reuslt
+      if (result == first->batch) {
+        // Switch to temporary batch instead of disturbing caller's batch
+        result = tmp_batch_;
+        assert(WriteBatchInternal::Count(result) == 0);
+        WriteBatchInternal::Append(result, first->batch);
+      }
+      WriteBatchInternal::Append(result, w->batch);
+    }
+    *last_writer = w;
+  }
+  return result;
 }
