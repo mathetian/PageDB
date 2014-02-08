@@ -14,7 +14,7 @@ using namespace std;
 **/
 #define SIZE 1000000
 #define BATCHSIZE 250000
-#define SUBSIZE   5000
+#define SUBSIZE   10000
 #define THRNUM    4
 
 Options option;
@@ -44,9 +44,8 @@ void* thrFunc(void * data)
 	        Slice value(packet.getData(),sizeof(int));
     		batch.put(key, value);	
 		}
-		printf("%d %d\n", flag, i);
-		
 		db -> tWrite(&batch);
+        printf("thread %d finished round %d\n", flag, i);
 	}
 
 	sprintf(buf, "Thread %d has been completed, spend time :", flag);
@@ -77,12 +76,14 @@ int main()
 
     for(int i = 0;i < THRNUM;i++) thrs[i].join();
 
-    total.StopTime("Total PutTime(Thread Version: ");
+    total.StopTime("Total PutTime(Thread Version): ");
     
+    db -> fflush();
+
     printf("Begin Check\n");
     
-    /*total.StartTime();
-    for(int i=SIZE-1;i>=0;i--)
+    total.StartTime();
+    for(int i=0;i < SIZE;i++)
     {
         BufferPacket packet(sizeof(int)); packet << i;
         
@@ -98,7 +99,7 @@ int main()
         if(i!=num)
             cout << i <<" "<<num <<" ) ";
     }
-    total.StopTime("GetTime(Without Cache): ");*/
-    
+    total.StopTime("GetTime(Without Cache): ");
+    db -> fflush();
     delete db;
 }

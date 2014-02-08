@@ -112,7 +112,7 @@ public:
     {
         //Todo list
     }
-    
+
 private:
     void     recycle(int offset, int size);
 
@@ -309,9 +309,10 @@ public:
                 eHash -> datfs.seekg(cacheElems[i].entry, ios_base::beg);
                 BufferPacket packet = page -> getPacket();
                 eHash -> datfs.write(packet.getData(),packet.getSize());
-                cacheElems[i].reset();
             }
+            cacheElems[i].reset();
         }
+
         cur = 0;
         eHash -> datfs.flush();
     }
@@ -364,9 +365,10 @@ public:
             eHash -> datfs.seekg(cacheElems[index].entry, ios_base::beg);
             BufferPacket packet = page1 -> getPacket();
             eHash -> datfs.write(packet.getData(),packet.getSize());
-            cacheElems[index].reset();
+            
             cur = index;
         }
+        cacheElems[index].reset();
     }
 
     void fflush()

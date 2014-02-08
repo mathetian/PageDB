@@ -50,12 +50,19 @@ public:
 
     Slice(const Slice & s1) : m_size(s1.m_size), m_data(NULL)
     {
-        *this = s1;
+        if(m_size != 0)
+        {
+            char * data = new char[m_size];
+            memcpy(data, s1.m_data, m_size);
+
+            m_data = data;
+        }
     }
 
     Slice & operator=(const Slice & s1)
     {
-        if(m_data != NULL && s1.m_data != m_data)
+        if(m_data != NULL \
+            && s1.m_data != m_data)
         {
             delete [] m_data; m_data = NULL; m_size = 0;
         }

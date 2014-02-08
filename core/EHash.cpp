@@ -864,12 +864,19 @@ void ExtendibleHash::write(WriteBatch * pbatch)
     Writer* last_writer = &w;
     WriteBatch* updates = BuildBatchGroup(&last_writer);
     
+    /*
+        use it to show the updated batch size compared with input.
+        
+        cout<<pbatch->getCount()<<" "<<updates->getCount()<<endl;
+    */
+
     {
         m_mutex.unlock();
         /**When it is directed to here, only one thread can access it at same time.**/
         runBatch(updates);
         m_mutex.lock();
     }
+
     if (updates == m_tmpBatch) m_tmpBatch->clear();
 
     while (true) 
@@ -924,6 +931,7 @@ WriteBatch* ExtendibleHash::BuildBatchGroup(Writer ** last_writer)
             if (result == first->batch) 
             {
                 result = m_tmpBatch;
+                assert(result->getCount() == 0);
                 WriteBatchInternal::Append(result, first->batch);
             }
             WriteBatchInternal::Append(result, w->batch);

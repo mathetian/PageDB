@@ -13,7 +13,7 @@ public:
 
 public:
   WriteBatch(int size = 1000) : m_size(size), m_num(0), m_msize(0) \
-      { m_ssvec = vector<Node>(m_size, make_pair(0,0));}
+      { m_ssvec = vector<Node>(m_size);}
   
   ~WriteBatch() { }
 
@@ -22,10 +22,9 @@ public:
     if(m_num == m_size) 
     {
       m_size *= 2;
-      m_ssvec.resize(m_size, make_pair(0,0));
+      m_ssvec.resize(m_size);
     }
       
-    
     m_ssvec[m_num].first = key;
     m_ssvec[m_num++].second = value;
 
@@ -39,18 +38,20 @@ public:
     **/
   }
 
+  /**Spend one night to find this hard bug**/
   void clear()
   {
-    vector<Node> empty;
+    vector<Node> empty = vector<Node>(m_size);
     swap(m_ssvec, empty);
 
-    assert(m_ssvec.size() == 0);
+    assert(m_ssvec.size() == m_size);
     m_num = 0;
+    m_msize = 0;
   }
 
   uint32_t getTotalSize() const { return m_msize; }
 
-  int      getCount() const { return m_ssvec.size(); }
+  int      getCount() const { return m_num; }
 
 public:
   class Iterator {
@@ -111,6 +112,7 @@ public:
   static void Append(WriteBatch * dst, const WriteBatch * src)
   {
       WriteBatch::Iterator iterator(src);
+      
       for(const Node * node = iterator.first();node != iterator.end();\
         node = iterator.next()) dst->put(node->first, node->second);
   }
