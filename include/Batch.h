@@ -19,15 +19,16 @@ public:
 
   void put(const Slice& key, const Slice& value)
   {
-    if(m_num < m_size)
+    if(m_num == m_size) 
     {
-      m_ssvec[m_num++] = make_pair(key, value);
+      m_size *= 2;
+      m_ssvec.resize(m_size, make_pair(0,0));
     }
-    else
-    {
-      m_ssvec.push_back(make_pair(key,value));
-      m_num++;
-    }
+      
+    
+    m_ssvec[m_num].first = key;
+    m_ssvec[m_num++].second = value;
+
     m_msize += key.size() + value.size();
   }
 
@@ -40,11 +41,16 @@ public:
 
   void clear()
   {
-    while(m_num--) m_ssvec.pop_back();
+    vector<Node> empty;
+    swap(m_ssvec, empty);
+
+    assert(m_ssvec.size() == 0);
     m_num = 0;
   }
 
   uint32_t getTotalSize() const { return m_msize; }
+
+  int      getCount() const { return m_ssvec.size(); }
 
 public:
   class Iterator {
@@ -86,6 +92,7 @@ public:
 
 private:
   vector<Node> m_ssvec;
+
   int m_size;
   int m_num;
   uint32_t m_msize;
@@ -94,5 +101,28 @@ private:
 class ReadBatch{
 public:
   ReadBatch();
+};
+
+class WriteBatchInternal{
+public:
+  typedef pair<Slice, Slice> Node;
+
+public:
+  static void Append(WriteBatch * dst, const WriteBatch * src)
+  {
+      WriteBatch::Iterator iterator(src);
+      for(const Node * node = iterator.first();node != iterator.end();\
+        node = iterator.next()) dst->put(node->first, node->second);
+  }
+
+  static uint32_t ByteSize(WriteBatch * dst)
+  {
+    return dst->getTotalSize();
+  }
+
+  static int Count(WriteBatch * dst)
+  {
+    return dst->getCount();
+  }
 };
 #endif

@@ -52,5 +52,8 @@ db_batch2: tests/db_batch2.cpp libcustomDB.a
 thread_test: tests/thread_test.cpp
 	$(CXX) ${CXXFLAGS} tests/thread_test.cpp -lpthread -o $@ 
 
+db_thread: tests/db_thread.cpp libcustomDB.a
+	$(CXX) ${CXXFLAGS} ${HEADER} tests/db_thread.cpp -lpthread -o $@ ${LDLIBS}
+
 clean: 
-	rm -f *.o *.idx *.dat test demo* mp_test thread *_test* db_bench db_*
+	rm -f *.o *.idx *.dat test demo* mp_test thread *_test* db_bench db_* *log

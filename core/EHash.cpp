@@ -194,7 +194,7 @@ bool Page::remove(const Slice & key, uint32_t hashVal)
 }
 
 ExtendibleHash::ExtendibleHash(HASH hashFunc) :\
-        hashFunc(hashFunc), gd(0), pn(1), fb(-1) { pcache = new PageCache(this);}
+        hashFunc(hashFunc), gd(0), pn(1), fb(-1) { pcache = new PageCache(this); m_tmpBatch = new WriteBatch; }
 
 ExtendibleHash::~ExtendibleHash()
 { 
@@ -202,6 +202,7 @@ ExtendibleHash::~ExtendibleHash()
     if(idxfs) idxfs.close(); 
     if(datfs) datfs.close();
     if(pcache) delete pcache;
+    if(m_tmpBatch) delete m_tmpBatch;
 }
 
 void ExtendibleHash::fflush()
@@ -707,7 +708,7 @@ void ExtendibleHash::printThisPage(Page * page)
     cout << endl;
 }
 
-void ExtendibleHash::runBatch(const WriteBatch & batch)
+void ExtendibleHash::runBatch(const WriteBatch * pbatch)
 {
     if(fb == -1)
     {
@@ -728,13 +729,13 @@ void ExtendibleHash::runBatch(const WriteBatch & batch)
 
     datfs.seekg(0, ios_base::end);
     uint32_t curpos = datfs.tellg();
-    assert(curpos == datfileLen);
-    BufferPacket phyPacket(batch.getTotalSize());
+  //  assert(curpos == datfileLen);
+    BufferPacket phyPacket(pbatch->getTotalSize());
     datfs.write(phyPacket.getData(), phyPacket.getSize());
 
     uint32_t totalSize = 0;
     typedef pair<Slice, Slice> Node;    
-    WriteBatch::Iterator iterator(&batch);
+    WriteBatch::Iterator iterator(pbatch);
 
     for(const Node * node = iterator.first();node != iterator.end();node = iterator.next())
     {
@@ -846,13 +847,13 @@ struct ExtendibleHash::Writer {
   explicit Writer(Mutex* mu) : cv(mu) { }
 };
 
-void ExtendibleHash::write(WriteBatch * my_batch)
+void ExtendibleHash::write(WriteBatch * pbatch)
 {
-    if(my_batch == NULL) return;
+    if(pbatch == NULL) return;
 
     Writer w(&m_mutex);
-    w.batch = my_batch;
-    w.sync = options.sync;
+    w.batch = pbatch;
+    w.sync = false;/*as I don't write sync option in Option.h, so just assume it is false*/
     w.done = false;
 
     ScopeMutex l(&m_mutex);
@@ -865,18 +866,23 @@ void ExtendibleHash::write(WriteBatch * my_batch)
     
     {
         m_mutex.unlock();
-        /**When it is directed to here, only one thread can access it at any time.**/
-        runBatch(*updates);
+        /**When it is directed to here, only one thread can access it at same time.**/
+        runBatch(updates);
         m_mutex.lock();
     }
+    if (updates == m_tmpBatch) m_tmpBatch->clear();
 
-    while (true) {
+    while (true) 
+    {
         Writer* ready = m_writers.front();
         m_writers.pop_front();
-        if (ready != &w) {
+        
+        if (ready != &w) 
+        {
             ready->done = true;
             ready->cv.Signal();
         }
+        
         if (ready == last_writer) break;
     }
 
@@ -885,48 +891,45 @@ void ExtendibleHash::write(WriteBatch * my_batch)
     }
 }
 
-WriteBatch* BuildBatchGroup(WriteBatch ** ppbatch)
+WriteBatch* ExtendibleHash::BuildBatchGroup(Writer ** last_writer)
 {
-    Writer* first = writers_.front();
+    Writer* first = m_writers.front();
     WriteBatch* result = first->batch;
 
-  size_t size = WriteBatchInternal::ByteSize(first->batch);
+    size_t size = result->getTotalSize();
 
-  // Allow the group to grow up to a maximum size, but if the
-  // original write is small, limit the growth so we do not slow
-  // down the small write too much.
-  size_t max_size = 1 << 20;
-  if (size <= (128<<10)) {
-    max_size = size + (128<<10);
-  }
-
-  *last_writer = first;
-  std::deque<Writer*>::iterator iter = writers_.begin();
-  ++iter;  // Advance past "first"
-  for (; iter != writers_.end(); ++iter) {
-    Writer* w = *iter;
-    if (w->sync && !first->sync) {
-      // Do not include a sync write into a batch handled by a non-sync write.
-      break;
+    size_t max_size = 1 << 20;
+    
+    if (size <= (128<<10)) 
+    { 
+        max_size = size + (128<<10); 
     }
 
-    if (w->batch != NULL) {
-      size += WriteBatchInternal::ByteSize(w->batch);
-      if (size > max_size) {
-        // Do not make batch too big
-        break;
-      }
+    *last_writer = first;
+    
+    deque<ExtendibleHash::Writer*>::iterator iter = m_writers.begin();
 
-      // Append to *reuslt
-      if (result == first->batch) {
-        // Switch to temporary batch instead of disturbing caller's batch
-        result = tmp_batch_;
-        assert(WriteBatchInternal::Count(result) == 0);
-        WriteBatchInternal::Append(result, first->batch);
-      }
-      WriteBatchInternal::Append(result, w->batch);
+    for (++iter; iter != m_writers.end(); ++iter) 
+    {
+        Writer* w = *iter;
+        if (w->sync && !first->sync)
+            break;
+
+        if (w->batch != NULL) 
+        {
+            size += WriteBatchInternal::Count(w->batch);
+            if (size > max_size)
+                break;
+
+            if (result == first->batch) 
+            {
+                result = m_tmpBatch;
+                WriteBatchInternal::Append(result, first->batch);
+            }
+            WriteBatchInternal::Append(result, w->batch);
+        }
+        *last_writer = w;
     }
-    *last_writer = w;
-  }
-  return result;
+    
+    return result;
 }

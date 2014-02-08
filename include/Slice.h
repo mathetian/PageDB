@@ -12,13 +12,20 @@ using namespace std;
 class Slice
 {
 public:
-    Slice() : m_data(""), m_size(0) { }
+    Slice() : m_data(NULL), m_size(0) { }
     
     Slice(size_t n) : m_size(n)
     {
-        char * data = new char[m_size];
-        memset(data, 0, m_size);
-        m_data = data;
+        if(n == 0) 
+        {
+            m_data = NULL;
+        }
+        else
+        {
+            char * data = new char[m_size];
+            memset(data, 0, m_size);
+            m_data = data;
+        }
     }
     
     Slice(const char* d, size_t n) : m_size(n)
@@ -28,37 +35,53 @@ public:
         m_data = data;
     }
 
-    Slice(const string& s) : m_data(s.data()), m_size(s.size()) {}
+    Slice(const string& s)
+    {
+        *this = Slice(s.data(), s.size());
+    }
 
     Slice(const char* s) : m_size(strlen(s))
     {
-        char * data = new char[m_size + 1];
-        memset(data, 0, m_size + 1);
-        memcpy(data, s, m_size + 1);
+        char * data = new char[m_size];
+        memcpy(data, s, m_size);
 
         m_data = data;
     }
 
-    Slice(const Slice & s1) : m_size(s1.m_size)
+    Slice(const Slice & s1) : m_size(s1.m_size), m_data(NULL)
     {
-        char * data = new char[m_size];
-        memcpy(data, s1.m_data, m_size);
-        m_data = data;
+        *this = s1;
     }
 
     Slice & operator=(const Slice & s1)
     {
-        this -> m_size = s1.m_size;
-        char * data = new char[m_size];
-        memcpy(data, s1.m_data, m_size);
-        this -> m_data = data;
+        if(m_data != NULL && s1.m_data != m_data)
+        {
+            delete [] m_data; m_data = NULL; m_size = 0;
+        }
+        else if(s1.m_data == m_data)
+        {
+            return *this;
+        }
+
+        m_size = s1.m_size;
+
+        if(m_size != 0)
+        {
+            char * data = new char[m_size];
+            memcpy(data, s1.m_data, m_size);
+
+            m_data = data;
+        }
+
         return *this;
     }
     
     /**Have some problem, must check it out**/
     ~Slice()
     {
-        if(m_size != 0) delete [] m_data;
+        if(m_data != NULL) 
+            delete [] m_data;
         m_size = 0; m_data = NULL;
     }
 public:

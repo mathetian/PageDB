@@ -65,8 +65,9 @@ public:
     
     bool	getError();
 
-    void    write(const WriteBatch & batch) { factory -> runBatch(batch); }
+    void    write(const WriteBatch * pbatch) { factory -> runBatch(pbatch); }
 
+    void    tWrite(WriteBatch * pbatch) { factory -> write(pbatch); }
 private:
     Options   	option;
     Factory   * factory;

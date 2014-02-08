@@ -1,3 +1,6 @@
+#include <vector>
+using namespace std;
+
 #include "Slice.h"
 #include "BufferPacket.h"
 
@@ -16,7 +19,22 @@ void Test()
 	EXPECT_EQ(slice2.size(),0);
 }
 
+void Test2()
+{
+	Slice slice;
+	EXPECT_EQ(slice.size(), 0);
+}
+
+void Test3()
+{
+	vector<Slice> slices = vector<Slice>(10,0);
+	EXPECT_EQ(slices.size(), 10);
+	EXPECT_EQ(slices.at(0).size(), 0);
+}
+
 int main()
 {
-	Test();
+	Test2();
+	printf("All Test has Passed\n");
+	return 0;
 }

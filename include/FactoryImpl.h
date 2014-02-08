@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <fstream>
+#include <queue>
 using namespace std;
 
 #include <sys/stat.h>
@@ -102,11 +103,16 @@ public:
         //Todo list
     }
     
-    void    runBatch(const WriteBatch & batch)
+    void    runBatch(const WriteBatch * pbatch)
     {
         //Todo list
     }
 
+    void           write(WriteBatch* pbatch)
+    {
+        //Todo list
+    }
+    
 private:
     void     recycle(int offset, int size);
 
@@ -238,7 +244,7 @@ public:
     void    fflush();
 
     /**To speed up the batch progress, we use replace instead of put(that means we don't check whether it will be successful)**/
-    void    runBatch(const WriteBatch & batch);
+    void    runBatch(const WriteBatch * pbatch);
 
 private:
     void     recycle(int offset, int size);
@@ -265,12 +271,13 @@ private:
     struct Writer;
 
 private:
-    vector<Writer*> m_writers;
-    Mutex           m_mutex;
-    WriteBatch * BuildBatchGroup(WriteBatch ** ppbatch);
+    deque<Writer*> m_writers;
+    WriteBatch *   m_tmpBatch;
+    Mutex          m_mutex;
+    WriteBatch *   BuildBatchGroup(Writer ** last_writer);
 
 public:
-    void   write(WriteBatch* my_batch);
+    void           write(WriteBatch* pbatch);
 };
 
 #define CACHESIZE 10

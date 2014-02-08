@@ -25,8 +25,8 @@ public:
     virtual void   dump() = 0;
     virtual void   removeAll(const char * filename) = 0;
     virtual void   fflush() = 0;
-    virtual void   runBatch(const WriteBatch & batch) = 0;
-
+    virtual void   runBatch(const WriteBatch * pbatch) = 0;
+    virtual void   write(WriteBatch* pbatch) = 0;
 protected:
 	Log  *  log;
 };

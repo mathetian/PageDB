@@ -8,8 +8,8 @@ using namespace std;
 #include <assert.h>
 
 
-#define SIZE 1000000
-#define BATCHSIZE 50000
+#define SIZE 20000
+#define BATCHSIZE 10000
 
 int main()
 {
@@ -21,9 +21,12 @@ int main()
     int round = SIZE/BATCHSIZE;
     if(SIZE % BATCHSIZE != 0) round++;
 
+    TimeStamp total, part;
+    
+    total.StartTime();
     for(int i = 0;i < round;i++)
     {
-    	TimeStamp::StartTime();
+    	part.StartTime();
     	
     	WriteBatch batch(BATCHSIZE);
 
@@ -39,15 +42,15 @@ int main()
     		batch.put(key, value);	
     	}
     	
-    	db -> write(batch);
-
+    	db -> write(&batch);
+        batch.clear();
     	sprintf(str, "In round %d, PutTime: ", i);
-    	TimeStamp::StopTime(str);
-    }
-
-
-    TimeStamp::StartTime();
-
+    	part.StopTime(str);
+    }  
+    sprintf(str, "Total PutTime: ");
+    total.StopTime(str);
+    
+    /*total.StartTime();
     for(int i=SIZE-1;i>=0;i--)
     {
         BufferPacket packet(sizeof(int)); packet << i;
@@ -64,8 +67,8 @@ int main()
         if(i!=num)
             cout << i <<" "<<num <<" ) ";
     }
-
-    TimeStamp::StopTime("GetTime(Without Cache): ");
+    total.StopTime("GetTime(Without Cache): ");*/
+    
     delete db;
 }
     
