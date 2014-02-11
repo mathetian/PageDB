@@ -77,7 +77,6 @@ private:
   mutable condition_variable m_tasksFinishedOrTerminated;
   
   friend class WorkThread;
-
 };
 
 class WorkThread

@@ -11,7 +11,7 @@ using namespace std;
 #include "Factory.h"
 #include "BufferPacket.h"
 #include "HashFunction.h"
-#include "ThreadPosix.h"
+#include "Thread.h"
 
 #define PAGESIZE 100
 #define SINT     sizeof(int)

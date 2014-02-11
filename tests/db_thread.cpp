@@ -61,7 +61,7 @@ int main()
     printf("open successful\n");
 
     int ids[THRNUM];
-    ThreadPosix thrs[THRNUM];
+    Thread thrs[THRNUM];
 
     TimeStamp total;
     
@@ -70,7 +70,7 @@ int main()
     for(int i = 0;i < THRNUM;i++)
     {
     	ids[i] = i;
-    	thrs[i] = ThreadPosix(thrFunc, &ids[i]);
+    	thrs[i] = Thread(thrFunc, &ids[i]);
     	thrs[i].run();
     }  
 
