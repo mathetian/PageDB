@@ -68,6 +68,12 @@ public:
     void    write(const WriteBatch * pbatch) { factory -> runBatch(pbatch); }
 
     void    tWrite(WriteBatch * pbatch) { factory -> write(pbatch); }
+
+    void    compact()
+    {
+        factory -> compact();
+    }
+    
 private:
     Options   	option;
     Factory   * factory;

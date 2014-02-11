@@ -9,6 +9,8 @@ using namespace std;
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "Thread.h"
+
 enum LOG_TYPE { LOG_DEBUG = 1, LOG_TRACE = 2, LOG_WARN  = 3, LOG_ERROR = 4, LOG_FATAL = 5};
 
 extern std::ostream& operator<<(std::ostream& out, const LOG_TYPE value);
@@ -17,7 +19,7 @@ class Log
 {
 public:
     static Log * GetInstance();
-    void    SetLogInfo(LOG_TYPE level, const char * fileName);
+    void    SetLogInfo(LOG_TYPE level, const char * fileName, bool disabled = false);
 
 public:
     ~Log()  { }
@@ -28,17 +30,18 @@ public:
     void 	_Fatal(const char* format,...);
 
 private:
-    static Log *     _pTheLogs;
+    static Log *     m_pTheLogs;
     static LOG_TYPE  m_logLevel;
     static string    m_prefix;
-    static FILE *    pfile;
+    static FILE *    m_pfile;
+    static Mutex     m_mutex;
+    static bool      m_disabled;
 
-private:
+private:    
     Log() {}
     string GetLogFileName();
     void   WriteLog(LOG_TYPE outLevel,const char* format,va_list args);
     void   GetCurrentTm(int tag, size_t size, char * buf);
-
 };
 
 #endif

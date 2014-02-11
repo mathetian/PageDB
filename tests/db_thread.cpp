@@ -56,6 +56,7 @@ void* thrFunc(void * data)
 
 int main()
 {
+    option.logOption.disabled = true;
     db = new CustomDB;
     db -> open(option);
     printf("open successful\n");
@@ -78,7 +79,10 @@ int main()
 
     total.StopTime("Total PutTime(Thread Version): ");
     
-    db -> fflush();
+    db -> close();
+    
+    db -> open(option);
+    printf("open successful\n");
 
     printf("Begin Check\n");
     

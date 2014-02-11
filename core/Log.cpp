@@ -13,10 +13,12 @@
 #define TM_FORMAT_SHORT     "%04d%02d%02d"
 #define TM_FORMAT_FULL      "%04d.%02d.%02d - %02d:%02d:%02d"
 
-Log   *  Log::_pTheLogs = NULL;
+Log   *  Log::m_pTheLogs = NULL;
 LOG_TYPE Log::m_logLevel;
 string   Log::m_prefix;
-FILE  *  Log::pfile;
+FILE  *  Log::m_pfile;
+Mutex    Log::m_mutex;
+bool     Log::m_disabled;
 
 const char * getStrFromType(const LOG_TYPE & value)
 {
@@ -43,24 +45,26 @@ const char * getStrFromType(const LOG_TYPE & value)
     return s;
 }
 
-void Log::SetLogInfo(LOG_TYPE level, const char * prefix)
+void Log::SetLogInfo(LOG_TYPE level, const char * prefix, bool disabled)
 {
-    if(_pTheLogs == NULL) 
-        _pTheLogs = new Log;
+    if(m_pTheLogs == NULL) 
+        m_pTheLogs = new Log;
 
-    _pTheLogs -> m_prefix   = prefix;
-    _pTheLogs -> m_logLevel = level;
-    _pTheLogs -> pfile = fopen(GetLogFileName().c_str(), "a+");
-    if(! _pTheLogs -> pfile)
+    m_pTheLogs -> m_prefix   = prefix;
+    m_pTheLogs -> m_logLevel = level;
+    m_pTheLogs -> m_pfile = fopen(GetLogFileName().c_str(), "a+");
+    if(! m_pTheLogs -> m_pfile)
         printf("open file error\n");
+
+    m_disabled = disabled;
 }
 
 Log* Log::GetInstance()
 {
-    if(_pTheLogs == NULL)
-        _pTheLogs = new Log;
+    if(m_pTheLogs == NULL)
+        m_pTheLogs = new Log;
     
-    return _pTheLogs;
+    return m_pTheLogs;
 }
 
 string Log::GetLogFileName()
@@ -95,10 +99,15 @@ void Log::GetCurrentTm(int tag, size_t size, char * buf)
 
 void Log::WriteLog(LOG_TYPE outLevel,const char* format,va_list args)
 {    
+
+    if(m_disabled == true)
+    {
+        if(m_logLevel > outLevel)
+            return;
+    }
     /**
         Need advanced solution
     **/
-
     const char * str = getStrFromType(outLevel);
     char buf[256];memset(buf, 0, sizeof(buf));
     
@@ -109,13 +118,18 @@ void Log::WriteLog(LOG_TYPE outLevel,const char* format,va_list args)
 
     va_list old; va_copy(old,args);
     
-    vfprintf(pfile,fformat,args);
-    fprintf(pfile,"\n");
-
+    if(m_disabled == true)
+    {
+        m_mutex.lock();
+        vfprintf(m_pfile,fformat,args);
+        fprintf(m_pfile,"\n");
+        m_mutex.unlock();
+    }
+   
     if(m_logLevel <= outLevel)
         vprintf(fformat,old);
     
-    fflush(pfile);
+    fflush(m_pfile);
     
     if(m_logLevel < outLevel)
         exit(1);

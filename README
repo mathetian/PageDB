@@ -155,7 +155,9 @@ Speed is almost same as previous experiment(I guess the parallel technology I ta
 --------------------------------------------------------------
 V0.05, add async-w/r technology.
 --------------------------------------------------------------
-V0.06, add compact feature
+V0.06, add compact feature, add log disabled option
+Performance, when we disabled the log, the read performance has obvious advancement.
+ 
 --------------------------------------------------------------
 Best practise in coding life,
 1. Build it

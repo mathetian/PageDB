@@ -198,6 +198,8 @@ ExtendibleHash::ExtendibleHash(HASH hashFunc) :\
 
 ExtendibleHash::~ExtendibleHash()
 { 
+    fflush();
+    
     if(idxfs) writeToIdxFile();
     if(idxfs) idxfs.close(); 
     if(datfs) datfs.close();
@@ -217,8 +219,8 @@ bool ExtendibleHash::init(const char * filename)
     struct stat buf;
 
     string sfilename(filename, filename + strlen(filename));
-    string idxName = sfilename + ".idx";
-    string datName = sfilename +  ".dat";
+    idxName = sfilename + ".idx";
+    datName = sfilename +  ".dat";
 
     /**Sorry for that, I don't find better solution.**/
     idxfs.open (idxName.c_str(), FILEMODE2);
@@ -858,21 +860,18 @@ void ExtendibleHash::write(WriteBatch * pbatch)
 
     ScopeMutex l(&m_mutex);
     m_writers.push_back(&w);
-    while (!w.done && &w != m_writers.front()) { w.cv.Wait(); }
+    while (!w.done && &w != m_writers.front()) { w.cv.wait(); }
     if (w.done) { return; }
     
     Writer* last_writer = &w;
     WriteBatch* updates = BuildBatchGroup(&last_writer);
-    
-    /*
-        use it to show the updated batch size compared with input.
-        
-        cout<<pbatch->getCount()<<" "<<updates->getCount()<<endl;
-    */
 
     {
         m_mutex.unlock();
-        /**When it is directed to here, only one thread can access it at same time.**/
+        /**
+           When it is directed to here, 
+           only one thread can access it at same time.
+        **/
         runBatch(updates);
         m_mutex.lock();
     }
@@ -887,14 +886,14 @@ void ExtendibleHash::write(WriteBatch * pbatch)
         if (ready != &w) 
         {
             ready->done = true;
-            ready->cv.Signal();
+            ready->cv.signal();
         }
         
         if (ready == last_writer) break;
     }
 
     if (!m_writers.empty()) {
-        m_writers.front()->cv.Signal();
+        m_writers.front()->cv.signal();
     }
 }
 
@@ -940,4 +939,136 @@ WriteBatch* ExtendibleHash::BuildBatchGroup(Writer ** last_writer)
     }
     
     return result;
+}
+
+void  ExtendibleHash::compact()
+{
+    pcache -> fflush();
+    datfs.flush();
+    idxfs.flush();
+
+    Page * page = new Page(this);
+
+    FILE * tmpfile1 = fopen("tmppage.bak","wb");
+    FILE * tmpfile2 = fopen("tmpcon.bak","wb");
+    assert(tmpfile1 && tmpfile2);
+    typedef pair<Slice, Slice> Node;    
+    WriteBatch * pbatch =  new WriteBatch(PAGESIZE*2);
+
+    for(int cur = 0;cur < entries.size();cur++)
+    {
+        int j;
+        for(j = 0;j < cur;j++)
+        {
+            if(entries.at(j) ==  entries.at(cur)) break;
+        }
+
+        if(j != cur) continue;
+
+        BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
+        datfs.seekg(entries.at(cur), ios_base::beg);
+        datfs.read(packet.getData(), packet.getSize());
+
+        page -> setByBucket(packet);
+
+        
+        for(j = 0;j < page -> curNum;j++)
+        {
+            PageElement element = page -> elements[j];
+
+            datfs.seekg(element.m_datPos, ios_base::beg);
+            BufferPacket packet(element.m_keySize + element.m_datSize);
+            datfs.read(packet.getData(),packet.getSize());
+            Slice a(element.m_keySize), b(element.m_datSize); 
+            packet >> a >> b;
+            pbatch -> put(a,b);
+        }
+        int nmeb = fwrite(packet.getData(), packet.getSize(), 1, tmpfile1);
+        assert(nmeb == 1);
+        BufferPacket packet1(WriteBatchInternal::ByteSize(pbatch));
+        WriteBatch::Iterator iter(pbatch);
+        for(const Node * node = iter.first();node != iter.end();node = iter.next())
+        {
+            packet1 << (node -> first) << (node -> second);
+        }
+        uint32_t size = packet1.getSize();
+
+        fwrite((char*)&(size), 4, 1, tmpfile2);
+        nmeb = fwrite(packet1.getData(), packet1.getSize(), 1, tmpfile2);
+        assert(nmeb == 1);
+
+        pbatch -> clear();
+    }
+
+    fseek(tmpfile1,0,SEEK_SET);
+    fseek(tmpfile2,0,SEEK_SET);
+
+    string nidxName = "rm " + idxName;
+    string ndatName = "rm " + datName;
+    system(nidxName.c_str());
+    system(ndatName.c_str());
+
+     /**Sorry for that, I don't find better solution.**/
+    idxfs.open (idxName.c_str(), FILEMODE2);
+    datfs.open (datName.c_str(), FILEMODE2);
+    
+    idxfs.close(); datfs.close();
+
+    idxfs.open (idxName.c_str(), FILEMODE1);
+    datfs.open (datName.c_str(), FILEMODE1);
+
+    vector<char> used(entries.size(), 0);
+
+    uint32_t uds = 0;
+    for(int cur = 0;cur < entries.size();cur++)
+    {
+        vector<int> ids; ids.push_back(cur);
+        if(used.at(cur) == 0)
+        {
+            for(int j = cur + 1;j < entries.size();j++)
+            {
+                if(entries.at(cur) == entries.at(j))
+                {    
+                    used.at(cur) = 1;
+                    ids.push_back(j);
+                }
+            }
+
+            for(int j=0;j<ids.size();j++)
+            {
+                entries[ids.at(j)] = uds;
+            }
+
+            BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
+            fread(packet.getData(), packet.getSize(), 1, tmpfile1);
+
+            page -> setByBucket(packet);
+
+            uint32_t size;
+            fread((char*)&size, sizeof(int), 1, tmpfile2);
+            BufferPacket packet1(size);
+            fread(packet1.getData(), packet1.getSize(), 1, tmpfile2);
+
+            int fpos = uds + packet.getSize();
+            for(int j=0;j<page->curNum;j++)
+            {
+                page->elements[j].m_datPos = fpos;
+                fpos += page->elements[j].m_keySize  + page->elements[j].m_datSize;
+            }
+
+            packet = page->getPacket();
+            datfs.write(packet.getData(), packet.getSize());
+            datfs.write(packet1.getData(), packet1.getSize());
+
+            uds += packet.getSize() + packet1.getSize();
+        }
+    }
+
+    this -> fb = -1;
+    datfs.flush();
+    writeToIdxFile();
+    idxfs.flush();
+
+    delete page; page = NULL;
+    delete pbatch; pbatch = NULL;
 }

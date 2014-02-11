@@ -108,10 +108,15 @@ public:
         //Todo list
     }
 
-    void           write(WriteBatch* pbatch)
+    void    write(WriteBatch* pbatch)
     {
         //Todo list
     }
+
+    void    compact()
+    {
+
+    }   
 
 private:
     void     recycle(int offset, int size);
@@ -246,6 +251,8 @@ public:
     /**To speed up the batch progress, we use replace instead of put(that means we don't check whether it will be successful)**/
     void    runBatch(const WriteBatch * pbatch);
 
+    void    compact();
+
 private:
     void     recycle(int offset, int size);
     void     writeToIdxFile(); /**Initialization, so write something into file**/
@@ -276,6 +283,9 @@ private:
     Mutex          m_mutex;
     WriteBatch *   BuildBatchGroup(Writer ** last_writer);
 
+    string         idxName;
+    string         datName;
+    
 public:
     void           write(WriteBatch* pbatch);
 };

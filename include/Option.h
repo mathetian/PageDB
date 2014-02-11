@@ -49,10 +49,12 @@ struct LogOption_t
 {
     LOG_TYPE     logLevel;
     const char * logPrefix;
+    bool         disabled;
     LogOption_t()
     {
         logLevel = LOG_WARN;
         logPrefix = "demo";
+        disabled = false;
     }
 };
 

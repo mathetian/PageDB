@@ -5,7 +5,7 @@ bool CustomDB::open(const Options & option)
     this -> option = option;
     
     log = Log::GetInstance();
-    log -> SetLogInfo(option.logOption.logLevel, option.logOption.logPrefix);
+    log -> SetLogInfo(option.logOption.logLevel, option.logOption.logPrefix, option.logOption.disabled);
     
     switch(option.cacheOption.cacheType)
     {

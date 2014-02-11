@@ -27,6 +27,7 @@ public:
     virtual void   fflush() = 0;
     virtual void   runBatch(const WriteBatch * pbatch) = 0;
     virtual void   write(WriteBatch* pbatch) = 0;
+    virtual void   compact() = 0;
 protected:
 	Log  *  log;
 };
