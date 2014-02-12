@@ -7,6 +7,7 @@ bool CustomDB::open(const Options & option)
     log = Log::GetInstance();
     log -> SetLogInfo(option.logOption.logLevel, option.logOption.logPrefix, option.logOption.disabled);
     
+
     switch(option.cacheOption.cacheType)
     {
     case FIFO:
@@ -21,7 +22,7 @@ bool CustomDB::open(const Options & option)
     }
     if(cache == NULL)
         log -> _Fatal("CustomDB::open::new cache error\n");
-
+    
     switch(option.factoryOption.factoryType)
     {
     case EHASH:
@@ -33,9 +34,10 @@ bool CustomDB::open(const Options & option)
     default:
         log -> _Fatal("CustomDB::open::factory error\n");
     }
+    
     if(factory == NULL)
         log -> _Fatal("CustomDB::open::new factory error\n");
-    
+
     if(factory -> init(option.fileOption.fileName) == false)
         log -> _Fatal("CustomDB::open::init factory error\n");
     

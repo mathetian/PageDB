@@ -1,10 +1,12 @@
 #include "FactoryImpl.h"
+#include "Utils.h"
 
 #define FILEMODE1 (fstream::in | fstream::out)
 
 #define FILEMODE2 (fstream::out | fstream::app)
 
 static uint32_t datfileLen = 0;
+typedef pair<Slice, Slice> Node;    
 
 bool EEmptyBlock::checkSuitable(int size, int & pos)
 {
@@ -90,7 +92,7 @@ bool Page::put(const Slice & key, const Slice & value, uint32_t hashVal)
     eHash -> datfs.seekg(offset, ios_base::beg);
     eHash -> datfs.write(packet.getData(), packet.getSize());
 
-    assert(eHash -> datfs.tellg() == datfileLen);
+    // assert(eHash -> datfs.tellg() == datfileLen);
 
     /**
         Modify the page index
@@ -199,7 +201,7 @@ ExtendibleHash::ExtendibleHash(HASH hashFunc) :\
 ExtendibleHash::~ExtendibleHash()
 { 
     fflush();
-    
+
     if(idxfs) writeToIdxFile();
     if(idxfs) idxfs.close(); 
     if(datfs) datfs.close();
@@ -264,6 +266,21 @@ bool ExtendibleHash::init(const char * filename)
         readFromFile();
         datfs.seekg(0, ios_base::end);
         datfileLen = datfs.tellg();
+    }
+
+    if(fb == -1)
+    {
+        datfs.seekg(0, ios_base::end);
+        fb = datfs.tellg();
+        
+        EEmptyBlock block;
+
+        block.eles[0].pos  = fb + SEEBLOCK;
+        block.eles[0].size = SEEBLOCK;
+        block.curNum       = 1;
+
+        datfs.write((char*)&block, SEEBLOCK);
+        datfs.write((char*)&block, SEEBLOCK);
     }
 
     return true;
@@ -376,7 +393,7 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
         int oldpos = entries.at(cur);
         int oldpos2 = datfs.tellg();
 
-        assert(oldpos2 == datfileLen);
+        // assert(oldpos2 == datfileLen);
         
         for(index = 0; index < entries.size(); index++)
         {
@@ -404,7 +421,7 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
         /**As I have move the pointer to the end of file, so just write**/
         datfs.write(packe2.getData(), packe2.getSize());
         datfileLen = oldpos2 + packe2.getSize();
-        assert(datfileLen == datfs.tellg());
+        // assert(datfileLen == datfs.tellg());
 
         entriesUpdate = true;
         /*
@@ -602,7 +619,7 @@ int ExtendibleHash::findSuitableOffset(int size)
             block.nextBlock = datfs.tellg();
             
             datfs.write((char*)&nnn,SEEBLOCK);
-            assert(datfileLen + SEEBLOCK == datfs.tellg());
+            // assert(datfileLen + SEEBLOCK == datfs.tellg());
             datfileLen += SEEBLOCK;
         }
 
@@ -712,31 +729,12 @@ void ExtendibleHash::printThisPage(Page * page)
 
 void ExtendibleHash::runBatch(const WriteBatch * pbatch)
 {
-    if(fb == -1)
-    {
-        datfs.seekg(0, ios_base::end);
-        fb = datfs.tellg();
-        
-        EEmptyBlock block;
-
-        block.eles[0].pos  = fb + SEEBLOCK;
-        block.eles[0].size = SEEBLOCK;
-        block.curNum       = 1;
-
-        datfs.write((char*)&block, SEEBLOCK);
-        datfs.write((char*)&block, SEEBLOCK);
-        assert(datfileLen + 2*SEEBLOCK == datfs.tellg());
-        datfileLen += 2*SEEBLOCK;
-    }
-
     datfs.seekg(0, ios_base::end);
     uint32_t curpos = datfs.tellg();
-  //  assert(curpos == datfileLen);
     BufferPacket phyPacket(pbatch->getTotalSize());
     datfs.write(phyPacket.getData(), phyPacket.getSize());
 
     uint32_t totalSize = 0;
-    typedef pair<Slice, Slice> Node;    
     WriteBatch::Iterator iterator(pbatch);
 
     for(const Node * node = iterator.first();node != iterator.end();node = iterator.next())
@@ -952,7 +950,7 @@ void  ExtendibleHash::compact()
     FILE * tmpfile1 = fopen("tmppage.bak","wb");
     FILE * tmpfile2 = fopen("tmpcon.bak","wb");
     assert(tmpfile1 && tmpfile2);
-    typedef pair<Slice, Slice> Node;    
+    
     WriteBatch * pbatch =  new WriteBatch(PAGESIZE*2);
 
     for(int cur = 0;cur < entries.size();cur++)
@@ -971,18 +969,18 @@ void  ExtendibleHash::compact()
 
         page -> setByBucket(packet);
 
-        
         for(j = 0;j < page -> curNum;j++)
         {
             PageElement element = page -> elements[j];
 
             datfs.seekg(element.m_datPos, ios_base::beg);
-            BufferPacket packet(element.m_keySize + element.m_datSize);
-            datfs.read(packet.getData(),packet.getSize());
+            BufferPacket packet1(element.m_keySize + element.m_datSize);
+            datfs.read(packet1.getData(),packet1.getSize());
             Slice a(element.m_keySize), b(element.m_datSize); 
-            packet >> a >> b;
+            packet1 >> a >> b;
             pbatch -> put(a,b);
         }
+
         int nmeb = fwrite(packet.getData(), packet.getSize(), 1, tmpfile1);
         assert(nmeb == 1);
         BufferPacket packet1(WriteBatchInternal::ByteSize(pbatch));
@@ -993,15 +991,14 @@ void  ExtendibleHash::compact()
         }
         uint32_t size = packet1.getSize();
 
-        fwrite((char*)&(size), 4, 1, tmpfile2);
+        fwrite((char*)&(size), sizeof(uint32_t), 1, tmpfile2);
         nmeb = fwrite(packet1.getData(), packet1.getSize(), 1, tmpfile2);
         assert(nmeb == 1);
 
         pbatch -> clear();
     }
 
-    fseek(tmpfile1,0,SEEK_SET);
-    fseek(tmpfile2,0,SEEK_SET);
+    idxfs.close(); datfs.close();
 
     string nidxName = "rm " + idxName;
     string ndatName = "rm " + datName;
@@ -1019,17 +1016,29 @@ void  ExtendibleHash::compact()
 
     vector<char> used(entries.size(), 0);
 
+        fseek(tmpfile1,0,SEEK_SET);
+    fseek(tmpfile2,0,SEEK_SET);
+
+    fclose(tmpfile1); fclose(tmpfile2);
+    tmpfile1 = fopen("tmppage.bak","rb");
+    tmpfile2 = fopen("tmpcon.bak","rb");
+    assert(tmpfile1 && tmpfile2);
+    
+    fseek(tmpfile1, 0, SEEK_SET);
+    fseek(tmpfile2, 0, SEEK_SET);
+
     uint32_t uds = 0;
     for(int cur = 0;cur < entries.size();cur++)
     {
-        vector<int> ids; ids.push_back(cur);
         if(used.at(cur) == 0)
         {
+            vector<int> ids; ids.push_back(cur);
+
             for(int j = cur + 1;j < entries.size();j++)
             {
                 if(entries.at(cur) == entries.at(j))
                 {    
-                    used.at(cur) = 1;
+                    used[j] = 1;
                     ids.push_back(j);
                 }
             }
@@ -1040,23 +1049,29 @@ void  ExtendibleHash::compact()
             }
 
             BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
-            fread(packet.getData(), packet.getSize(), 1, tmpfile1);
+            int nmeb = fread(packet.getData(), packet.getSize(), 1, tmpfile1);
+            cout<<packet.getSize()<<" "<<GetFileLen(tmpfile1)<<" "<<ftell(tmpfile1)<<endl;
+            assert(nmeb == 1);
 
             page -> setByBucket(packet);
 
             uint32_t size;
-            fread((char*)&size, sizeof(int), 1, tmpfile2);
+            nmeb = fread((char*)&size, sizeof(uint32_t), 1, tmpfile2);
+            assert(nmeb == 1);
+
             BufferPacket packet1(size);
-            fread(packet1.getData(), packet1.getSize(), 1, tmpfile2);
+            nmeb = fread(packet1.getData(), packet1.getSize(), 1, tmpfile2);
+            assert(nmeb == 1);
 
             int fpos = uds + packet.getSize();
             for(int j=0;j<page->curNum;j++)
             {
                 page->elements[j].m_datPos = fpos;
-                fpos += page->elements[j].m_keySize  + page->elements[j].m_datSize;
+                fpos += page->elements[j].m_keySize + page->elements[j].m_datSize;
             }
 
             packet = page->getPacket();
+            cout<< page->curNum <<" "<<packet.getSize() << " " << packet1.getSize() << endl;
             datfs.write(packet.getData(), packet.getSize());
             datfs.write(packet1.getData(), packet1.getSize());
 
@@ -1071,4 +1086,152 @@ void  ExtendibleHash::compact()
 
     delete page; page = NULL;
     delete pbatch; pbatch = NULL;
+}
+
+void ExtendibleHash::runBatch2(const WriteBatch * pbatch)
+{
+    BufferPacket phyPacket(pbatch->getTotalSize());
+
+    uint32_t curpos = 0, totalSize = 0; 
+    Page * page;
+
+    {
+        ScopeMutex scope(&datLock);
+        datfs.seekg(0, ios_base::end);
+        curpos = datfs.tellg();
+        datfs.write(phyPacket.getData(), phyPacket.getSize());
+    }    
+
+    WriteBatch::Iterator iterator(pbatch);
+
+    for(const Node * node = iterator.first();node != iterator.end();node = iterator.next())
+    {
+        Slice key   = node -> first;
+        Slice value = node -> second;
+
+        uint32_t hashVal = hashFunc(key);
+        int cur   = hashVal & ((1 << gd) -1);
+        int index = 0;
+
+        {
+            ScopeMutex scope(&cacheLock);
+            Page * page = pcache -> find(entries.at(cur), index);
+
+        }
+
+        if(page != NULL)
+        {
+            cacheElemLock[index].lock();
+        }
+        else if(page == NULL) 
+        {
+            {
+                ScopeMutex lock(&cacheLock);
+                page  = new Page(this);
+                /**In putinto, when it find suitable, it must lock at the same time.**/
+                index = pcache -> putInto(page, entries.at(cur));
+            }
+
+            BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
+
+            {
+                ScopeMutex lock(&datLock);
+                datfs.seekg(entries.at(cur), ios_base::beg);
+                datfs.read(packet.getData(), packet.getSize());
+            }
+
+            page -> setByBucket(packet);
+        }
+
+
+        if(page -> full())
+        {
+            ScopeMutex scope(&globalLock);
+
+            if(page -> getD() == gd)
+            {   
+                gd++; pn = 2*pn;
+                int oldSize = entries.size();
+                for(int i = 0; i < oldSize; i++)
+                    entries.push_back(entries.at(i));
+            }
+
+            page -> replaceQ(key, value, hashVal, totalSize + curpos);
+            phyPacket << key << value;
+            totalSize += key.size() + value.size();
+
+            pcache -> setUpdated(index);
+
+            Page * p2 = new Page(this);
+
+            int index = 0, curNum2 = 0, curNum3 = 0;
+
+            int ocurNum = page -> getCurNum();
+            page -> setCurNum(0);
+
+            for(index = 0; index < ocurNum; index++)
+            {
+                PageElement element = page -> elements[index];
+            
+                int id = element.m_hashVal;
+
+                int flag = (id & ((1 << gd) - 1));
+            
+                if(((flag >> (page -> d)) & 1) == 1)
+                    p2 -> addElement(page -> getElement2(index));
+                else
+                    p2 -> addElement(page -> getElement2(index));
+            }
+            
+            int oldpos2;
+
+            /**Can focus on whether it can be reduced to zero**/
+            {
+                ScopeMutex scope(&datLock);
+                datfs.seekg(0, ios_base::end);
+                oldpos2 = datfs.tellg();
+            }
+            
+            int oldpos = entries.at(cur);
+            
+            /**could be further optimization, but should consider the frequency**/
+            for(index = 0; index < entries.size(); index++)
+            {
+                if(entries.at(index) == oldpos)
+                {
+                    if(((index >> (page -> d)) & 1) == 1)
+                        entries[index] = oldpos2;
+                    else
+                        entries[index] = oldpos;
+                }
+            }
+
+            p2   -> setD(page->getD() + 1);
+            page -> setD(p2->getD());
+            
+            {
+                ScopeMutex scope(&datLock);
+                datfs.seekg(0, ios_base::end);
+                BufferPacket packe2 = p2 -> getPacket();
+                datfs.write(packe2.getData(), packe2.getSize());
+            }
+        }
+        else
+        {
+            page -> replaceQ(key, value, hashVal, totalSize + curpos);
+            
+            phyPacket << key << value;
+            totalSize = totalSize + key.size() + value.size();
+           
+            pcache -> setUpdated(index);
+        }       
+
+        cacheElemLock[index].unlock();
+    }
+
+    {
+        ScopeMutex scope(&datLock);
+        datfs.seekg(curpos, ios_base::beg);
+        datfs.write(phyPacket.getData(), phyPacket.getSize());
+    }
 }

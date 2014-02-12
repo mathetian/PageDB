@@ -56,7 +56,7 @@ void* thrFunc(void * data)
 
 int main()
 {
-    option.logOption.disabled = true;
+    //option.logOption.disabled = true;
     db = new CustomDB;
     db -> open(option);
     printf("open successful\n");

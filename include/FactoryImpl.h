@@ -19,7 +19,10 @@ using namespace std;
 #define SCEBLOCK sizeof(CEmptyBlock)
 #define SELEM    sizeof(CElement)
 
+#define CACHESIZE 10
+
 typedef uint32_t (*HASH)(const Slice & key);
+class PageCache;
 
 class CEmptyBlock
 {
@@ -193,7 +196,7 @@ inline  ostream & operator << (ostream & os, PageElement & e)
 class Page
 {
 public:
-    Page(ExtendibleHash * eHash) : d(0),curNum(0) { this -> eHash = eHash; }
+    Page(ExtendibleHash * eHash) : d(0), curNum(0) { this -> eHash = eHash; m_log = Log::GetInstance();}
 
 public:
     BufferPacket getPacket();
@@ -208,19 +211,43 @@ private:
     void   replaceQ(const Slice & key, const Slice & value, uint32_t hashVal, int offset);
 
 private:
+    void   addElement(PageElement element)
+    {
+        elements[curNum++] = element;
+    }
+
+    PageElement getElement(int index)
+    {
+        
+    }
+
+    PageElement getElement2(int index)
+    {
+        return elements[index];
+    }
+
+    int    getCurNum() const { return curNum; }
+    int    getD() const { return d; }
+    void   setCurNum(int num) { curNum = num; }
+    void   setD(int d) { this -> d = d; }
+
+private:
     friend class ExtendibleHash;
     ExtendibleHash * eHash;
+    friend class PageCache;
 
 private:
     /**
        Asscoiate with the file,
        Use PAGESIZE + 5 to avoid some special(boundary) situation
     **/
+    // volatile int d, curNum;
     int d, curNum;
     PageElement elements[PAGESIZE + 5];
+    Log * m_log;
 };
 
-class PageCache;
+
 
 class ExtendibleHash : public Factory
 {
@@ -250,6 +277,7 @@ public:
 
     /**To speed up the batch progress, we use replace instead of put(that means we don't check whether it will be successful)**/
     void    runBatch(const WriteBatch * pbatch);
+    void    runBatch2(const WriteBatch * pbatch);
 
     void    compact();
 
@@ -273,7 +301,8 @@ private:
 
 private:
     /**Need read from file**/
-    int           gd, pn, fb;
+    // volatile int  gd, pn, fb;
+    int gd, pn, fb;
     vector <int>  entries; /**Page entries, just offset for each page**/
     struct Writer;
 
@@ -288,9 +317,14 @@ private:
     
 public:
     void           write(WriteBatch* pbatch);
-};
 
-#define CACHESIZE 10
+private:
+    /**If not use flush, idx data won't be flushed into file.**/
+    Mutex          datLock;
+    Mutex          cacheLock;
+    Mutex          globalLock;
+    Mutex          cacheElemLock[CACHESIZE];
+};
 
 typedef struct _tCacheElem{
     Page * page;
@@ -308,11 +342,19 @@ class PageCache{
 public:
     PageCache(ExtendibleHash * eHash) : cur(0), eHash(eHash) { }
     ~PageCache() { free(); }
-    void    free()
+    
+    /**when we need use free, we must lock everything visable.**/
+    void    free(int lockable = 0)
     {
+        if(lockable == 1)
+            eHash -> cacheLock.lock();
+
         int i;
         for(i = 0;i < CACHESIZE;i++)
         {
+            if(lockable == 1)
+                eHash -> cacheElemLock[i].lock();
+
             if(cacheElems[i].updated == true)
             {
                 Page * page = cacheElems[i].page;
@@ -321,12 +363,21 @@ public:
                 eHash -> datfs.write(packet.getData(),packet.getSize());
             }
             cacheElems[i].reset();
+
+            if(lockable == 1)
+                eHash -> cacheElemLock[i].unlock();
         }
 
         cur = 0;
-        eHash -> datfs.flush();
+        
+        if(lockable == 1)
+            eHash -> cacheLock.unlock();
     }
 
+    /**
+        As some need be proceed outside of this function
+        Lock should be in EHash.
+    **/
     Page * find(uint32_t addr, int & index)
     {
         int i;
@@ -338,54 +389,96 @@ public:
                 return cacheElems[i].page;
             }
         }
-        
         return NULL;
     }
 
-    int putInto(Page * page, int pos)
+    /**
+        Same reason as PageCache.find
+        However, need further process.
+    **/
+    int putInto(Page * page, int addr, int lockable = 0)
     {
-        int low = 0, high = CACHESIZE -1;
-        int flag = 0;
-
-        if(cacheElems[cur].updated == true)
+        /**
+            Hard to implement
+        **/
+        int i = (cur+1)%CACHESIZE;
+        for(;i != cur;i = (i+1)%CACHESIZE)
         {
-            Page * page1 = cacheElems[cur].page;
-            eHash -> datfs.seekg(cacheElems[cur].entry, ios_base::beg);
-            BufferPacket packet = page1 -> getPacket();
-            eHash -> datfs.write(packet.getData(),packet.getSize());
-            cacheElems[cur].reset();
+            if(lockable == 0 || eHash -> cacheElemLock[i].trylock() == 0)
+            {   
+                if(cacheElems[i].updated == true)
+                {
+                    resetWithDatlock(i, lockable);
+                }
+                cacheElems[i].page = page;
+                cacheElems[i].entry = addr;
+                break;
+            }
         }
         
-        cacheElems[cur].page = page;
-        cacheElems[cur].entry = pos;
-        
         int oldcur = cur;
-        cur = (cur + 1)%CACHESIZE;
+
+        if(i == cur)
+        {
+            i = (i + 1)%CACHESIZE;
+            if(lockable == 1) 
+                eHash -> cacheElemLock[i].lock();
+            resetWithDatlock(i, lockable);
+        }
+        else
+        {
+            cur = (cur + 1)%CACHESIZE;
+        }
         
         return oldcur;
     }
 
+    /**Don't need further lock**/
     void setUpdated(int index) { cacheElems[index].updated = true; }
 
-    void reset(int index)
+private:
+    /**Just need require datlock**/
+    void resetWithDatlock(int index, int lockable = 0)
     {
         if(cacheElems[index].updated == true)
         {
             Page * page1 = cacheElems[index].page;
-            eHash -> datfs.seekg(cacheElems[index].entry, ios_base::beg);
-            BufferPacket packet = page1 -> getPacket();
-            eHash -> datfs.write(packet.getData(),packet.getSize());
+            cout << page1 -> curNum << endl;
+
+            {
+                if(lockable == 0)
+                {
+                    eHash -> datfs.seekg(cacheElems[index].entry, ios_base::beg);
+                    BufferPacket packet = page1 -> getPacket();
+                    cout<<"reset:"<<packet.getSize() <<endl;
+                    eHash -> datfs.write(packet.getData(),packet.getSize());
+                }
+                else
+                {
+                    ScopeMutex scope(&(eHash -> datLock));
+                     eHash -> datfs.seekg(cacheElems[index].entry, ios_base::beg);
+                    BufferPacket packet = page1 -> getPacket();
+                    eHash -> datfs.write(packet.getData(),packet.getSize());
+                }
+                
+               
+            }          
             
             cur = index;
         }
         cacheElems[index].reset();
     }
 
-    void fflush()
+public:
+    void fflush(int lockable = 0)
     {
-        int i;
-        for(i = 0;i < CACHESIZE;i++)
+        if(lockable == 1)
+            eHash -> cacheLock.lock();
+
+        for(int i = 0;i < CACHESIZE;i++)
         {
+            eHash -> cacheElemLock[i].lock();
+
             if(cacheElems[i].updated == true)
             {
                 Page * page = cacheElems[i].page;
@@ -394,8 +487,13 @@ public:
                 eHash -> datfs.write(packet.getData(),packet.getSize());
                 cacheElems[i].updated = false;
             }
+            if(lockable == 1)
+                eHash -> cacheElemLock[i].unlock();
         }
         cur = 0;
+        
+        if(lockable == 1)
+            eHash -> cacheLock.unlock();
     }
 
 private:

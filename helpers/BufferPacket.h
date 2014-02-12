@@ -40,6 +40,7 @@ public:
 	BufferPacket & operator << (const char * str);
 	BufferPacket & operator << (const BufferPacket & packet);
 	BufferPacket & operator << (const uint32_t value);
+	// BufferPacket & operator << (volatile int value);
 
 public:
 	BufferPacket & operator >> (int    & ivalue);
@@ -48,6 +49,7 @@ public:
 	BufferPacket & operator >> (Slice  & slice);
 	BufferPacket & operator >> (char * str);
 	BufferPacket & operator >> (uint32_t & value);
+	// BufferPacket & operator >> (volatile int & value);
 
 public:
 	/**Sorry for that**/

@@ -90,13 +90,13 @@ private:
 #else
 	class Thread{
 	public:
-		Thread(Task task = NULL, void * args = NULL) : m_task(task), m_args(args) { }
+		Thread(Task task = NULL, void * args = NULL) : m_task(task), m_args(args), m_tid(-1) { }
 		
 		Thread(const Thread & thr) : m_task(thr.m_task), m_args(thr.m_args) { }
 
 		pthread_t run() 
 		{ 
-			if(m_tid == -1) 
+			if(m_tid != -1) 
 				return m_tid; 
 		
 			pthread_create(&m_tid, NULL, m_task, m_args); 
@@ -120,8 +120,9 @@ private:
 		Mutex() { pthread_mutex_init(&m_mutex, 0); }
 		virtual ~Mutex() { pthread_mutex_destroy(&m_mutex); }
 	public:
-		void lock() { pthread_mutex_lock(&m_mutex);}
-		void unlock() { pthread_mutex_unlock(&m_mutex); }
+		int lock() { return pthread_mutex_lock(&m_mutex);}
+		int unlock() { return pthread_mutex_unlock(&m_mutex); }
+		int trylock() { return pthread_mutex_trylock(&m_mutex); }
 	private: 
 		pthread_mutex_t m_mutex;
 		friend class CondVar;
@@ -212,8 +213,8 @@ private:
 
 class RWLock{
 public:
-    RWLock(Mutex * mutex) : m_mutex(mutex), m_condRead(m_mutex), m_condWrite(m_mutex),\
-    	 m_nReader(0), m_nWriter(0), m_wReader(0), m_wWriter(0) { }
+    RWLock(Mutex * mutex = NULL) : m_mutex(mutex), m_condRead(m_mutex), m_condWrite(m_mutex),\
+    	 m_nReader(0), m_nWriter(0), m_wReader(0), m_wWriter(0) { if(mutex == NULL) m_mutex = new Mutex; }
    ~RWLock() { }
 
 public:
