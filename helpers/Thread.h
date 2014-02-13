@@ -211,6 +211,7 @@ private:
     Mutex * m_pmutex;
 };
 
+/**constructor can't be empty parameter.**/
 class RWLock{
 public:
     RWLock(Mutex * mutex = NULL) : m_mutex(mutex), m_condRead(m_mutex), m_condWrite(m_mutex),\
@@ -265,6 +266,25 @@ public:
 			m_condWrite.signal();
 		else if(m_wReader != 0)
 			m_condRead.signal();
+    }
+
+public:
+    bool specilLock()
+    {
+    	ScopeMutex scope(m_mutex);
+
+    	if(m_nReader == 1 && m_nWriter == 0)
+    	{
+    		m_nReader--;
+    		m_nWriter++;
+    		return true;
+    	}
+    	else return false;
+    }
+
+    void specilUnlock()
+    {
+
     }
 
 private:

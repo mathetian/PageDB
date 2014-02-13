@@ -12,10 +12,10 @@ using namespace std;
 	Create 5 four thread, each put 250000 items.
 	For each thread, each time, it compute 5000 items.
 **/
-#define SIZE 1000000
+#define SIZE      1000000
 #define BATCHSIZE 250000
-#define SUBSIZE   10000
-#define THRNUM    4
+#define SUBSIZE   25000
+#define THRNUM    1
 
 #define EXPECT_EQ(a,b) assert(a == b)
 #define EXPECT_EQ_S(a,b) assert(strcmp(a,b) == 1)
@@ -47,6 +47,7 @@ void* thrFunc(void * data)
 	        Slice value(packet.getData(),sizeof(int));
     		batch.put(key, value);	
 		}
+
 		db -> runBatch2(&batch);
         printf("thread %d finished round %d\n", flag, i);
 	}
@@ -73,8 +74,6 @@ void RunTest2()
 
         int ids[THRNUM];
         Thread thrs[THRNUM];
-
-        
         
         total.StartTime();
 
@@ -88,7 +87,7 @@ void RunTest2()
         for(int i = 0;i < THRNUM;i++) thrs[i].join();
 
         total.StopTime("Total PutTime(Thread Version): ");
-        
+
         db -> close();
     }
     
@@ -99,7 +98,7 @@ void RunTest2()
         printf("Begin Check\n");
         
         total.StartTime();
-        for(int i=0;i < SIZE;i++)
+        for(int i=0;i < BATCHSIZE;i++)
         {
             BufferPacket packet(sizeof(int)); packet << i;
             

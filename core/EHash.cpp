@@ -196,7 +196,7 @@ bool Page::remove(const Slice & key, uint32_t hashVal)
 }
 
 ExtendibleHash::ExtendibleHash(HASH hashFunc) :\
-        hashFunc(hashFunc), gd(0), pn(1), fb(-1) { pcache = new PageCache(this); m_tmpBatch = new WriteBatch; }
+        hashFunc(hashFunc), gd(0), pn(1), fb(-1), globalLock(&tmplock) { pcache = new PageCache(this); m_tmpBatch = new WriteBatch; }
 
 ExtendibleHash::~ExtendibleHash()
 { 
@@ -219,8 +219,10 @@ void ExtendibleHash::fflush()
     }
 
     {
-        ScopeMutex scope(&globalLock);
+       // ScopeMutex scope(&globalLock);
+        globalLock.writeLock();
         idxfs.flush();
+        globalLock.writeUnlock();
     }
 }
 
@@ -1118,13 +1120,20 @@ void ExtendibleHash::runBatch2(const WriteBatch * pbatch)
         Slice key   = node -> first;
         Slice value = node -> second;
 
+        cout<< key.returnAsInt() << endl;
         uint32_t hashVal = hashFunc(key);
+        /**Sooorry, I need use jump to**/
+LABLE:
         int cur   = hashVal & ((1 << gd) -1);
+        assert((1<<gd) <= entries.size());
         int index = 0;
+
+        page = NULL;
 
         {
             ScopeMutex scope(&cacheLock);
-            Page * page = pcache -> find(entries.at(cur), index);
+            assert(cur < entries.size());
+            page = pcache -> find(entries.at(cur), index);
         }
 
         if(page != NULL)
@@ -1133,20 +1142,27 @@ void ExtendibleHash::runBatch2(const WriteBatch * pbatch)
         }
         else if(page == NULL) 
         {
+            bool flag1 = true; page  = new Page(this);
+
+            while(flag1)
             {
-                ScopeMutex lock(&cacheLock);
-                page  = new Page(this);
-                /**
-                    In putinto, when it find suitable, it must lock at the same time.
-                    I guess should use condition. However, no idea.
-                **/
-                index = pcache -> putIntoWithLock(page, entries.at(cur));
+                int index1 = -1;
+                {
+                    ScopeMutex lock(&cacheLock);
+                    index1 = pcache -> findLockable();
+                }
+
+                if(index1 != -1)
+                {
+                    flag1 = false;
+                }
             }
 
             BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
 
             {
                 ScopeMutex lock(&datLock);
+                assert(cur < entries.size());
                 datfs.seekg(entries.at(cur), ios_base::beg);
                 datfs.read(packet.getData(), packet.getSize());
             }
@@ -1154,17 +1170,30 @@ void ExtendibleHash::runBatch2(const WriteBatch * pbatch)
             page -> setByBucket(packet);
         }
 
-
+        globalLock.writeLock();
+        
         if(page -> full())
         {
-            ScopeMutex scope(&globalLock);
+            cout<<"split?"<<endl;
+            // globalLock.readUnlock();
+            
+            // globalLock.writeLock();
 
+            // if(globalLock.specilLock() == false)
+            // {
+            //     globalLock.readUnlock();
+            //     cacheElemLock[index].unlock();
+            //     goto LABLE;
+            // }
+
+            cout<<"enter split"<<endl;
             if(page -> getD() == gd)
             {   
                 gd++; pn = 2*pn;
                 int oldSize = entries.size();
                 for(int i = 0; i < oldSize; i++)
                     entries.push_back(entries.at(i));
+            
             }
 
             page -> replaceQ(key, value, hashVal, totalSize + curpos);
@@ -1189,20 +1218,23 @@ void ExtendibleHash::runBatch2(const WriteBatch * pbatch)
                 int flag = (id & ((1 << gd) - 1));
             
                 if(((flag >> (page -> d)) & 1) == 1)
-                    p2 -> addElement(page -> getElement2(index));
+                    p2   -> addElement(page -> getElement2(index));
                 else
-                    p2 -> addElement(page -> getElement2(index));
+                    page -> addElement(page -> getElement2(index));
             }
             
             int oldpos2;
 
             /**Can focus on whether it can be reduced to zero**/
+            BufferPacket packe2 = p2 -> getPacket();
             {
                 ScopeMutex scope(&datLock);
                 datfs.seekg(0, ios_base::end);
                 oldpos2 = datfs.tellg();
+                datfs.write(packe2.getData(), packe2.getSize());
             }
-            
+
+            assert(cur < entries.size());
             int oldpos = entries.at(cur);
             
             /**could be further optimization, but should consider the frequency**/
@@ -1219,13 +1251,18 @@ void ExtendibleHash::runBatch2(const WriteBatch * pbatch)
 
             p2   -> setD(page->getD() + 1);
             page -> setD(p2->getD());
-            
+
+            BufferPacket packe3 = p2 -> getPacket();
             {
                 ScopeMutex scope(&datLock);
-                datfs.seekg(0, ios_base::end);
-                BufferPacket packe2 = p2 -> getPacket();
-                datfs.write(packe2.getData(), packe2.getSize());
+                datfs.seekg(oldpos2, ios_base::beg);    
+                datfs.write(packe3.getData(), packe3.getSize());
             }
+            // cout<<"endSplit"<<endl;
+            // globalLock.writeUnlock();
+            // cacheElemLock[index].unlock();
+
+            // continue;
         }
         else
         {
@@ -1236,10 +1273,13 @@ void ExtendibleHash::runBatch2(const WriteBatch * pbatch)
            
             pcache -> setUpdated(index);
         }       
+        
+        globalLock.writeUnlock();
 
         cacheElemLock[index].unlock();
+        
     }
-
+    
     {
         ScopeMutex scope(&datLock);
         datfs.seekg(curpos, ios_base::beg);

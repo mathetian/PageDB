@@ -327,7 +327,8 @@ private:
     /**If not use flush, idx data won't be flushed into file.**/
     Mutex          datLock;
     Mutex          cacheLock;
-    Mutex          globalLock;
+    RWLock         globalLock;
+    Mutex          tmplock;
     Mutex          cacheElemLock[CACHESIZE];
 };
 
@@ -485,7 +486,10 @@ public:
 
         if(i == cur)
         {
-            ScopeMutex scope(&(eHash -> cacheElemLock[i]));
+            /**ScopeMutex scope(&(eHash -> cacheElemLock[i]));**/
+
+            eHash -> cacheElemLock[i].lock();
+            
 
             if(cacheElems[i].updated == true)
                 resetWithDatLock(i);
@@ -497,12 +501,28 @@ public:
         }
 
         cur = (i+1)%CACHESIZE;
-        
+        /**Dirty code, only when it get the owner of this page, it can release the cachelock.**/
+
+        // eHash -> cacheLock.unlock();
+
         return oldcur;
     }
     /**Don't need further lock**/
     void setUpdated(int index) { cacheElems[index].updated = true; }
 
+    int  findLockable()
+    {
+        int i = (cur+1)%CACHESIZE;
+        for(;i!=cur;i=(i+1)%CACHESIZE)
+        {
+            if(eHash->cacheElemLock[i].trylock() == 0)
+            {
+                cur = (i+1)%CACHESIZE;
+                return i;
+            }
+        }
+        return -1;
+    }
 private:
     /**Just need require datlock**/
     void resetWithDatLock(int index)
