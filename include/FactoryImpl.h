@@ -510,13 +510,22 @@ public:
     /**Don't need further lock**/
     void setUpdated(int index) { cacheElems[index].updated = true; }
 
-    int  findLockable()
+    int  findLockable(Page * page, uint32_t addr)
     {
         int i = (cur+1)%CACHESIZE;
         for(;i!=cur;i=(i+1)%CACHESIZE)
         {
             if(eHash->cacheElemLock[i].trylock() == 0)
             {
+                if(cacheElems[i].updated == true)
+                {
+                    resetWithDatLock(i);
+                }
+                cacheElems[i].reset();
+                
+                cacheElems[i].page = page;
+                cacheElems[i].entry = addr;
+
                 cur = (i+1)%CACHESIZE;
                 return i;
             }
@@ -588,6 +597,7 @@ private:
     ExtendibleHash * eHash;
     CacheElem cacheElems[CACHESIZE];
     int cur;
+    friend class ExtendibleHash;
 };
 
 #endif

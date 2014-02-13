@@ -1135,7 +1135,7 @@ LABLE:
             assert(cur < entries.size());
             page = pcache -> find(entries.at(cur), index);
         }
-
+        
         if(page != NULL)
         {
             cacheElemLock[index].lock();
@@ -1144,15 +1144,15 @@ LABLE:
         {
             bool flag1 = true; page  = new Page(this);
 
+            index = -1;
             while(flag1)
-            {
-                int index1 = -1;
+            {                
                 {
                     ScopeMutex lock(&cacheLock);
-                    index1 = pcache -> findLockable();
+                    index = pcache -> findLockable(page, entries.at(cur));
                 }
 
-                if(index1 != -1)
+                if(index != -1)
                 {
                     flag1 = false;
                 }
@@ -1169,38 +1169,25 @@ LABLE:
 
             page -> setByBucket(packet);
         }
-
         globalLock.writeLock();
-        
+        int index2 = index;
+
         if(page -> full())
         {
-            cout<<"split?"<<endl;
-            // globalLock.readUnlock();
-            
-            // globalLock.writeLock();
-
-            // if(globalLock.specilLock() == false)
-            // {
-            //     globalLock.readUnlock();
-            //     cacheElemLock[index].unlock();
-            //     goto LABLE;
-            // }
-
-            cout<<"enter split"<<endl;
+            cout<<"split"<<endl;
             if(page -> getD() == gd)
             {   
                 gd++; pn = 2*pn;
                 int oldSize = entries.size();
                 for(int i = 0; i < oldSize; i++)
                     entries.push_back(entries.at(i));
-            
             }
 
             page -> replaceQ(key, value, hashVal, totalSize + curpos);
             phyPacket << key << value;
             totalSize += key.size() + value.size();
 
-            pcache -> setUpdated(index);
+            pcache -> setUpdated(index2);
 
             Page * p2 = new Page(this);
 
@@ -1273,10 +1260,9 @@ LABLE:
            
             pcache -> setUpdated(index);
         }       
-        
         globalLock.writeUnlock();
 
-        cacheElemLock[index].unlock();
+        cacheElemLock[index2].unlock();
         
     }
     
