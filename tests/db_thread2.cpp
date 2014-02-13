@@ -65,7 +65,8 @@ void RunTest2()
     option.logOption.disabled = true;
 
     db = new CustomDB;
-    
+    TimeStamp total;
+
     {
         db -> open(option);
         printf("open successful\n");
@@ -73,7 +74,7 @@ void RunTest2()
         int ids[THRNUM];
         Thread thrs[THRNUM];
 
-        TimeStamp total;
+        
         
         total.StartTime();
 
@@ -112,7 +113,7 @@ void RunTest2()
             
             int num = -1; packet2 >> num;
 
-            ASSERT(i,num);
+            EXPECT_EQ(i,num);
         }
         total.StopTime("GetTime(Without Cache): ");
 

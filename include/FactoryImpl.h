@@ -349,17 +349,11 @@ public:
     ~PageCache() { free(); }
     
     /**when we need use free, we must lock everything visable.**/
-    void    free(int lockable = 0)
+    void    free()
     {
-        if(lockable == 1)
-            eHash -> cacheLock.lock();
-
         int i;
         for(i = 0;i < CACHESIZE;i++)
         {
-            if(lockable == 1)
-                eHash -> cacheElemLock[i].lock();
-
             if(cacheElems[i].updated == true)
             {
                 Page * page = cacheElems[i].page;
@@ -369,16 +363,41 @@ public:
                 eHash -> datfs.write(packet.getData(),packet.getSize());
             }
             cacheElems[i].reset();
-
-            if(lockable == 1)
-                eHash -> cacheElemLock[i].unlock();
         }
 
         cur = 0;
-        eHash -> datfs.flush();
 
-        if(lockable == 1)
-            eHash -> cacheLock.unlock();
+        eHash -> datfs.flush();
+    }
+
+    void freeWithLock()
+    {
+        ScopeMutex scope(&(eHash -> cacheLock));
+
+        int i;
+        for(i = 0;i < CACHESIZE;i++)
+        {
+            ScopeMutex scope1(&(eHash -> cacheElemLock[i]));
+
+            if(cacheElems[i].updated == true)
+            {
+                Page * page = cacheElems[i].page;
+                assert(page != NULL);
+                BufferPacket packet = page -> getPacket();
+                {
+                    ScopeMutex scope2(&(eHash -> datLock));
+                    eHash -> datfs.seekg(cacheElems[i].entry, ios_base::beg);
+                    eHash -> datfs.write(packet.getData(),packet.getSize());
+                }
+            }
+            cacheElems[i].reset();
+        }
+        cur = 0;
+
+        {
+            ScopeMutex scope(&(eHash -> datLock));
+            eHash -> datfs.flush();
+        }
     }
 
     /**
@@ -403,7 +422,7 @@ public:
         Same reason as PageCache.find
         However, need further process.
     **/
-    int putInto(Page * page, int addr, int lockable = 0)
+    int putInto(Page * page, int addr)
     {
         /**
             Hard to implement
@@ -411,7 +430,7 @@ public:
         int i = (cur+1)%CACHESIZE;
         for(;i != cur;i = (i+1)%CACHESIZE)
         {
-            if(lockable == 0 && cacheElems[i].updated == false)
+            if(cacheElems[i].updated == false)
             {
                 cacheElems[i].reset();
 
@@ -419,32 +438,14 @@ public:
                 cacheElems[i].entry = addr;
                 break;
             }
-            else if(lockable == 1)
-            {
-                if(eHash -> cacheElemLock[i].trylock() == 0)
-                {   
-                    if(cacheElems[i].updated == true)
-                    {
-                        resetWithDatlock(i, lockable);
-                    }
-                    cacheElems[i].reset();
-
-                    cacheElems[i].page = page;
-                    cacheElems[i].entry = addr;
-                    break;
-                }
-            }
         }
         
         int oldcur = i;
 
         if(i == cur)
-        {
-             if(lockable == 1) 
-                eHash -> cacheElemLock[i].lock();
-            
+        {   
             if(cacheElems[i].updated == true)
-                resetWithDatlock(i, lockable);
+                reset(i);
 
             cacheElems[i].reset();
             
@@ -457,41 +458,81 @@ public:
         return oldcur;
     }
 
+    int putIntoWithLock(Page * page, int addr)
+    {
+        int i = (cur+1)%CACHESIZE;
+        for(;i != cur;i = (i+1)%CACHESIZE)
+        {
+            if(cacheElems[i].updated == false)
+            {
+                if(eHash -> cacheElemLock[i].trylock() == 0)
+                {   
+                    if(cacheElems[i].updated == true)
+                    {
+                        resetWithDatLock(i);
+                    }
+                    cacheElems[i].reset();
+
+                    cacheElems[i].page = page;
+                    cacheElems[i].entry = addr;
+                    break;
+                }
+            }
+           
+        }
+        
+        int oldcur = i;
+
+        if(i == cur)
+        {
+            ScopeMutex scope(&(eHash -> cacheElemLock[i]));
+
+            if(cacheElems[i].updated == true)
+                resetWithDatLock(i);
+
+            cacheElems[i].reset();
+            
+            cacheElems[i].page = page;
+            cacheElems[i].entry = addr;
+        }
+
+        cur = (i+1)%CACHESIZE;
+        
+        return oldcur;
+    }
     /**Don't need further lock**/
     void setUpdated(int index) { cacheElems[index].updated = true; }
 
 private:
     /**Just need require datlock**/
-    void resetWithDatlock(int index, int lockable = 0)
+    void resetWithDatLock(int index)
     {
         Page * page1 = cacheElems[index].page;
         assert(page1 != NULL);
+        BufferPacket packet = page1 -> getPacket();
 
-        if(lockable == 0)
-        {
-            eHash -> datfs.seekg(cacheElems[index].entry, ios_base::beg);
-            BufferPacket packet = page1 -> getPacket();
-            eHash -> datfs.write(packet.getData(),packet.getSize());
-        }
-        else
         {
             ScopeMutex scope(&(eHash -> datLock));
-             eHash -> datfs.seekg(cacheElems[index].entry, ios_base::beg);
-            BufferPacket packet = page1 -> getPacket();
+            eHash -> datfs.seekg(cacheElems[index].entry, ios_base::beg);
             eHash -> datfs.write(packet.getData(),packet.getSize());
         }                  
     }
 
-public:
-    void fflush(int lockable = 0)
+    void reset(int index)
     {
-        if(lockable == 1)
-            eHash -> cacheLock.lock();
+        Page * page1 = cacheElems[index].page;
+        assert(page1 != NULL);
+        BufferPacket packet = page1 -> getPacket();
 
+        eHash -> datfs.seekg(cacheElems[index].entry, ios_base::beg);
+        eHash -> datfs.write(packet.getData(),packet.getSize());
+    }
+
+public:
+    void fflush()
+    {
         for(int i = 0;i < CACHESIZE;i++)
         {
-            eHash -> cacheElemLock[i].lock();
-
             if(cacheElems[i].updated == true)
             {
                 Page * page = cacheElems[i].page;
@@ -500,13 +541,27 @@ public:
                 eHash -> datfs.write(packet.getData(),packet.getSize());
                 cacheElems[i].updated = false;
             }
-            if(lockable == 1)
-                eHash -> cacheElemLock[i].unlock();
         }
         cur = 0;
-        
-        if(lockable == 1)
-            eHash -> cacheLock.unlock();
+    }
+
+    void fflushWithLock()
+    {
+        ScopeMutex scope(&(eHash -> cacheLock));
+
+        for(int i = 0;i < CACHESIZE;i++)
+        {
+            ScopeMutex scope1(&(eHash -> cacheElemLock[i]));
+            if(cacheElems[i].updated == true)
+            {
+                Page * page = cacheElems[i].page;
+                eHash -> datfs.seekg(cacheElems[i].entry, ios_base::beg);
+                BufferPacket packet = page -> getPacket();
+                eHash -> datfs.write(packet.getData(),packet.getSize());
+                cacheElems[i].updated = false;
+            }
+        }
+        cur = 0;
     }
 
 private:

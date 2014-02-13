@@ -750,7 +750,7 @@ void ExtendibleHash::runBatch(const WriteBatch * pbatch)
     {
         Slice key   = node -> first;
         Slice value = node -> second;
-        
+                
         uint32_t hashVal = hashFunc(key);
         int cur   = hashVal & ((1 << gd) -1);
         int index = 0;
@@ -1125,7 +1125,6 @@ void ExtendibleHash::runBatch2(const WriteBatch * pbatch)
         {
             ScopeMutex scope(&cacheLock);
             Page * page = pcache -> find(entries.at(cur), index);
-
         }
 
         if(page != NULL)
@@ -1137,8 +1136,11 @@ void ExtendibleHash::runBatch2(const WriteBatch * pbatch)
             {
                 ScopeMutex lock(&cacheLock);
                 page  = new Page(this);
-                /**In putinto, when it find suitable, it must lock at the same time.**/
-                index = pcache -> putInto(page, entries.at(cur), 1);
+                /**
+                    In putinto, when it find suitable, it must lock at the same time.
+                    I guess should use condition. However, no idea.
+                **/
+                index = pcache -> putIntoWithLock(page, entries.at(cur));
             }
 
             BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));

@@ -55,6 +55,9 @@ thread_test: tests/thread_test.cpp
 db_thread: tests/db_thread.cpp libcustomDB.a
 	$(CXX) ${CXXFLAGS} ${HEADER} tests/db_thread.cpp -lpthread -o $@ ${LDLIBS}
 
+db_thread2: tests/db_thread2.cpp libcustomDB.a
+	$(CXX) ${CXXFLAGS} ${HEADER} tests/db_thread2.cpp -lpthread -o $@ ${LDLIBS}
+
 rw_test:  tests/rw_test.cpp
 	$(CXX) ${CXXFLAGS} tests/rw_test.cpp -lpthread -o $@ 
 
