@@ -1120,7 +1120,7 @@ void ExtendibleHash::runBatch2(const WriteBatch * pbatch)
         Slice key   = node -> first;
         Slice value = node -> second;
 
-        cout<< key.returnAsInt() << endl;
+        //cout<< key.returnAsInt() << endl;
         uint32_t hashVal = hashFunc(key);
         /**Sooorry, I need use jump to**/
 LABLE:
@@ -1135,7 +1135,8 @@ LABLE:
             assert(cur < entries.size());
             page = pcache -> find(entries.at(cur), index);
         }
-        
+
+        /**Some error with this part**/
         if(page != NULL)
         {
             cacheElemLock[index].lock();
@@ -1174,7 +1175,6 @@ LABLE:
 
         if(page -> full())
         {
-            cout<<"split"<<endl;
             if(page -> getD() == gd)
             {   
                 gd++; pn = 2*pn;

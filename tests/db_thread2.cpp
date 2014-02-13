@@ -15,7 +15,7 @@ using namespace std;
 #define SIZE      1000000
 #define BATCHSIZE 250000
 #define SUBSIZE   25000
-#define THRNUM    1
+#define THRNUM    4
 
 #define EXPECT_EQ(a,b) assert(a == b)
 #define EXPECT_EQ_S(a,b) assert(strcmp(a,b) == 1)
