@@ -47,7 +47,7 @@ void* thrFunc(void * data)
 	        Slice value(packet.getData(),sizeof(int));
     		batch.put(key, value);	
 		}
-		db -> tWrite(&batch);
+		db -> runBatch2(&batch);
         printf("thread %d finished round %d\n", flag, i);
 	}
 
@@ -60,19 +60,20 @@ void* thrFunc(void * data)
 /**
     Test for Batch-Digest
 **/
-void RunTest1()
+void RunTest2()
 {
     option.logOption.disabled = true;
 
     db = new CustomDB;
-    TimeStamp total;
-
+    
     {
         db -> open(option);
         printf("open successful\n");
 
         int ids[THRNUM];
         Thread thrs[THRNUM];
+
+        TimeStamp total;
         
         total.StartTime();
 
@@ -111,7 +112,7 @@ void RunTest1()
             
             int num = -1; packet2 >> num;
 
-            EXPECT_EQ(i,num);
+            ASSERT(i,num);
         }
         total.StopTime("GetTime(Without Cache): ");
 
@@ -123,7 +124,8 @@ void RunTest1()
 
 int main()
 {   
-    RunTest1();
+    RunTest2();
     printf("Passed All Test, Congratulations");
+
     return 0;
 }

@@ -30,6 +30,8 @@ public:
 
     void   close()
     {
+        if(factory) factory -> fflush();
+        
         if(factory) delete factory;
         if(cache)   delete cache;
 
@@ -74,6 +76,11 @@ public:
         factory -> compact();
     }
     
+    void    runBatch2(const WriteBatch * pbatch)
+    {
+        factory -> runBatch2(pbatch);
+    }
+
 private:
     Options   	option;
     Factory   * factory;

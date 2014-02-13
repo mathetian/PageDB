@@ -111,6 +111,11 @@ public:
         //Todo list
     }
 
+    void    runBatch2(const WriteBatch * pbatch)
+    {
+        //Todo list
+    }
+
     void    write(WriteBatch* pbatch)
     {
         //Todo list
@@ -118,7 +123,7 @@ public:
 
     void    compact()
     {
-
+        //Todo list
     }   
 
 private:
@@ -358,6 +363,7 @@ public:
             if(cacheElems[i].updated == true)
             {
                 Page * page = cacheElems[i].page;
+                assert(page != NULL);
                 eHash -> datfs.seekg(cacheElems[i].entry, ios_base::beg);
                 BufferPacket packet = page -> getPacket();
                 eHash -> datfs.write(packet.getData(),packet.getSize());
@@ -369,7 +375,8 @@ public:
         }
 
         cur = 0;
-        
+        eHash -> datfs.flush();
+
         if(lockable == 1)
             eHash -> cacheLock.unlock();
     }
@@ -404,31 +411,48 @@ public:
         int i = (cur+1)%CACHESIZE;
         for(;i != cur;i = (i+1)%CACHESIZE)
         {
-            if(lockable == 0 || eHash -> cacheElemLock[i].trylock() == 0)
-            {   
-                if(cacheElems[i].updated == true)
-                {
-                    resetWithDatlock(i, lockable);
-                }
+            if(lockable == 0 && cacheElems[i].updated == false)
+            {
+                cacheElems[i].reset();
+
                 cacheElems[i].page = page;
                 cacheElems[i].entry = addr;
                 break;
             }
+            else if(lockable == 1)
+            {
+                if(eHash -> cacheElemLock[i].trylock() == 0)
+                {   
+                    if(cacheElems[i].updated == true)
+                    {
+                        resetWithDatlock(i, lockable);
+                    }
+                    cacheElems[i].reset();
+
+                    cacheElems[i].page = page;
+                    cacheElems[i].entry = addr;
+                    break;
+                }
+            }
         }
         
-        int oldcur = cur;
+        int oldcur = i;
 
         if(i == cur)
         {
-            i = (i + 1)%CACHESIZE;
-            if(lockable == 1) 
+             if(lockable == 1) 
                 eHash -> cacheElemLock[i].lock();
-            resetWithDatlock(i, lockable);
+            
+            if(cacheElems[i].updated == true)
+                resetWithDatlock(i, lockable);
+
+            cacheElems[i].reset();
+            
+            cacheElems[i].page = page;
+            cacheElems[i].entry = addr;
         }
-        else
-        {
-            cur = (cur + 1)%CACHESIZE;
-        }
+
+        cur = (i+1)%CACHESIZE;
         
         return oldcur;
     }
@@ -440,33 +464,22 @@ private:
     /**Just need require datlock**/
     void resetWithDatlock(int index, int lockable = 0)
     {
-        if(cacheElems[index].updated == true)
-        {
-            Page * page1 = cacheElems[index].page;
-            cout << page1 -> curNum << endl;
+        Page * page1 = cacheElems[index].page;
+        assert(page1 != NULL);
 
-            {
-                if(lockable == 0)
-                {
-                    eHash -> datfs.seekg(cacheElems[index].entry, ios_base::beg);
-                    BufferPacket packet = page1 -> getPacket();
-                    cout<<"reset:"<<packet.getSize() <<endl;
-                    eHash -> datfs.write(packet.getData(),packet.getSize());
-                }
-                else
-                {
-                    ScopeMutex scope(&(eHash -> datLock));
-                     eHash -> datfs.seekg(cacheElems[index].entry, ios_base::beg);
-                    BufferPacket packet = page1 -> getPacket();
-                    eHash -> datfs.write(packet.getData(),packet.getSize());
-                }
-                
-               
-            }          
-            
-            cur = index;
+        if(lockable == 0)
+        {
+            eHash -> datfs.seekg(cacheElems[index].entry, ios_base::beg);
+            BufferPacket packet = page1 -> getPacket();
+            eHash -> datfs.write(packet.getData(),packet.getSize());
         }
-        cacheElems[index].reset();
+        else
+        {
+            ScopeMutex scope(&(eHash -> datLock));
+             eHash -> datfs.seekg(cacheElems[index].entry, ios_base::beg);
+            BufferPacket packet = page1 -> getPacket();
+            eHash -> datfs.write(packet.getData(),packet.getSize());
+        }                  
     }
 
 public:

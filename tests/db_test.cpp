@@ -8,7 +8,7 @@ using namespace std;
 #include "Slice.h"
 
 #define EXPECT_EQ(a,b) assert(a == b)
-#define EXPECT_EQ_S(a,b) assert(strcmp(a,b) == 1); 
+#define EXPECT_EQ_S(a,b) assert(strcmp(a,b) == 1)
 
 /**Basic Test for put and get**/
 void RunTest1()
@@ -41,7 +41,7 @@ void RunTest1()
     delete db;
 }
 
-/**Basic Test for compact**/
+/**Basic Test for compact, failed passed this Test**/
 void RunTest2()
 {
     Options option;

@@ -212,8 +212,16 @@ ExtendibleHash::~ExtendibleHash()
 void ExtendibleHash::fflush()
 {
     pcache -> free();
-    idxfs.flush();
-    datfs.flush();
+    
+    {
+        ScopeMutex scope(&datLock);
+        datfs.flush();
+    }
+
+    {
+        ScopeMutex scope(&globalLock);
+        idxfs.flush();
+    }
 }
 
 bool ExtendibleHash::init(const char * filename)
@@ -731,6 +739,7 @@ void ExtendibleHash::runBatch(const WriteBatch * pbatch)
 {
     datfs.seekg(0, ios_base::end);
     uint32_t curpos = datfs.tellg();
+
     BufferPacket phyPacket(pbatch->getTotalSize());
     datfs.write(phyPacket.getData(), phyPacket.getSize());
 
@@ -741,7 +750,7 @@ void ExtendibleHash::runBatch(const WriteBatch * pbatch)
     {
         Slice key   = node -> first;
         Slice value = node -> second;
-
+        
         uint32_t hashVal = hashFunc(key);
         int cur   = hashVal & ((1 << gd) -1);
         int index = 0;
@@ -1129,7 +1138,7 @@ void ExtendibleHash::runBatch2(const WriteBatch * pbatch)
                 ScopeMutex lock(&cacheLock);
                 page  = new Page(this);
                 /**In putinto, when it find suitable, it must lock at the same time.**/
-                index = pcache -> putInto(page, entries.at(cur));
+                index = pcache -> putInto(page, entries.at(cur), 1);
             }
 
             BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
