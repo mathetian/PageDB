@@ -666,6 +666,8 @@ void ExtendibleHash::recycle(int offset, int size)
         log -> _Fatal("There must be some fatal error\n");
         return;
     }
+    
+    assert(0);
 
     {
         ScopeMutex scope(&(datLock));
@@ -1211,6 +1213,8 @@ LABLE:
                 {
                     flag1 = false;
                 }
+                else
+                    printf("notice4\n");
             }
 
             BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
@@ -1226,6 +1230,7 @@ LABLE:
         }
 
         int index2 = index;
+        /**could use further optimization**/
         if(page -> full())
         {
             if(globalFlag == 0)
@@ -1273,6 +1278,11 @@ LABLE:
             
             int oldpos2;
 
+            int od = page -> getD();
+
+            p2   -> setD(page->getD() + 1);
+            page -> setD(p2->getD());
+
             /**Can focus on whether it can be reduced to zero**/
             BufferPacket packe2 = p2 -> getPacket();
             
@@ -1291,29 +1301,21 @@ LABLE:
             {
                 if(entries.at(index) == oldpos)
                 {
-                    if(((index >> (page -> d)) & 1) == 1)
+                    if(((index >> (od)) & 1) == 1)
                         entries[index] = oldpos2;
                     else
                         entries[index] = oldpos;
                 }
             }
 
-            p2   -> setD(page->getD() + 1);
-            page -> setD(p2->getD());
-
-            BufferPacket packe3 = p2 -> getPacket();
-            {
-                ScopeMutex scope(&datLock);
-                datfs.seekg(oldpos2, ios_base::beg);    
-                datfs.write(packe3.getData(), packe3.getSize());
-            }
+            delete p2; p2 = NULL;
         }
         else
         {
             page -> replaceQ(key, value, hashVal, totalSize + curpos);
             
             phyPacket << key << value;
-            totalSize = totalSize + key.size() + value.size();
+            totalSize += key.size() + value.size();
            
             pcache -> setUpdated(index);
         }       
