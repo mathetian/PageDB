@@ -1153,8 +1153,7 @@ LABLE:
         }
         else if(globalFlag == 1)
         {
-     //       cout<<"1124:"<< key.returnAsInt() << endl;
-     //       printf("oh my.god\n");
+            printf("oh my.god\n");
             globalLock.writeLock();
         }
 
@@ -1178,7 +1177,7 @@ LABLE:
                 }
                 else
                 {
-                 //   printf("notice\n");
+                    assert(globalFlag == 0);
                     cacheLock.unlock();
                     cacheElemLock[index].lock();
                 }
@@ -1194,12 +1193,21 @@ LABLE:
             }
             else
             {
-                printf("notice2\n");
+                /**which situation will lead to different output**/
+                /**Page different can be understand. However, entry?**/
+                if(page != pcache -> cacheElems[index].page)
+                    printf("notice21\n");
+                else 
+                {
+                    cout<<entries.at(cur)<<endl;
+                    cout<<pcache -> cacheElems[index].entry<<endl;
+                    printf("notice22\n");
+                }
+
                 cacheElemLock[index].unlock();
-                if(globalFlag == 0)
-                    globalLock.readUnlock();
-                else
-                    globalLock.writeUnlock();
+                assert(globalFlag == 0);
+                globalLock.readUnlock();
+               
                 goto LABLE;
             }
         }
@@ -1214,6 +1222,8 @@ LABLE:
                     ScopeMutex lock(&cacheLock);
                     index = pcache -> findLockable(page, entries.at(cur));
                 }
+                
+                if(globalFlag == 1) assert(index != -1);
 
                 if(index != -1)
                 {
@@ -1237,7 +1247,7 @@ LABLE:
 
         int index2 = index;
         /**could use further optimization**/
-        if(page -> full())
+        if(page -> full() && page -> getD() == gd)
         {
             if(globalFlag == 0)
             {
@@ -1246,8 +1256,7 @@ LABLE:
                 globalFlag = 1;
                 goto LABLE;
             }
-            notnotnot++;
-            assert(notnotnot < 2);
+
             if(page -> getD() == gd)
             {   
                 gd++; pn = 2*pn;
@@ -1256,6 +1265,14 @@ LABLE:
                     entries.push_back(entries.at(i));
             }
 
+            globalLock.writeUnlock();
+            cacheElemLock[index].unlock();
+            globalFlag = 0;
+
+            goto LABLE;
+        }
+        else if(page -> full())
+        {
             page -> replaceQ(key, value, hashVal, totalSize + curpos);
             phyPacket << key << value;
             totalSize += key.size() + value.size();
@@ -1290,7 +1307,6 @@ LABLE:
             p2   -> setD(page->getD() + 1);
             page -> setD(p2->getD());
 
-            /**Can focus on whether it can be reduced to zero**/
             BufferPacket packe2 = p2 -> getPacket();
             
             {
@@ -1316,7 +1332,6 @@ LABLE:
             }
 
             delete p2; p2 = NULL;
-            notnotnot--;
         }
         else
         {

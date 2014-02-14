@@ -19,7 +19,7 @@ using namespace std;
 #define SCEBLOCK sizeof(CEmptyBlock)
 #define SELEM    sizeof(CElement)
 
-#define CACHESIZE 10
+#define CACHESIZE 20
 
 typedef uint32_t (*HASH)(const Slice & key);
 class PageCache;
@@ -251,8 +251,6 @@ private:
     Log * m_log;
 };
 
-
-
 class ExtendibleHash : public Factory
 {
 public:
@@ -433,7 +431,7 @@ public:
             {
                 cacheElems[i].reset();
 
-                cacheElems[i].page = page;
+                cacheElems[i].page  = page;
                 cacheElems[i].entry = addr;
                 break;
             }
