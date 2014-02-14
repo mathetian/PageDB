@@ -50,7 +50,8 @@ BufferPacket Page::getPacket()
 void  Page::setByBucket(BufferPacket & packet)
 {
     packet.setBeg(); 
-    packet >> d >> curNum;
+    int d1 = d; int curNum1 = curNum;
+    packet >> d1 >> curNum1;
     
     packet.read((char*)&elements[0],sizeof(elements));
 }
@@ -204,7 +205,7 @@ bool Page::remove(const Slice & key, uint32_t hashVal)
 }
 
 ExtendibleHash::ExtendibleHash(HASH hashFunc) :\
-        hashFunc(hashFunc), gd(0), pn(1), fb(-1), globalLock(&tmplock) { pcache = new PageCache(this); m_tmpBatch = new WriteBatch; }
+        hashFunc(hashFunc), gd(0), pn(1), fb(-1), globalLock(&tmplock), notnotnot(0) { pcache = new PageCache(this); m_tmpBatch = new WriteBatch; }
 
 ExtendibleHash::~ExtendibleHash()
 { 
@@ -322,7 +323,8 @@ void ExtendibleHash::readFromFile()
     BufferPacket packet(SINT * 3);
     idxfs.read(packet.getData(), packet.getSize());
     
-    packet >> gd >> pn >> fb;
+    int gd1 = gd; int pn1 = pn; int fb1 = fb;
+    packet >> gd1 >> pn1 >> fb1;
     entries = vector<int> (1 << gd, 0);
 
     idxfs.read((char*)&entries[0], entries.size()*SINT);
@@ -1137,7 +1139,7 @@ void ExtendibleHash::runBatch2(const WriteBatch * pbatch)
         Slice key   = node -> first;
         Slice value = node -> second;
 
-       // cout<< key.returnAsInt() << endl;
+        cout<<"1123:"<< key.returnAsInt() << endl;
         uint32_t hashVal = hashFunc(key);
         /**Sooorry, I need use jump to**/
         int globalFlag = 0;
@@ -1148,6 +1150,7 @@ LABLE:
         }
         else if(globalFlag == 1)
         {
+            cout<<"1124:"<< key.returnAsInt() << endl;
             printf("oh my.god\n");
             globalLock.writeLock();
         }
@@ -1240,7 +1243,8 @@ LABLE:
                 globalFlag = 1;
                 goto LABLE;
             }
-
+            notnotnot++;
+            assert(notnotnot < 2);
             if(page -> getD() == gd)
             {   
                 gd++; pn = 2*pn;
@@ -1309,6 +1313,7 @@ LABLE:
             }
 
             delete p2; p2 = NULL;
+            notnotnot--;
         }
         else
         {

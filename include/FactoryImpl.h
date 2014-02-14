@@ -209,7 +209,7 @@ public:
     int          getSize() { return SINT*2 + sizeof(elements);}
 
 private:
-    bool   full() { return curNum >= PAGESIZE; }
+    bool   full() { assert(curNum < PAGESIZE + 3); return curNum >= PAGESIZE; }
     bool   put(const Slice & key,const Slice & value, uint32_t hashVal);
     Slice  get(const Slice & key, uint32_t hashVal);
     bool   remove(const Slice & key, uint32_t hashVal);
@@ -247,7 +247,7 @@ private:
        Use PAGESIZE + 5 to avoid some special(boundary) situation
     **/
     // volatile int d, curNum;
-    int d, curNum;
+    volatile int d, curNum;
     PageElement elements[PAGESIZE + 5];
     Log * m_log;
 };
@@ -307,7 +307,7 @@ private:
 private:
     /**Need read from file**/
     // volatile int  gd, pn, fb;
-    int gd, pn, fb;
+    volatile int gd, pn, fb;
     vector <int>  entries; /**Page entries, just offset for each page**/
     struct Writer;
 
@@ -319,7 +319,7 @@ private:
 
     string         idxName;
     string         datName;
-    
+    volatile       int notnotnot;
 public:
     void           write(WriteBatch* pbatch);
 
