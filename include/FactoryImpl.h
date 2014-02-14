@@ -246,7 +246,6 @@ private:
        Asscoiate with the file,
        Use PAGESIZE + 5 to avoid some special(boundary) situation
     **/
-    // volatile int d, curNum;
     volatile int d, curNum;
     PageElement elements[PAGESIZE + 5];
     Log * m_log;
@@ -306,8 +305,7 @@ private:
 
 private:
     /**Need read from file**/
-    // volatile int  gd, pn, fb;
-    volatile int gd, pn, fb;
+    volatile int  gd, pn, fb;
     vector <int>  entries; /**Page entries, just offset for each page**/
     struct Writer;
 

@@ -50,9 +50,10 @@ BufferPacket Page::getPacket()
 void  Page::setByBucket(BufferPacket & packet)
 {
     packet.setBeg(); 
-    int d1 = d; int curNum1 = curNum;
+    //int d1 = d; int curNum1 = curNum;
+    int d1, curNum1;
     packet >> d1 >> curNum1;
-    
+    d = d1; curNum = curNum1;
     packet.read((char*)&elements[0],sizeof(elements));
 }
 
@@ -323,8 +324,10 @@ void ExtendibleHash::readFromFile()
     BufferPacket packet(SINT * 3);
     idxfs.read(packet.getData(), packet.getSize());
     
-    int gd1 = gd; int pn1 = pn; int fb1 = fb;
+   // int gd1 = gd; int pn1 = pn; int fb1 = fb;
+    int gd1, pn1, fb1;
     packet >> gd1 >> pn1 >> fb1;
+    gd = gd1; pn = pn1; fb = fb1;
     entries = vector<int> (1 << gd, 0);
 
     idxfs.read((char*)&entries[0], entries.size()*SINT);
@@ -1139,7 +1142,7 @@ void ExtendibleHash::runBatch2(const WriteBatch * pbatch)
         Slice key   = node -> first;
         Slice value = node -> second;
 
-        cout<<"1123:"<< key.returnAsInt() << endl;
+     //   cout<<"1123:"<< key.returnAsInt() << endl;
         uint32_t hashVal = hashFunc(key);
         /**Sooorry, I need use jump to**/
         int globalFlag = 0;
@@ -1150,8 +1153,8 @@ LABLE:
         }
         else if(globalFlag == 1)
         {
-            cout<<"1124:"<< key.returnAsInt() << endl;
-            printf("oh my.god\n");
+     //       cout<<"1124:"<< key.returnAsInt() << endl;
+     //       printf("oh my.god\n");
             globalLock.writeLock();
         }
 

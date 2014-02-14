@@ -62,4 +62,4 @@ rw_test:  tests/rw_test.cpp
 	$(CXX) ${CXXFLAGS} tests/rw_test.cpp -lpthread -o $@ 
 
 clean: 
-	rm -f *.o *.idx *.dat test demo* mp_test thread *_test* db_bench db_* *log *bak
+	rm -f *.o *.idx *.dat test demo* mp_test thread *_test* db_bench db_* *log *bak test3 test4

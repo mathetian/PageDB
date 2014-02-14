@@ -63,7 +63,8 @@ void* thrFunc(void * data)
 void RunTest1()
 {
     option.logOption.disabled = true;
-
+    option.logOption.logLevel = LOG_FATAL;
+    
     db = new CustomDB;
     TimeStamp total;
 
