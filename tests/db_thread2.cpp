@@ -12,8 +12,8 @@ using namespace std;
 	Create 5 four thread, each put 250000 items.
 	For each thread, each time, it compute 5000 items.
 **/
-#define SIZE      800
-#define BATCHSIZE 800
+#define SIZE      1500
+#define BATCHSIZE 1500
 #define SUBSIZE   50
 #define THRNUM    1
 

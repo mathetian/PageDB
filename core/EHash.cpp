@@ -667,9 +667,6 @@ void ExtendibleHash::recycle(int offset, int size)
         return;
     }
 
-    /**Error?**/
-    printf("notice5\n");
-    
     {
         ScopeMutex scope(&(datLock));
         datfs.seekg(fb,      ios_base::beg);
@@ -1149,7 +1146,7 @@ LABLE:
         }
         else if(globalFlag == 1)
         {
-           // printf("oh my.god\n");
+            printf("oh my.god\n");
             globalLock.writeLock();
         }
 
@@ -1160,6 +1157,7 @@ LABLE:
         page = NULL;
 
         {
+            // ScopeMutex scope(&cacheLock);
             cacheLock.lock();
             assert(cur < entries.size());
             page = pcache -> find(entries.at(cur), index);
@@ -1213,8 +1211,6 @@ LABLE:
                 {
                     flag1 = false;
                 }
-                else
-                    printf("notice4\n");
             }
 
             BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
@@ -1230,7 +1226,6 @@ LABLE:
         }
 
         int index2 = index;
-        /**could use advanced optimization**/
         if(page -> full())
         {
             if(globalFlag == 0)
@@ -1252,6 +1247,8 @@ LABLE:
             page -> replaceQ(key, value, hashVal, totalSize + curpos);
             phyPacket << key << value;
             totalSize += key.size() + value.size();
+
+            pcache -> setUpdated(index2);
 
             Page * p2 = new Page(this);
 
@@ -1276,10 +1273,9 @@ LABLE:
             
             int oldpos2;
 
-            p2   -> setD(page->getD() + 1);
-            page -> setD(p2->getD());
+            /**Can focus on whether it can be reduced to zero**/
             BufferPacket packe2 = p2 -> getPacket();
-
+            
             {
                 ScopeMutex scope(&datLock);
                 datfs.seekg(0, ios_base::end);
@@ -1302,17 +1298,25 @@ LABLE:
                 }
             }
 
-            delete p2; p2 = NULL;
+            p2   -> setD(page->getD() + 1);
+            page -> setD(p2->getD());
+
+            BufferPacket packe3 = p2 -> getPacket();
+            {
+                ScopeMutex scope(&datLock);
+                datfs.seekg(oldpos2, ios_base::beg);    
+                datfs.write(packe3.getData(), packe3.getSize());
+            }
         }
         else
         {
             page -> replaceQ(key, value, hashVal, totalSize + curpos);
             
             phyPacket << key << value;
-            totalSize += key.size() + value.size();           
+            totalSize = totalSize + key.size() + value.size();
+           
+            pcache -> setUpdated(index);
         }       
-
-        pcache -> setUpdated(index2);
 
         if(globalFlag == 0)
         {
