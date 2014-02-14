@@ -118,12 +118,20 @@ void Page::replaceQ(const Slice & key, const Slice & value, uint32_t hashVal, in
             BufferPacket packet(element.m_keySize);
             Slice        slice(element.m_keySize);
 
-            eHash -> datfs.seekg(element.m_datPos, ios_base::beg);
-            eHash -> datfs.read(packet.getData(), packet.getSize());
-            
+            {
+                ScopeMutex scope(&(eHash -> datLock));
+                eHash -> datfs.seekg(element.m_datPos, ios_base::beg);
+                eHash -> datfs.read(packet.getData(), packet.getSize());
+            }
+
             packet.setBeg(); 
             packet >> slice;
-            
+            if(slice != key)
+            {
+                printf("notice3\n");
+                continue;
+            }
+
             eHash -> recycle(elements[index].m_datPos, key.size() + value.size());
 
             elements[index].m_datPos  = offset;
@@ -659,11 +667,18 @@ void ExtendibleHash::recycle(int offset, int size)
         return;
     }
 
-    datfs.seekg(fb,      ios_base::beg);
-    datfs.read((char*)&block, SEEBLOCK);
+    /**Error?**/
+    printf("notice5\n");
+    
+    {
+        ScopeMutex scope(&(datLock));
+        datfs.seekg(fb,      ios_base::beg);
+        datfs.read((char*)&block, SEEBLOCK);
+    }
     
     if(block.curNum == PAGESIZE)
     {
+        ScopeMutex scope(&datLock);
         datfs.seekg(0, ios_base::end);
 
         int nn = block.nextBlock;
@@ -678,9 +693,12 @@ void ExtendibleHash::recycle(int offset, int size)
 
     block.eles[block.curNum].pos    = offset;
     block.eles[block.curNum++].size = size;
-
-    datfs.seekg(fb, ios_base::beg);
-    datfs.write((char*)&block,SEEBLOCK);
+    
+    {
+        ScopeMutex scope(&datLock);
+        datfs.seekg(fb, ios_base::beg);
+        datfs.write((char*)&block,SEEBLOCK);
+    }
 }
 
 void ExtendibleHash::dump()
@@ -1120,10 +1138,21 @@ void ExtendibleHash::runBatch2(const WriteBatch * pbatch)
         Slice key   = node -> first;
         Slice value = node -> second;
 
-        //cout<< key.returnAsInt() << endl;
+       // cout<< key.returnAsInt() << endl;
         uint32_t hashVal = hashFunc(key);
         /**Sooorry, I need use jump to**/
+        int globalFlag = 0;
 LABLE:
+        if(globalFlag == 0)
+        {
+            globalLock.readLock();
+        }
+        else if(globalFlag == 1)
+        {
+           // printf("oh my.god\n");
+            globalLock.writeLock();
+        }
+
         int cur   = hashVal & ((1 << gd) -1);
         assert((1<<gd) <= entries.size());
         int index = 0;
@@ -1131,15 +1160,42 @@ LABLE:
         page = NULL;
 
         {
-            ScopeMutex scope(&cacheLock);
+            cacheLock.lock();
             assert(cur < entries.size());
             page = pcache -> find(entries.at(cur), index);
+
+            if(page != NULL)
+            {
+                if(cacheElemLock[index].trylock()==0)
+                {
+                    cacheLock.unlock();
+                }
+                else
+                {
+                 //   printf("notice\n");
+                    cacheLock.unlock();
+                    cacheElemLock[index].lock();
+                }
+            }
+            else
+                cacheLock.unlock();
         }
 
-        /**Some error with this part**/
         if(page != NULL)
         {
-            cacheElemLock[index].lock();
+            if(page == pcache -> cacheElems[index].page && entries.at(cur) == pcache -> cacheElems[index].entry)
+            {
+            }
+            else
+            {
+                printf("notice2\n");
+                cacheElemLock[index].unlock();
+                if(globalFlag == 0)
+                    globalLock.readUnlock();
+                else
+                    globalLock.writeUnlock();
+                goto LABLE;
+            }
         }
         else if(page == NULL) 
         {
@@ -1157,6 +1213,8 @@ LABLE:
                 {
                     flag1 = false;
                 }
+                else
+                    printf("notice4\n");
             }
 
             BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
@@ -1170,11 +1228,19 @@ LABLE:
 
             page -> setByBucket(packet);
         }
-        globalLock.writeLock();
-        int index2 = index;
 
+        int index2 = index;
+        /**could use advanced optimization**/
         if(page -> full())
         {
+            if(globalFlag == 0)
+            {
+                globalLock.readUnlock();
+                cacheElemLock[index].unlock();
+                globalFlag = 1;
+                goto LABLE;
+            }
+
             if(page -> getD() == gd)
             {   
                 gd++; pn = 2*pn;
@@ -1186,8 +1252,6 @@ LABLE:
             page -> replaceQ(key, value, hashVal, totalSize + curpos);
             phyPacket << key << value;
             totalSize += key.size() + value.size();
-
-            pcache -> setUpdated(index2);
 
             Page * p2 = new Page(this);
 
@@ -1212,8 +1276,10 @@ LABLE:
             
             int oldpos2;
 
-            /**Can focus on whether it can be reduced to zero**/
+            p2   -> setD(page->getD() + 1);
+            page -> setD(p2->getD());
             BufferPacket packe2 = p2 -> getPacket();
+
             {
                 ScopeMutex scope(&datLock);
                 datfs.seekg(0, ios_base::end);
@@ -1236,31 +1302,26 @@ LABLE:
                 }
             }
 
-            p2   -> setD(page->getD() + 1);
-            page -> setD(p2->getD());
-
-            BufferPacket packe3 = p2 -> getPacket();
-            {
-                ScopeMutex scope(&datLock);
-                datfs.seekg(oldpos2, ios_base::beg);    
-                datfs.write(packe3.getData(), packe3.getSize());
-            }
-            // cout<<"endSplit"<<endl;
-            // globalLock.writeUnlock();
-            // cacheElemLock[index].unlock();
-
-            // continue;
+            delete p2; p2 = NULL;
         }
         else
         {
             page -> replaceQ(key, value, hashVal, totalSize + curpos);
             
             phyPacket << key << value;
-            totalSize = totalSize + key.size() + value.size();
-           
-            pcache -> setUpdated(index);
+            totalSize += key.size() + value.size();           
         }       
-        globalLock.writeUnlock();
+
+        pcache -> setUpdated(index2);
+
+        if(globalFlag == 0)
+        {
+            globalLock.readUnlock();
+        }
+        else
+        {
+            globalLock.writeUnlock();
+        }
 
         cacheElemLock[index2].unlock();
         

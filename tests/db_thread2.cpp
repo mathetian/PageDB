@@ -12,10 +12,10 @@ using namespace std;
 	Create 5 four thread, each put 250000 items.
 	For each thread, each time, it compute 5000 items.
 **/
-#define SIZE      1000000
-#define BATCHSIZE 250000
-#define SUBSIZE   25000
-#define THRNUM    4
+#define SIZE      800
+#define BATCHSIZE 800
+#define SUBSIZE   50
+#define THRNUM    1
 
 #define EXPECT_EQ(a,b) assert(a == b)
 #define EXPECT_EQ_S(a,b) assert(strcmp(a,b) == 1)
@@ -63,7 +63,7 @@ void* thrFunc(void * data)
 **/
 void RunTest2()
 {
-    option.logOption.disabled = true;
+   // option.logOption.disabled = true;
 
     db = new CustomDB;
     TimeStamp total;
@@ -88,6 +88,8 @@ void RunTest2()
 
         total.StopTime("Total PutTime(Thread Version): ");
 
+        db -> dump();
+
         db -> close();
     }
     
@@ -98,7 +100,7 @@ void RunTest2()
         printf("Begin Check\n");
         
         total.StartTime();
-        for(int i=0;i < BATCHSIZE;i++)
+        for(int i=0;i < SIZE;i++)
         {
             BufferPacket packet(sizeof(int)); packet << i;
             
@@ -111,8 +113,9 @@ void RunTest2()
             packet2 << value; packet2.setBeg();
             
             int num = -1; packet2 >> num;
-
-            EXPECT_EQ(i,num);
+            if(i != num)
+                cout<<i<<" "<<num<<endl;
+          //  EXPECT_EQ(i,num);
         }
         total.StopTime("GetTime(Without Cache): ");
 
