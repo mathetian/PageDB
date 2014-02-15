@@ -137,7 +137,7 @@ void RunTest2()
 int main()
 {   
     RunTest2();
-    printf("Passed All Test, Congratulations");
+    printf("Passed All Test, Congratulations\n");
 
     return 0;
 }

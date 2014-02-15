@@ -12,7 +12,7 @@
     #include <sys/time.h>
 #endif
 
-struct timeval DW2time(int dur)
+inline struct timeval DW2time(int dur)
 {
     struct timeval rs;
     rs.tv_sec  = dur / 1000;
@@ -54,6 +54,7 @@ public:
 
     void AddTime(struct timeval & totalTime)
     {
+        timeval_subtract(&difference,&curtime,&starttime);
         totalTime.tv_sec  += difference.tv_sec;
         totalTime.tv_usec += difference.tv_usec;
         if(totalTime.tv_usec >= 1000000)

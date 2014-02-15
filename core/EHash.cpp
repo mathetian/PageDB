@@ -200,7 +200,12 @@ bool Page::remove(const Slice & key, uint32_t hashVal)
 }
 
 ExtendibleHash::ExtendibleHash(HASH hashFunc) :\
-        hashFunc(hashFunc), gd(0), pn(1), fb(-1), globalLock(&tmplock), notnotnot(0), MOD((1ull << 56) - 1) { pcache = new PageCache(this); m_tmpBatch = new WriteBatch; }
+        hashFunc(hashFunc), gd(0), pn(1), fb(-1), globalLock(&tmplock), notnotnot(0), MOD((1ull << 56) - 1) 
+    { 
+        pcache = new PageCache(this); 
+        m_tmpBatch = new WriteBatch; 
+        m_totalTime.tv_sec = 0; m_totalTime.tv_usec = 0;
+    }
 
 ExtendibleHash::~ExtendibleHash()
 { 
@@ -216,6 +221,8 @@ ExtendibleHash::~ExtendibleHash()
 void ExtendibleHash::fflush()
 {
     printf("globalTimes %d\n",globalTimes);
+    printf("Disk time %d %d\n",m_totalTime.tv_sec, m_totalTime.tv_usec);
+
     pcache -> free();
     
     {
@@ -715,11 +722,14 @@ void ExtendibleHash::printThisPage(Page * page)
 
 void ExtendibleHash::runBatch(const WriteBatch * pbatch)
 {
+    m_ts.StartTime();
     datfs.seekg(0, ios_base::end);
     uint32_t curpos = datfs.tellg();
 
     BufferPacket phyPacket(pbatch->getTotalSize());
     datfs.write(phyPacket.getData(), phyPacket.getSize());
+    m_ts.StopTime();
+    m_ts.AddTime(m_totalTime);
 
     uint32_t totalSize = 0;
     WriteBatch::Iterator iterator(pbatch);
@@ -745,10 +755,11 @@ void ExtendibleHash::runBatch(const WriteBatch * pbatch)
             index = pcache -> putInto(page, addr);
 
             BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
-
+            m_ts.StartTime();
             datfs.seekg(addr, ios_base::beg);
             datfs.read(packet.getData(), packet.getSize());
-
+            m_ts.StopTime();
+            m_ts.AddTime(m_totalTime);
             page -> setByBucket(packet);
         }
 
@@ -799,7 +810,7 @@ void ExtendibleHash::runBatch(const WriteBatch * pbatch)
         
             page -> curNum = curNum2;
             p2   -> curNum = curNum3;
-            
+            m_ts.StartTime();
             datfs.seekg(0, ios_base::end);
 
             uint64_t oldpos = addr;
@@ -818,6 +829,8 @@ void ExtendibleHash::runBatch(const WriteBatch * pbatch)
       
             BufferPacket packe2 = p2 -> getPacket();
             datfs.write(packe2.getData(), packe2.getSize());
+            m_ts.StopTime();
+            m_ts.AddTime(m_totalTime);
         }
         else
         {
@@ -828,10 +841,11 @@ void ExtendibleHash::runBatch(const WriteBatch * pbatch)
             pcache -> setUpdated(index);
         }
     }
-
+    m_ts.StartTime();
     datfs.seekg(curpos, ios_base::beg);
     datfs.write(phyPacket.getData(), phyPacket.getSize());
-    
+    m_ts.StopTime();
+    m_ts.AddTime(m_totalTime);
     writeToIdxFile();
     pcache -> free();
 }
@@ -1115,9 +1129,14 @@ void ExtendibleHash::runBatch2(const WriteBatch * pbatch)
 
     {
         ScopeMutex scope(&datLock);
+        m_ts.StartTime();
+
         datfs.seekg(0, ios_base::end);
         curpos = datfs.tellg();
         datfs.write(phyPacket.getData(), phyPacket.getSize());
+
+        m_ts.StopTime();
+        m_ts.AddTime(m_totalTime);
     }    
 
     WriteBatch::Iterator iterator(pbatch);
@@ -1225,9 +1244,12 @@ LABLE:
 
             {
                 ScopeMutex lock(&datLock);
+                m_ts.StartTime();
                 assert(cur < entries.size());
                 datfs.seekg(addr, ios_base::beg);
                 datfs.read(packet.getData(), packet.getSize());
+                m_ts.StopTime();
+                m_ts.AddTime(m_totalTime);
             }
 
             page -> setByBucket(packet);
@@ -1309,9 +1331,12 @@ LABLE:
             
             {
                 ScopeMutex scope(&datLock);
+                m_ts.StartTime();
                 datfs.seekg(0, ios_base::end);
                 oldpos2 = datfs.tellg();
                 datfs.write(packe2.getData(), packe2.getSize());
+                m_ts.StopTime();
+                m_ts.AddTime(m_totalTime);
             }
             
             uint64_t oldpos = addr;
@@ -1364,8 +1389,11 @@ LABLE:
     
     {
         ScopeMutex scope(&datLock);
+        m_ts.StartTime();
         datfs.seekg(curpos, ios_base::beg);
         datfs.write(phyPacket.getData(), phyPacket.getSize());
+        m_ts.StopTime();
+        m_ts.AddTime(m_totalTime);
     }
 }
 

@@ -12,6 +12,7 @@ using namespace std;
 #include "BufferPacket.h"
 #include "HashFunction.h"
 #include "Thread.h"
+#include "TimeStamp.h"
 
 #define PAGESIZE 100
 #define SINT     sizeof(int)
@@ -330,7 +331,10 @@ private:
     Mutex          tmplock;
     Mutex          cacheElemLock[CACHESIZE];
 
+private:
     int            globalTimes;
+    TimeStamp      m_ts;  
+    struct timeval m_totalTime;  
 };
 
 typedef struct _tCacheElem{
@@ -543,8 +547,11 @@ private:
 
         {
             ScopeMutex scope(&(eHash -> datLock));
+            eHash -> m_ts.StartTime();
             eHash -> datfs.seekg(cacheElems[index].entry, ios_base::beg);
             eHash -> datfs.write(packet.getData(),packet.getSize());
+            eHash -> m_ts.StopTime();
+            eHash -> m_ts.AddTime(eHash -> m_totalTime);
         }                  
     }
 
@@ -554,8 +561,11 @@ private:
         assert(page1 != NULL);
         BufferPacket packet = page1 -> getPacket();
 
+        eHash -> m_ts.StartTime();
         eHash -> datfs.seekg(cacheElems[index].entry, ios_base::beg);
         eHash -> datfs.write(packet.getData(),packet.getSize());
+        eHash -> m_ts.StopTime();
+        eHash -> m_ts.AddTime(eHash -> m_totalTime);
     }
 
 public:
