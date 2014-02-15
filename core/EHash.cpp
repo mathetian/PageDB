@@ -215,6 +215,7 @@ ExtendibleHash::~ExtendibleHash()
 
 void ExtendibleHash::fflush()
 {
+    printf("globalTimes %d\n",globalTimes);
     pcache -> free();
     
     {
@@ -334,7 +335,6 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
     uint64_t addr    = entries.at(cur) & MOD;
     uint64_t digNum  = (entries.at(cur) & (~MOD));
     uint64_t pageNum = (digNum >> 56);
-
     Page * page = pcache -> find(addr, index);
     bool entriesUpdate = false;
 
@@ -355,18 +355,28 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
     if(page -> full() && page -> d == gd)
     {
         log -> _Trace("ExtendibleHash :: put :: full, so double-entries\n");
-        
+        printf("double\n");
         gd += 1; pn = 2*pn;
         
         int oldSize = entries.size();
-        for(int i = 0; i < oldSize; i++)
+        for(int i = 0;i < oldSize;i++)
+        {
+            uint64_t addr1    = entries.at(i) & MOD;
+            uint64_t pageNum2 = entries.at(i) & (~MOD);
+            pageNum2 >>= 56; pageNum2++; pageNum2 <<= 56;
+            entries[i] = addr1 | pageNum2;
+        }
+
+        for(int i = 0;i < oldSize;i++)
             entries.push_back(entries.at(i));
+
+        pageNum++;
     }
 
     if(page -> full() && page -> d < gd)
     {
+        globalTimes++;
         log -> _Trace("ExtendibleHash :: put :: split \n");
-
         if((page -> put(key, value, hashVal)) == 1)
         {
             pcache -> setUpdated(index);
@@ -406,17 +416,22 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
         assert(pageNum - 1 >= 0);
         pageNum--; digNum = pageNum << 56;
 
-        for(index = 0; index < entries.size(); index++)
-        {
-            uint64_t addr1 = entries.at(index) & MOD;
-            if(addr1 == oldpos)
-            {
-                if(((index >> (page -> d)) & 1) == 1)
-                    entries[index] = oldpos2 | digNum;
-                else
-                    entries[index] = oldpos | digNum;
-            }
-        }
+        oldpos2 = oldpos2 | digNum;
+        oldpos  = oldpos  | digNum;
+
+        // for(index = 0; index < entries.size(); index++)
+        // {
+        //     uint64_t addr1 = entries.at(index) & MOD;
+        //     if(addr1 == oldpos)
+        //     {
+        //         if(((index >> (page -> d)) & 1) == 1)
+        //             entries[index] = oldpos2 | digNum;
+        //         else
+        //             entries[index] = oldpos | digNum;
+        //     }
+        // }
+        uint64_t pageNum2 = 1ull << (pageNum + 1);
+        fullAddLocalD(cur, pageNum2, oldpos, oldpos2, page -> d);
 
         page -> d = p2 -> d = (page -> d) + 1;
 
@@ -740,9 +755,20 @@ void ExtendibleHash::runBatch(const WriteBatch * pbatch)
         if(page -> full() && page -> d == gd)
         {
             gd++; pn = 2*pn;
+
             int oldSize = entries.size();
-            for(int i = 0; i < oldSize; i++)
+            for(int i = 0;i < oldSize;i++)
+            {
+                uint64_t addr1    = entries.at(i) & MOD;
+                uint64_t pageNum2 = entries.at(i) & (~MOD);
+                pageNum2 >>= 56; pageNum2++; pageNum2 <<= 56;
+                entries[i] = addr1 | pageNum2;
+            }
+
+            for(int i = 0;i < oldSize;i++)
                 entries.push_back(entries.at(i));
+
+            pageNum++;
         }
 
         if(page -> full() && page -> d < gd)
@@ -782,18 +808,11 @@ void ExtendibleHash::runBatch(const WriteBatch * pbatch)
             assert(pageNum - 1 >= 0);
             pageNum--; digNum = pageNum << 56;
 
-            for(index = 0; index < entries.size(); index++)
-            {
-                uint64_t addr1 = entries.at(index) & MOD;
+            oldpos2 = oldpos2 | digNum;
+            oldpos  = oldpos  | digNum;
 
-                if(addr1 == oldpos)
-                {
-                    if(((index >> (page -> d)) & 1) == 1)
-                        entries[index] = oldpos2 | digNum;
-                    else
-                        entries[index] = oldpos | digNum;
-                }
-            }
+            uint64_t pageNum2 = 1ull << (pageNum + 1);
+            fullAddLocalD(cur, pageNum2, oldpos, oldpos2, page -> d);
 
             page -> d = p2 -> d = (page -> d) + 1;
       
@@ -1226,13 +1245,21 @@ LABLE:
                 goto LABLE;
             }
 
-            if(page -> getD() == gd)
-            {   
-                gd++; pn = 2*pn;
-                int oldSize = entries.size();
-                for(int i = 0; i < oldSize; i++)
-                    entries.push_back(entries.at(i));
+            gd++; pn = 2*pn;
+
+            int oldSize = entries.size();
+            for(int i = 0;i < oldSize;i++)
+            {
+                uint64_t addr1    = entries.at(i) & MOD;
+                uint64_t pageNum2 = entries.at(i) & (~MOD);
+                pageNum2 >>= 56; pageNum2++; pageNum2 <<= 56;
+                entries[i] = addr1 | pageNum2;
             }
+
+            for(int i = 0;i < oldSize;i++)
+                entries.push_back(entries.at(i));
+
+            pageNum++;
 
             globalLock.writeUnlock();
             cacheElemLock[index].unlock();
@@ -1292,19 +1319,23 @@ LABLE:
             assert(pageNum - 1 >= 0);
             pageNum--; digNum = pageNum << 56;
 
-            /**could be further optimization, but should consider the frequency**/
-            for(index = 0; index < entries.size(); index++)
-            {
-                uint64_t addr1 = entries.at(index) & MOD;
-                if(addr1 == oldpos)
-                {
-                    if(((index >> (od)) & 1) == 1)
-                        entries[index] = oldpos2 | digNum;
-                    else
-                        entries[index] = oldpos | digNum;
-                }
+            // for(index = 0; index < entries.size(); index++)
+            // {
+            //     uint64_t addr1 = entries.at(index) & MOD;
+            //     if(addr1 == oldpos)
+            //     {
+            //         if(((index >> (od)) & 1) == 1)
+            //             entries[index] = oldpos2 | digNum;
+            //         else
+            //             entries[index] = oldpos | digNum;
+            //     }
+            // }
 
-            }
+            oldpos2 = oldpos2 | digNum;
+            oldpos  = oldpos  | digNum;
+
+            uint64_t pageNum2 = 1ull << (pageNum + 1);
+            fullAddLocalD(cur, pageNum2, oldpos, oldpos2, od);
 
             delete p2; p2 = NULL;
         }
@@ -1335,5 +1366,34 @@ LABLE:
         ScopeMutex scope(&datLock);
         datfs.seekg(curpos, ios_base::beg);
         datfs.write(phyPacket.getData(), phyPacket.getSize());
+    }
+}
+
+void   ExtendibleHash::fullAddLocalD(int cur, uint64_t num, uint64_t pos1, uint64_t pos2, uint64_t od)
+{   
+    assert(entries.size() % num == 0);
+    uint64_t each = ((uint64_t)entries.size()) / num;
+
+    int ocur = cur; bool flag, oflag;
+
+    if(((cur >> (od)) & 1) == 1) flag = true;
+    else flag = false; oflag = flag;
+
+    while(cur >= 0)
+    {
+        if(flag == true) entries[cur] = pos2;
+        else entries[cur] = pos1;
+        
+        cur -= each; flag = !flag;
+    }
+
+    cur = ocur + each; flag = !oflag;
+
+    while(cur < entries.size())
+    {
+        if(flag == true) entries[cur] = pos2;
+        else entries[cur] = pos1;
+
+        cur += each; flag = !flag;
     }
 }

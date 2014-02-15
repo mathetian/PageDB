@@ -289,9 +289,10 @@ private:
     void     writeToIdxFile(); /**Initialization, so write something into file**/
     void     readFromFile();/**Read the Index information**/
     int      findSuitableOffset(int size);
-
     void     printThisPage(Page * page);
     
+    void     fullAddLocalD(int cur, uint64_t num, uint64_t pos1, uint64_t pos2, uint64_t od);
+
 private:
     HASH      hashFunc;
     bool      updated, eupdated; /**two files update status**/

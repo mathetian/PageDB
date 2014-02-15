@@ -166,6 +166,10 @@ Performance, when we disabled the log, the read performance has obvious advancem
 
 Great, achieve compact. However. the efficiency of compact is very slow when we use batch in write phase. However, it can achieve 34M/57M performance in general put method. Further optimization can be adopted. However, very hard and time-consuming.
 --------------------------------------------------------------
+V0.07 Add fast search in Split
+
+10%~20% performance improvement. Not very ideal.
+--------------------------------------------------------------
 Best practise in coding life,
 1. Build it
 2. Write(find) a basic test to testify it
