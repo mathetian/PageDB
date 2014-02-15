@@ -63,11 +63,18 @@ void RunTest2()
         printf("open successful for RunTest2 in compact\n");
         db -> compact();
 
+        db -> close();
+    }
+
+    {
+        db -> open(option);
+        printf("open successful for RunTest2 in test After compact\n");
+
         EXPECT_EQ(db -> get("hello"), Slice("world"));
         EXPECT_EQ(db -> get("hello1"), Slice("world1"));
         EXPECT_EQ(db -> get("hello12"), Slice("world123"));
 
-        db -> close();
+        db -> close();  
     }
 
     delete db;

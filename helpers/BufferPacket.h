@@ -15,9 +15,12 @@ class BufferPacket{
 public:
 	BufferPacket(int size);
    ~BufferPacket();
+    /**How big the bug is**/
     BufferPacket(const BufferPacket & packet)
     {
     	data = new char[packet.size];
+    	memcpy(data, packet.data, packet.size);
+
     	size = packet.size;
     	cur  = packet.cur;
     }
@@ -27,11 +30,14 @@ public:
     	if(size != 0) delete [] data;
     	
     	data = new char[packet.size];
+    	memcpy(data, packet.data, packet.size);
+
     	size = packet.size;
     	cur  = packet.cur;
 
     	return *this;
     }
+
 public:
 	BufferPacket & operator << (int ivalue);
 	BufferPacket & operator << (size_t st);

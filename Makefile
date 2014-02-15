@@ -20,10 +20,10 @@ thread:
 	${CXX}  ${HEADER} helpers/ThreadPool.cpp -o thread -std=c++0x
 
 db_test: tests/db_test.cpp
-	$(CXX) ${CXXFLAGS} ${HEADER} $^ -lpthread  -pthread -o $@ ${LDLIBS}
+	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread $^  -o $@ ${LDLIBS}
 
-db_test2: tests/db_test2.cpp
-	$(CXX) ${CXXFLAGS} ${HEADER} $^ -o $@ ${LDLIBS}
+db_test2: tests/db_test2.cpp 
+	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread  $^ -o $@ ${LDLIBS}
 
 db_test3: tests/db_test3.cpp
 	$(CXX) ${CXXFLAGS} ${HEADER} $^ -o $@ ${LDLIBS}

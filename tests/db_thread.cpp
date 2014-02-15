@@ -122,9 +122,66 @@ void RunTest1()
     delete db;
 }
 
+/**
+    Test for compact
+**/
+void RunTest2()
+{
+    option.logOption.disabled = true;
+    option.logOption.logLevel = LOG_FATAL;
+    
+    db = new CustomDB;
+    TimeStamp total;
+    
+    {
+        db -> open(option);
+        printf("open successful, Test After compact\n");
+        
+        total.StartTime();
+
+        db -> compact();
+        
+        total.StopTime("Compact time: ");   
+
+        db -> close();
+    }
+
+    {
+        db -> open(option);
+        printf("open successful\n");
+
+        printf("Begin Check\n");
+        
+        total.StartTime();
+        for(int i=0;i < SIZE;i++)
+        {
+            BufferPacket packet(sizeof(int)); packet << i;
+            
+            Slice key(packet.getData(), sizeof(int));
+
+            Slice value = db -> get(key);
+
+            BufferPacket packet2(sizeof(int));
+            
+            packet2 << value; packet2.setBeg();
+            
+            int num = -1; packet2 >> num;
+
+            EXPECT_EQ(i,num);
+        }
+        
+        total.StopTime("GetTime(Without Cache): ");
+
+        db -> close();
+    }
+   
+    delete db;
+}
+
 int main()
 {   
     RunTest1();
+    RunTest2();
     printf("Passed All Test, Congratulations");
     return 0;
 }

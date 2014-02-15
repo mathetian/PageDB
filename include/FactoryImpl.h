@@ -209,7 +209,7 @@ public:
     int          getSize() { return SINT*2 + sizeof(elements);}
 
 private:
-    bool   full() { assert(curNum < PAGESIZE + 3); return curNum >= PAGESIZE; }
+    bool   full() { if(curNum >= PAGESIZE + 3) printf("xxx:%d\n", curNum); assert(curNum < PAGESIZE + 3); return curNum >= PAGESIZE; }
     bool   put(const Slice & key,const Slice & value, uint32_t hashVal);
     Slice  get(const Slice & key, uint32_t hashVal);
     bool   remove(const Slice & key, uint32_t hashVal);

@@ -151,13 +151,16 @@ Speed performance, 25s/100M, and the speed will be slow enough with the increasi
 V0.035, the fasted record is 10.5s/100M in my experiment.
 --------------------------------------------------------------
 V0.04, add multiple-threading programming technology.
-Speed is almost same as previous experiment(I guess the parallel technology I take affects it.
+Speed is almost same as previous experiment(I guess the parallel technology I take affects it).
+
+Add another mp technolgy, however, the performance is still the same. Bottleneck is in disk?
 --------------------------------------------------------------
 V0.05, add async-w/r technology.
 --------------------------------------------------------------
 V0.06, add compact feature, add log disabled option
 Performance, when we disabled the log, the read performance has obvious advancement.
  
+
 --------------------------------------------------------------
 Best practise in coding life,
 1. Build it

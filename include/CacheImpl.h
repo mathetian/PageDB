@@ -11,6 +11,7 @@ using namespace std;
 
 #include "Log.h"
 #include "Slice.h"
+#include "Thread.h"
 
 class BaseCache
 {
