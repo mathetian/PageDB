@@ -22,6 +22,8 @@ public:
 public:
     virtual bool    put(const Slice & key, const Slice & value)
     {
+        ScopeMutex scope(&m_mutex);
+
         if(softMap.find(key) == softMap.end())
         {
             softMap[key] = value;
@@ -29,16 +31,22 @@ public:
         }
         return false;
     }
+    
     virtual Slice  	get(const Slice & key)
     {
+        ScopeMutex scope(&m_mutex);
+        
         if(softMap.find(key) == softMap.end())
             return "";
         return softMap[key];
     }
+
     virtual bool    remove(const Slice & key) { return softMap.erase(key); }
     
     vector<Slice>   keys()
     {
+        ScopeMutex scope(&m_mutex);
+        
         map<Slice, Slice>::iterator itMap = softMap.begin();
         vector<Slice> rsv;
         for(; itMap != softMap.end(); itMap++)
@@ -48,6 +56,8 @@ public:
 
     virtual void    clear()
     {
+        ScopeMutex scope(&m_mutex);
+
         softMap.erase(softMap.begin(),softMap.end());
     }
 
@@ -56,6 +66,7 @@ protected:
 	
 private:
     map<Slice, Slice> softMap;
+    Mutex m_mutex;
 };
 
 class LimitedMemoryCache : public BaseCache
@@ -72,7 +83,6 @@ public:
 
 public:
     virtual bool   put(const Slice & key, const Slice & value);
-    virtual Slice  get(const Slice & key);
     virtual bool   remove(const Slice & key);
     virtual void   clear();
 
@@ -87,8 +97,10 @@ protected:
     const static int defaultCacheSizeInMB;
 
 private:
-    int cacheLimit, cacheSize;
+    const int cacheLimit;
+    Atomic cacheSize;
     set <Slice> hardCache;
+    Mutex m_mutex;
 };
 
 class FIFOLimitedMemoryCache : public LimitedMemoryCache
@@ -102,7 +114,6 @@ public:
 
 public:
     bool    put(const Slice & key, const Slice & value);
-    Slice   get(const Slice & key);
     bool    remove(const Slice & key);
     void    clear();
 
@@ -111,6 +122,7 @@ public:
 
 private:
     list <Slice> sQue;
+    Mutex        m_mutex;
 };
 
 class LRULimitedMemoryCache : public LimitedMemoryCache
@@ -132,6 +144,7 @@ public:
 
 private:
     list <Slice> sQue;
+    Mutex       m_mutex;
 };
 
 #endif
