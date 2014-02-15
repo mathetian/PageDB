@@ -175,3 +175,9 @@ Best practise in coding life,
 2. Write(find) a basic test to testify it
 --------------------------------------------------------------
 Bottleneck has been found, the updated time of page.
+
+Three method to remedy it.
+
+1. AIO
+2. Use fcntl(However, need much times to implement it.)
+3. MMAP + dup, maybe.
