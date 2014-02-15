@@ -156,6 +156,8 @@ Speed is almost same as previous experiment(I guess the parallel technology I ta
 Add another mp technolgy, however, the performance is still the same. Bottleneck is in disk?
 
 V0.045, add `log lock` and `cache lock`. The style of `cache lock` is very ugly.
+
+How to use lock(atomic or others)?
 --------------------------------------------------------------
 V0.05, add async-w/r technology.
 --------------------------------------------------------------

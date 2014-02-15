@@ -200,7 +200,7 @@ bool Page::remove(const Slice & key, uint32_t hashVal)
 }
 
 ExtendibleHash::ExtendibleHash(HASH hashFunc) :\
-        hashFunc(hashFunc), gd(0), pn(1), fb(-1), globalLock(&tmplock), notnotnot(0) { pcache = new PageCache(this); m_tmpBatch = new WriteBatch; }
+        hashFunc(hashFunc), gd(0), pn(1), fb(-1), globalLock(&tmplock), notnotnot(0), MOD((1ull << 56) - 1) { pcache = new PageCache(this); m_tmpBatch = new WriteBatch; }
 
 ExtendibleHash::~ExtendibleHash()
 { 
@@ -301,9 +301,9 @@ void ExtendibleHash::writeToIdxFile()
 {
     idxfs.seekg(0,ios_base::beg);
     
-    BufferPacket packet(SINT * 3 + entries.size()*SINT);
+    BufferPacket packet(SINT * 3 + entries.size()*SINT64);
     packet << gd << pn << fb;
-    packet.write((char*)&entries[0], entries.size()*SINT);
+    packet.write((char*)&entries[0], entries.size()*SINT64);
 
     idxfs.write(packet.getData(),packet.getSize());
 }
@@ -318,9 +318,9 @@ void ExtendibleHash::readFromFile()
     int gd1, pn1, fb1;
     packet >> gd1 >> pn1 >> fb1;
     gd = gd1; pn = pn1; fb = fb1;
-    entries = vector<int> (1 << gd, 0);
+    entries = vector<uint64_t> (1 << gd, 0);
 
-    idxfs.read((char*)&entries[0], entries.size()*SINT);
+    idxfs.read((char*)&entries[0], entries.size()*SINT64);
 }
 
 bool ExtendibleHash::put(const Slice & key,const Slice & value)
@@ -330,17 +330,22 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
     int cur     = hashVal & ((1 << gd) -1);
 
     int index = 0;
-    Page * page = pcache -> find(entries.at(cur), index);
+
+    uint64_t addr    = entries.at(cur) & MOD;
+    uint64_t digNum  = (entries.at(cur) & (~MOD));
+    uint64_t pageNum = (digNum >> 56);
+
+    Page * page = pcache -> find(addr, index);
     bool entriesUpdate = false;
 
     if(page == NULL) 
     {
         page = new Page(this);
-        index = pcache -> putInto(page, entries.at(cur));
+        index = pcache -> putInto(page, addr);
 
         BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
 
-        datfs.seekg(entries.at(cur), ios_base::beg);
+        datfs.seekg(addr, ios_base::beg);
         datfs.read(packet.getData(), packet.getSize());
 
         page -> setByBucket(packet);
@@ -361,6 +366,7 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
     if(page -> full() && page -> d < gd)
     {
         log -> _Trace("ExtendibleHash :: put :: split \n");
+
         if((page -> put(key, value, hashVal)) == 1)
         {
             pcache -> setUpdated(index);
@@ -394,25 +400,30 @@ bool ExtendibleHash::put(const Slice & key,const Slice & value)
 
         datfs.seekg(0, ios_base::end);
 
-        int oldpos  = entries.at(cur);
-        int oldpos2 = datfs.tellg();
+        uint64_t oldpos  = addr;
+        uint64_t oldpos2 = datfs.tellg();
+        
+        assert(pageNum - 1 >= 0);
+        pageNum--; digNum = pageNum << 56;
 
         for(index = 0; index < entries.size(); index++)
         {
-            if(entries.at(index) == oldpos)
+            uint64_t addr1 = entries.at(index) & MOD;
+            if(addr1 == oldpos)
             {
                 if(((index >> (page -> d)) & 1) == 1)
-                    entries[index] = oldpos2;
+                    entries[index] = oldpos2 | digNum;
                 else
-                    entries[index] = oldpos;
+                    entries[index] = oldpos | digNum;
             }
         }
 
         page -> d = p2 -> d = (page -> d) + 1;
 
         BufferPacket packe2 = p2 -> getPacket();
-        /**As I have move the pointer to the end of file, so just write**/
         datfs.write(packe2.getData(), packe2.getSize());
+
+        delete p2; p2 = NULL;
     }
     else
     {
@@ -438,16 +449,19 @@ Slice ExtendibleHash::get(const Slice & key)
     int cur = hashVal & ((1 << gd) -1);
 
     int index = 0;
-    Page * page = pcache -> find(entries.at(cur), index);
+    
+    uint64_t addr    =  entries.at(cur) & MOD;
+
+    Page * page = pcache -> find(addr, index);
     
     if(page == NULL) 
     {
         page = new Page(this);
-        pcache -> putInto(page, entries.at(cur));
+        pcache -> putInto(page, addr);
 
         BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
 
-        datfs.seekg(entries.at(cur), ios_base::beg);
+        datfs.seekg(addr, ios_base::beg);
         datfs.read(packet.getData(), packet.getSize());
 
         page -> setByBucket(packet);
@@ -466,16 +480,19 @@ bool ExtendibleHash::remove(const Slice & key)
     int cur   = hashVal & ((1 << gd) -1);
     
     int index = 0;
-    Page * page = pcache -> find(entries.at(cur), index);
+    
+    uint64_t addr    =  entries.at(cur) & MOD;
+
+    Page * page = pcache -> find(addr, index);
     
     if(page == NULL) 
     {
         page = new Page(this);
-        index = pcache -> putInto(page, entries.at(cur));
+        index = pcache -> putInto(page, addr);
 
         BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
 
-        datfs.seekg(entries.at(cur), ios_base::beg);
+        datfs.seekg(addr, ios_base::beg);
         datfs.read(packet.getData(), packet.getSize());
 
         page -> setByBucket(packet);
@@ -487,7 +504,7 @@ bool ExtendibleHash::remove(const Slice & key)
     {
         BufferPacket npacket = page -> getPacket();
         
-        datfs.seekg(entries.at(cur), ios_base::beg);
+        datfs.seekg(addr, ios_base::beg);
         datfs.write(npacket.getData(), npacket.getSize());
 
         pcache -> setUpdated(index);
@@ -641,8 +658,10 @@ void ExtendibleHash::dump()
 
         if(j != cur) continue;
 
+        uint64_t addr    = entries.at(cur) & MOD;
+
         BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
-        datfs.seekg(entries.at(cur), ios_base::beg);
+        datfs.seekg(addr, ios_base::beg);
         datfs.read(packet.getData(), packet.getSize());
 
         page -> setByBucket(packet);
@@ -698,17 +717,21 @@ void ExtendibleHash::runBatch(const WriteBatch * pbatch)
         uint32_t hashVal = hashFunc(key);
         int cur   = hashVal & ((1 << gd) -1);
         int index = 0;
+        
+        uint64_t addr    =  entries.at(cur) & MOD;
+        uint64_t digNum  = (entries.at(cur) & (~MOD));
+        uint64_t pageNum = (digNum >> 56);
 
-        Page * page = pcache -> find(entries.at(cur), index);
+        Page * page = pcache -> find(addr, index);
 
         if(page == NULL) 
         {
             page  = new Page(this);
-            index = pcache -> putInto(page, entries.at(cur));
+            index = pcache -> putInto(page, addr);
 
             BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
 
-            datfs.seekg(entries.at(cur), ios_base::beg);
+            datfs.seekg(addr, ios_base::beg);
             datfs.read(packet.getData(), packet.getSize());
 
             page -> setByBucket(packet);
@@ -751,20 +774,24 @@ void ExtendibleHash::runBatch(const WriteBatch * pbatch)
             page -> curNum = curNum2;
             p2   -> curNum = curNum3;
             
-            /**Can focus on whether it can be reduced to zero**/
             datfs.seekg(0, ios_base::end);
 
-            int oldpos = entries.at(cur);
-            int oldpos2 = datfs.tellg();
-            /**what's wrong with this line**/
+            uint64_t oldpos = addr;
+            uint64_t oldpos2 = datfs.tellg();
+
+            assert(pageNum - 1 >= 0);
+            pageNum--; digNum = pageNum << 56;
+
             for(index = 0; index < entries.size(); index++)
             {
-                if(entries.at(index) == oldpos)
+                uint64_t addr1 = entries.at(index) & MOD;
+
+                if(addr1 == oldpos)
                 {
                     if(((index >> (page -> d)) & 1) == 1)
-                        entries[index] = oldpos2;
+                        entries[index] = oldpos2 | digNum;
                     else
-                        entries[index] = oldpos;
+                        entries[index] = oldpos | digNum;
                 }
             }
 
@@ -915,8 +942,10 @@ void  ExtendibleHash::compact()
 
         if(j != cur) continue;
 
+        uint64_t addr    = entries.at(cur) & MOD;
+
         BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
-        datfs.seekg(entries.at(cur), ios_base::beg);
+        datfs.seekg(addr, ios_base::beg);
         datfs.read(packet.getData(), packet.getSize());
 
         page -> setByBucket(packet);
@@ -998,9 +1027,17 @@ void  ExtendibleHash::compact()
                 }
             }
 
+            if(ids.size() != 1) 
+                assert(ids.size() % 2 == 0);
+            
             for(int j=0;j<ids.size();j++)
             {
-                entries[ids.at(j)] = uds;
+                uint64_t pageNum = ids.size(); uint64_t k = 0;
+                while(pageNum > 1)
+                {
+                    k++; pageNum >>= 1;
+                }
+                entries[ids.at(j)] = uds | (k << 56);
             }
 
             BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
@@ -1071,7 +1108,6 @@ void ExtendibleHash::runBatch2(const WriteBatch * pbatch)
         Slice key   = node -> first;
         Slice value = node -> second;
 
-     //   cout<<"1123:"<< key.returnAsInt() << endl;
         uint32_t hashVal = hashFunc(key);
         /**Sooorry, I need use jump to**/
         int globalFlag = 0;
@@ -1087,16 +1123,20 @@ LABLE:
         }
 
         int cur   = hashVal & ((1 << gd) -1);
-        assert((1<<gd) <= entries.size());
+        assert((1<<gd) == entries.size());
         int index = 0;
+
+        uint64_t addr    =  entries.at(cur) & MOD;
+        uint64_t digNum  = (entries.at(cur) & (~MOD));
+        uint64_t pageNum = (digNum >> 56);
 
         page = NULL;
 
         {
-            // ScopeMutex scope(&cacheLock);
             cacheLock.lock();
             assert(cur < entries.size());
-            page = pcache -> find(entries.at(cur), index);
+            
+            page = pcache -> find(addr, index);
 
             if(page != NULL)
             {
@@ -1117,7 +1157,7 @@ LABLE:
 
         if(page != NULL)
         {
-            if(page == pcache -> cacheElems[index].page && entries.at(cur) == pcache -> cacheElems[index].entry)
+            if(page == pcache -> cacheElems[index].page && addr == pcache -> cacheElems[index].entry)
             {
             }
             else
@@ -1128,7 +1168,7 @@ LABLE:
                     printf("notice21\n");
                 else 
                 {
-                    cout<<entries.at(cur)<<endl;
+                    cout<<addr<<endl;
                     cout<<pcache -> cacheElems[index].entry<<endl;
                     printf("notice22\n");
                 }
@@ -1149,7 +1189,7 @@ LABLE:
             {                
                 {
                     ScopeMutex lock(&cacheLock);
-                    index = pcache -> findLockable(page, entries.at(cur));
+                    index = pcache -> findLockable(page, addr);
                 }
                 
                 if(globalFlag == 1) assert(index != -1);
@@ -1167,7 +1207,7 @@ LABLE:
             {
                 ScopeMutex lock(&datLock);
                 assert(cur < entries.size());
-                datfs.seekg(entries.at(cur), ios_base::beg);
+                datfs.seekg(addr, ios_base::beg);
                 datfs.read(packet.getData(), packet.getSize());
             }
 
@@ -1202,6 +1242,8 @@ LABLE:
         }
         else if(page -> full())
         {
+            globalTimes++;
+
             page -> replaceQ(key, value, hashVal, totalSize + curpos);
             phyPacket << key << value;
             totalSize += key.size() + value.size();
@@ -1229,7 +1271,7 @@ LABLE:
                     page -> addElement(page -> getElement2(index));
             }
             
-            int oldpos2;
+            uint64_t oldpos2;
 
             int od = page -> getD();
 
@@ -1244,20 +1286,24 @@ LABLE:
                 oldpos2 = datfs.tellg();
                 datfs.write(packe2.getData(), packe2.getSize());
             }
-
-            assert(cur < entries.size());
-            int oldpos = entries.at(cur);
             
+            uint64_t oldpos = addr;
+
+            assert(pageNum - 1 >= 0);
+            pageNum--; digNum = pageNum << 56;
+
             /**could be further optimization, but should consider the frequency**/
             for(index = 0; index < entries.size(); index++)
             {
-                if(entries.at(index) == oldpos)
+                uint64_t addr1 = entries.at(index) & MOD;
+                if(addr1 == oldpos)
                 {
                     if(((index >> (od)) & 1) == 1)
-                        entries[index] = oldpos2;
+                        entries[index] = oldpos2 | digNum;
                     else
-                        entries[index] = oldpos;
+                        entries[index] = oldpos | digNum;
                 }
+
             }
 
             delete p2; p2 = NULL;

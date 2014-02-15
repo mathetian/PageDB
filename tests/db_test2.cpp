@@ -127,7 +127,7 @@ void RunTest2()
 
 int main()
 {
-    RunTest2();
+    RunTest1();
     printf("Passed All Tests\n");
     return 0;
 }

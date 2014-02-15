@@ -15,6 +15,7 @@ using namespace std;
 
 #define PAGESIZE 100
 #define SINT     sizeof(int)
+#define SINT64   sizeof(uint64_t)
 
 #define SCEBLOCK sizeof(CEmptyBlock)
 #define SELEM    sizeof(CElement)
@@ -304,8 +305,9 @@ private:
 private:
     /**Need read from file**/
     volatile int  gd, pn, fb;
-    vector <int>  entries; /**Page entries, just offset for each page**/
+    vector <uint64_t>  entries; /**Page entries, just offset for each page**/
     struct Writer;
+    const uint64_t MOD;
 
 private:
     deque<Writer*> m_writers;
@@ -326,6 +328,8 @@ private:
     RWLock         globalLock;
     Mutex          tmplock;
     Mutex          cacheElemLock[CACHESIZE];
+
+    int            globalTimes;
 };
 
 typedef struct _tCacheElem{
