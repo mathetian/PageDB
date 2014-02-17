@@ -9,7 +9,7 @@ using namespace std;
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "Thread.h"
+#include "../helpers/Thread.h"
 
 enum LOG_TYPE { LOG_DEBUG = 1, LOG_TRACE = 2, LOG_WARN  = 3, LOG_ERROR = 4, LOG_FATAL = 5};
 

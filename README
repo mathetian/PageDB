@@ -181,3 +181,5 @@ Three method to remedy it.
 1. AIO
 2. Use fcntl(However, need much times to implement it.)
 3. MMAP + dup, maybe.
+--------------------------------------------------------------
+Zero Tolerable Policy.
