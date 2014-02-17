@@ -44,6 +44,7 @@ struct FactoryOption_t
     int factoryType;
     FactoryOption_t() { factoryType = EHASH; }
 };
+
 /******************************/
 struct LogOption_t
 {
@@ -52,9 +53,9 @@ struct LogOption_t
     bool         disabled;
     LogOption_t()
     {
-        logLevel = LOG_WARN;
+        logLevel  = LOG_WARN;
         logPrefix = "demo";
-        disabled = false;
+        disabled  = false;
     }
 };
 
@@ -66,6 +67,7 @@ typedef struct FactoryOption_t FactoryOption;
 typedef struct LogOption_t     LogOption;
 
 /*******************************/
+
 struct Options_t
 {
     CacheOption   cacheOption;

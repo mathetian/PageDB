@@ -8,10 +8,12 @@
 
 #include "Slice.h"
 
-uint32_t MurmurHash3(const Slice & key);
+namespace customdb{
 
+uint32_t MurmurHash3(const Slice & key);
 /**Two samples to describe how to use it**/
 /**Bad Hashing Function for Integer-like string**/
 uint32_t DefaultHashFunc(const Slice & key);
 
+}
 #endif

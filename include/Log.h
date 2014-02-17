@@ -9,7 +9,10 @@ using namespace std;
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../helpers/Thread.h"
+#include "../utils/Thread.h"
+using utils::Mutex;
+
+namespace customdb{
 
 enum LOG_TYPE { LOG_DEBUG = 1, LOG_TRACE = 2, LOG_WARN  = 3, LOG_ERROR = 4, LOG_FATAL = 5};
 
@@ -44,4 +47,5 @@ private:
     void   GetCurrentTm(int tag, size_t size, char * buf);
 };
 
+};
 #endif
