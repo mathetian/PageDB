@@ -3,7 +3,8 @@
 
 #include "LMCache.h"
 
-namespace customdb{
+namespace customdb
+{
 
 class FIFOLimitedMemoryCache : public LimitedMemoryCache
 {

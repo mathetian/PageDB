@@ -3,20 +3,22 @@
 
 #include <string>
 #include <iostream>
-#include <fstream>
-using namespace std;
+using std::string;
+using std::ostream;
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 #include "../utils/Thread.h"
 using utils::Mutex;
 
-namespace customdb{
+namespace customdb
+{
 
 enum LOG_TYPE { LOG_DEBUG = 1, LOG_TRACE = 2, LOG_WARN  = 3, LOG_ERROR = 4, LOG_FATAL = 5};
 
-extern std::ostream& operator<<(std::ostream& out, const LOG_TYPE value);
+extern ostream& operator<<(ostream& out, const LOG_TYPE value);
 
 class Log
 {
@@ -40,7 +42,7 @@ private:
     static Mutex     m_mutex;
     static bool      m_disabled;
 
-private:    
+private:
     Log() {}
     string GetLogFileName();
     void   WriteLog(LOG_TYPE outLevel,const char* format,va_list args);

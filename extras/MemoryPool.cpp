@@ -25,7 +25,7 @@ int MemoryPool::calculateNeededChunks(size_t size)
 
 MemoryChunk * MemoryPool::skipChunk(MemoryChunk * chunk,int step)
 {
-    while(step--) 
+    while(step--)
     {
         chunk = chunk -> nextChunk;
         if(!chunk) break;
@@ -36,9 +36,10 @@ MemoryChunk * MemoryPool::skipChunk(MemoryChunk * chunk,int step)
 MemoryChunk * MemoryPool::findSuitableChunks(int chunkNum)
 {
     if(m_freeMemoryPoolSize <= chunkNum * m_eachChunkSize) return NULL;
-    MemoryChunk * chunk = curChunk, * oldChunk = curChunk; int f = 1;
+    MemoryChunk * chunk = curChunk, * oldChunk = curChunk;
+    int f = 1;
     while(chunk != oldChunk || f != 0)
-    {   
+    {
         if(chunk -> totalChunk >= chunkNum)
         {
             if(chunk -> usedChunk == 0)
@@ -48,7 +49,7 @@ MemoryChunk * MemoryPool::findSuitableChunks(int chunkNum)
         chunk = skipChunk(chunk, step);
         if(chunk == NULL) chunk = firstChunk;
         f = 0;
-    } 
+    }
     if(chunk == oldChunk) return NULL;
     return chunk;
 }
@@ -57,26 +58,27 @@ bool MemoryPool::allocateMemory(size_t size)
 {
     int needChunks = calculateNeededChunks(size);
     int needSize   = needChunks * m_eachChunkSize;
-   
+
     char * memoryData    = new char[needSize];
     MemoryChunk * chunks = new MemoryChunk[needChunks];
-    
+
     if(!memoryData || ! chunks)
     {
         if(memoryData) delete [] memoryData;
         if(chunks) delete [] chunks;
-        memoryData = NULL; chunks = NULL;
+        memoryData = NULL;
+        chunks = NULL;
         fprintf(stderr,"Error : allocateMemory error, maybe run out of memory\n.");
         return false;
-    }    
+    }
 
     m_totalMemoryPoolSize += needSize;
     m_freeMemoryPoolSize  += needSize;
-    
+
     memset(chunks,0xff,sizeof(MemoryChunk) * needChunks);
 
     int offset = 0, index = 0;
-    for(;index < needChunks;index++)
+    for(; index < needChunks; index++)
     {
         if(firstChunk == NULL)
         {
@@ -84,9 +86,9 @@ bool MemoryPool::allocateMemory(size_t size)
             curChunk = lastChunk = chunks;
         }
         else
-        {  
+        {
             lastChunk -> nextChunk = \
-                chunks + index;
+                                     chunks + index;
             lastChunk = chunks + index;
         }
         chunks[index].totalChunk = needChunks - index;
@@ -121,20 +123,20 @@ bool MemoryPool::freeMemory(char * data, size_t size)
     MemoryChunk * chunk = firstChunk;
     while(chunk && chunk -> data != data)
         chunk =  chunk -> nextChunk;
-    
-    if(!chunk || chunk -> usedChunk != needChunks) 
+
+    if(!chunk || chunk -> usedChunk != needChunks)
         return false;
-    
+
     if(chunk -> usedChunk == needChunks)
         chunk -> usedChunk = 0;
-    
+
     return true;
 }
 
 void MemoryPool::freeAllMemory()
 {
     MemoryChunk * chunk = firstChunk;
-    
+
     while(chunk)
     {
         if(chunk -> header == true)
@@ -148,7 +150,7 @@ void MemoryPool::freeAllChunks()
 {
     MemoryChunk * dleChunk = NULL;
     MemoryChunk * curChunk = firstChunk;
-    
+
     while(curChunk)
     {
         if(curChunk -> header == true)
@@ -160,7 +162,7 @@ void MemoryPool::freeAllChunks()
         curChunk = curChunk -> nextChunk;
     }
 
-    if(dleChunk) 
+    if(dleChunk)
         delete [] dleChunk;
     dleChunk = NULL;
 }

@@ -30,34 +30,34 @@ void TimeStamp::ElapseTime(const char * str)
 {
     SubtractTime(&difference,&curtime,&starttime);
     cout<<str<<" "<<difference.tv_sec<<"s "<<difference.tv_usec<<"us"<<endl;
-}   
+}
 
 struct timeval TimeStamp::GetDiffTime()
 {
-	SubtractTime(&difference, &starttime, &curtime);
-	return difference;
+    SubtractTime(&difference, &starttime, &curtime);
+    return difference;
 }
 
-int TimeStamp::SubtractTime(struct timeval *result, struct timeval *x, struct timeval *y) 
+int TimeStamp::SubtractTime(struct timeval *result, struct timeval *x, struct timeval *y)
 {
-  if (x->tv_usec < y->tv_usec) 
-  {
-		int nsec = (y->tv_usec - x->tv_usec) / 1000000 + 1;
-		y->tv_usec -= 1000000 * nsec;
-		y->tv_sec += nsec;
-  }
-  
-  if (x->tv_usec - y->tv_usec > 1000000) 
-  {
-		int nsec = (x->tv_usec - y->tv_usec) / 1000000;
-		y->tv_usec += 1000000 * nsec;
-		y->tv_sec -= nsec;
-  }
+    if (x->tv_usec < y->tv_usec)
+    {
+        int nsec = (y->tv_usec - x->tv_usec) / 1000000 + 1;
+        y->tv_usec -= 1000000 * nsec;
+        y->tv_sec += nsec;
+    }
 
-  result->tv_sec = x->tv_sec - y->tv_sec;
-  result->tv_usec = x->tv_usec - y->tv_usec;
+    if (x->tv_usec - y->tv_usec > 1000000)
+    {
+        int nsec = (x->tv_usec - y->tv_usec) / 1000000;
+        y->tv_usec += 1000000 * nsec;
+        y->tv_sec -= nsec;
+    }
 
-  return x->tv_sec < y->tv_sec;
+    result->tv_sec = x->tv_sec - y->tv_sec;
+    result->tv_usec = x->tv_usec - y->tv_usec;
+
+    return x->tv_sec < y->tv_sec;
 }
 
 struct timeval TimeStamp::DW2time(int dur)
@@ -70,28 +70,28 @@ struct timeval TimeStamp::DW2time(int dur)
 
 TimeAccumulator::TimeAccumulator()
 {
-	ResetTime();
+    ResetTime();
 }
 
 void TimeAccumulator::ResetTime()
 {
-	m_totalTime.tv_sec  = 0;
-	m_totalTime.tv_usec = 0;
+    m_totalTime.tv_sec  = 0;
+    m_totalTime.tv_usec = 0;
 }
 
 void TimeAccumulator::StartTime()
 {
-	m_ts.StartTime();
+    m_ts.StartTime();
 }
 
 void TimeAccumulator::StopTime()
 {
-	m_ts.StopTime();
-	m_difference = m_ts.GetDiffTime();
+    m_ts.StopTime();
+    m_difference = m_ts.GetDiffTime();
 
     m_totalTime.tv_sec  += m_difference.tv_sec;
     m_totalTime.tv_usec += m_difference.tv_usec;
-    
+
     if(m_totalTime.tv_usec >= 1000000)
     {
         m_totalTime.tv_sec++;
@@ -101,9 +101,9 @@ void TimeAccumulator::StopTime()
 
 void TimeAccumulator::PrintTime(const char *str)
 {
-  cout<<str<<" :"<<m_totalTime.tv_sec<<"s "<<m_totalTime.tv_usec<<"us"<<endl;
+    cout<<str<<" :"<<m_totalTime.tv_sec<<"s "<<m_totalTime.tv_usec<<"us"<<endl;
 
-	ResetTime();
+    ResetTime();
 }
 
 

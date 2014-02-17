@@ -14,7 +14,8 @@ using utils::Mutex;
 using utils::Atomic;
 using utils::ScopeMutex;
 
-namespace customdb{
+namespace customdb
+{
 
 class BaseCache
 {
@@ -29,7 +30,7 @@ public:
     virtual void    clear();
 
 protected:
-	Log   * log;
+    Log   * log;
 
 private:
     map<Slice, Slice> softMap;

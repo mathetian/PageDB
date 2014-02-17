@@ -61,7 +61,8 @@ uint32_t MurmurHash3(const Slice & key)
 
     const uint32_t * blocks = (const uint32_t *)(data + nblocks*4);
 
-    for(i = -nblocks; i; i++) {
+    for(i = -nblocks; i; i++)
+    {
         uint32_t k1 = getblock(blocks,i);
 
         k1 *= c1;
@@ -69,7 +70,7 @@ uint32_t MurmurHash3(const Slice & key)
         k1 *= c2;
 
         h1 ^= k1;
-        h1 = ROTL32(h1,13); 
+        h1 = ROTL32(h1,13);
         h1 = h1*5+0xe6546b64;
     }
 
@@ -77,11 +78,18 @@ uint32_t MurmurHash3(const Slice & key)
 
     uint32_t k1 = 0;
 
-    switch(len & 3) {
-        case 3: k1 ^= tail[2] << 16;
-        case 2: k1 ^= tail[1] << 8;
-        case 1: k1 ^= tail[0];
-                k1 *= c1; k1 = ROTL32(k1,15); k1 *= c2; h1 ^= k1;
+    switch(len & 3)
+    {
+    case 3:
+        k1 ^= tail[2] << 16;
+    case 2:
+        k1 ^= tail[1] << 8;
+    case 1:
+        k1 ^= tail[0];
+        k1 *= c1;
+        k1 = ROTL32(k1,15);
+        k1 *= c2;
+        h1 ^= k1;
     }
 
     h1 ^= len;

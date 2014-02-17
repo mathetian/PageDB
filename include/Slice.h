@@ -5,13 +5,14 @@
 #include <string>
 using namespace std;
 
-namespace customdb{
+namespace customdb
+{
 
 class Slice
 {
 public:
     Slice();
-    ~Slice();   
+    ~Slice();
 
 public:
     Slice(size_t n);

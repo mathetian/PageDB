@@ -24,17 +24,17 @@ void RunTest1()
     {
         db -> open(option);
         printf("open successful for put\n");
-        
+
         ts.StartTime();
 
-        for(int i=1;i<=SIZE;i++)
+        for(int i=1; i<=SIZE; i++)
         {
             BufferPacket packet(sizeof(int));
             packet << i;
             Slice key(packet.getData(),sizeof(int));
             Slice value(packet.getData(),sizeof(int));
-            
-            if(db -> put(key, value) == false) 
+
+            if(db -> put(key, value) == false)
                 cout << "error put:" << i << endl;
             if(i%(SIZE/100)==0) cout<<"Put:"<<i<<endl;
         }
@@ -50,22 +50,25 @@ void RunTest1()
 
         ts.StartTime();
 
-        for(int i=1;i<=SIZE;i++)
+        for(int i=1; i<=SIZE; i++)
         {
-            BufferPacket packet(sizeof(int)); packet << i;
-            
+            BufferPacket packet(sizeof(int));
+            packet << i;
+
             Slice key(packet.getData(), sizeof(int));
 
             Slice value = db -> get(key);
 
             BufferPacket packet2(sizeof(int));
-            
-            packet2 << value; packet2.setBeg();
-            
-            int num = -1; packet2 >> num;
+
+            packet2 << value;
+            packet2.setBeg();
+
+            int num = -1;
+            packet2 >> num;
             if(i!=num)
                 cout << i <<" "<<num <<" ) ";
-            
+
             EXPECT_EQ(i, num);
         }
 
@@ -100,22 +103,25 @@ void RunTest2()
 
         ts.StartTime();
 
-        for(int i=1;i<=SIZE;i++)
+        for(int i=1; i<=SIZE; i++)
         {
-            BufferPacket packet(sizeof(int)); packet << i;
-            
+            BufferPacket packet(sizeof(int));
+            packet << i;
+
             Slice key(packet.getData(), sizeof(int));
 
             Slice value = db -> get(key);
 
             BufferPacket packet2(sizeof(int));
-            
-            packet2 << value; packet2.setBeg();
-            
-            int num = -1; packet2 >> num;
+
+            packet2 << value;
+            packet2.setBeg();
+
+            int num = -1;
+            packet2 >> num;
             if(i!=num)
                 cout << i <<" "<<num <<" ) ";
-            
+
             EXPECT_EQ(i, num);
         }
 
@@ -131,4 +137,3 @@ int main()
     printf("Passed All Tests\n");
     return 0;
 }
-    

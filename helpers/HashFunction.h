@@ -6,9 +6,10 @@
 
 #include <stdint.h>
 
-#include "Slice.h"
+#include "../include/Slice.h"
 
-namespace customdb{
+namespace customdb
+{
 
 uint32_t MurmurHash3(const Slice & key);
 /**Two samples to describe how to use it**/

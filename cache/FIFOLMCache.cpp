@@ -1,15 +1,16 @@
 #include "FIFOLMCache.h"
 
-namespace customdb{
+namespace customdb
+{
 
 FIFOLimitedMemoryCache::FIFOLimitedMemoryCache(int cacheLimitInMB) :\
-        LimitedMemoryCache(cacheLimitInMB) { }
+    LimitedMemoryCache(cacheLimitInMB) { }
 
 
 bool FIFOLimitedMemoryCache::put(const Slice & key,const Slice & value)
 {
     ScopeMutex scope(&m_mutex);
-        
+
     if(LimitedMemoryCache::put(key,value) == true)
     {
         sQue.push_back(key);
@@ -27,15 +28,15 @@ bool FIFOLimitedMemoryCache::remove(const Slice & key)
     bool flag = LimitedMemoryCache::remove(key);
 
     if(flag == false) return false;
-    
+
     {
         list <Slice>::iterator itDq = sQue.begin();
-    
+
         while(itDq != sQue.end() && *itDq != key) itDq++;
-       
+
         if(itDq == sQue.end())
             log -> _Warn("Not exist in FIFOLimitedMemoryCache remove");
-        else   
+        else
             sQue.erase(itDq);
     }
 

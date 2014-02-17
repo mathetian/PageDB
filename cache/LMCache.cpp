@@ -1,6 +1,7 @@
 #include "LMCache.h"
 
-namespace customdb{
+namespace customdb
+{
 
 const int LimitedMemoryCache::defaultCacheSizeInMB=16;
 const int LimitedMemoryCache::defaultCacheSize = defaultCacheSizeInMB * 1024 * 1024;
@@ -42,22 +43,22 @@ bool LimitedMemoryCache::put(const Slice & key,const Slice & value)
         BaseCache::put(key, value);
     }
     else log -> _Warn("Large size, can't be put into cache\n");
-    
+
     return putSuccessfully;
 }
 
 bool LimitedMemoryCache::remove(const Slice & key)
 {
     ScopeMutex scope(&m_mutex);
-        
+
     const Slice & removedValue = BaseCache::get(key);
-    
+
     if(removedValue.size() == 0) return false;
-    
+
     BaseCache::remove(key);
 
     cacheSize -= removedValue.size();
-    
+
     return hardCache.erase(key);
 }
 
@@ -73,7 +74,7 @@ void LimitedMemoryCache::clear()
 void LimitedMemoryCache::clearZero(list <Slice> &q )
 {
     ScopeMutex scope(&m_mutex);
-        
+
     list <Slice> empty;
     swap(q, empty);
 }

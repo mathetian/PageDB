@@ -1,11 +1,9 @@
 #include "Log.h"
 
-#include <time.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <stdarg.h>
 #include <string.h>
+
+namespace customdb
+{
 
 #define TIME_SHORT 50
 #define TIME_FULL  51
@@ -23,10 +21,12 @@ bool     Log::m_disabled;
 const char * getStrFromType(const LOG_TYPE & value)
 {
 #define MAPENTRY(p) {p, #p}
-    const struct MapEntry{
+    const struct MapEntry
+    {
         LOG_TYPE value;
         const char* str;
-    } entries[] = {
+    } entries[] =
+    {
         MAPENTRY(LOG_DEBUG),
         MAPENTRY(LOG_TRACE),
         MAPENTRY(LOG_WARN),
@@ -36,8 +36,10 @@ const char * getStrFromType(const LOG_TYPE & value)
     };
 #undef MAPENTRY
     const char* s = 0;
-    for (const MapEntry* i = entries; i->str; i++){
-        if (i->value == value){
+    for (const MapEntry* i = entries; i->str; i++)
+    {
+        if (i->value == value)
+        {
             s = i->str;
             break;
         }
@@ -47,7 +49,7 @@ const char * getStrFromType(const LOG_TYPE & value)
 
 void Log::SetLogInfo(LOG_TYPE level, const char * prefix, bool disabled)
 {
-    if(m_pTheLogs == NULL) 
+    if(m_pTheLogs == NULL)
         m_pTheLogs = new Log;
 
     m_pTheLogs -> m_prefix   = prefix;
@@ -63,7 +65,7 @@ Log* Log::GetInstance()
 {
     if(m_pTheLogs == NULL)
         m_pTheLogs = new Log;
-    
+
     return m_pTheLogs;
 }
 
@@ -76,8 +78,9 @@ string Log::GetLogFileName()
 
 void Log::GetCurrentTm(int tag, size_t size, char * buf)
 {
-    time_t now; time(&now);
-    
+    time_t now;
+    time(&now);
+
     struct tm *ptime = NULL;
     ptime = localtime(&now);
 
@@ -87,7 +90,7 @@ void Log::GetCurrentTm(int tag, size_t size, char * buf)
         {
         case TIME_FULL :
             sprintf(buf,TM_FORMAT_FULL,(ptime->tm_year + 1900),(ptime->tm_mon + 1),ptime->tm_mday
-                     ,ptime->tm_hour,ptime->tm_min,ptime->tm_sec);
+                    ,ptime->tm_hour,ptime->tm_min,ptime->tm_sec);
             break;
         case TIME_SHORT :
         default:
@@ -98,7 +101,7 @@ void Log::GetCurrentTm(int tag, size_t size, char * buf)
 }
 
 void Log::WriteLog(LOG_TYPE outLevel,const char* format,va_list args)
-{    
+{
 
     if(m_disabled == true)
     {
@@ -109,15 +112,17 @@ void Log::WriteLog(LOG_TYPE outLevel,const char* format,va_list args)
         Need advanced solution
     **/
     const char * str = getStrFromType(outLevel);
-    char buf[256];memset(buf, 0, sizeof(buf));
-    
+    char buf[256];
+    memset(buf, 0, sizeof(buf));
+
     GetCurrentTm(TIME_FULL, 32, buf);
 
     char fformat[1000];
     sprintf(fformat,"%s\t%s--%s",buf,str,format);
 
-    va_list old; va_copy(old,args);
-    
+    va_list old;
+    va_copy(old,args);
+
     if(m_disabled == true)
     {
         m_mutex.lock();
@@ -125,12 +130,12 @@ void Log::WriteLog(LOG_TYPE outLevel,const char* format,va_list args)
         fprintf(m_pfile,"\n");
         m_mutex.unlock();
     }
-   
+
     if(m_logLevel <= outLevel)
         vprintf(fformat,old);
-    
+
     fflush(m_pfile);
-    
+
     if(m_logLevel < outLevel)
         exit(1);
 }
@@ -174,3 +179,5 @@ void Log::_Fatal(const char* format,...)
     WriteLog(LOG_FATAL,format,args);
     va_end(args);
 }
+
+};

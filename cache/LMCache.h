@@ -8,13 +8,14 @@ using std::list;
 
 #include "BaseCache.h"
 
-namespace customdb{
+namespace customdb
+{
 
 class LimitedMemoryCache : public BaseCache
 {
 public:
     LimitedMemoryCache(int cacheLimitInMB = defaultCacheSizeInMB);
-    
+
 public:
     virtual bool   put(const Slice & key, const Slice & value);
     virtual bool   remove(const Slice & key);
@@ -33,7 +34,7 @@ private:
     Atomic cacheSize;
     set<Slice> hardCache;
     Mutex m_mutex;
-}; 
+};
 
 };
 

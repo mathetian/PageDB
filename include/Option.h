@@ -30,7 +30,7 @@ struct CacheOption_t
     int cacheLimitInMB;
     CacheOption_t()
     {
-        cacheLimitInMB = 4; 
+        cacheLimitInMB = 4;
         cacheType = FIFO;
     }
 };
@@ -42,7 +42,10 @@ struct CacheOption_t
 struct FactoryOption_t
 {
     int factoryType;
-    FactoryOption_t() { factoryType = EHASH; }
+    FactoryOption_t()
+    {
+        factoryType = EHASH;
+    }
 };
 
 /******************************/

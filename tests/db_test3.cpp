@@ -12,7 +12,7 @@ using namespace std;
 
 int main()
 {
-	Options option;
+    Options option;
     option.logOption.logLevel = LOG_ERROR;
 
     CustomDB * db = new CustomDB;
@@ -21,7 +21,7 @@ int main()
 
     TimeStamp::StartTime();
 
-    for(int i=SIZE;i>=1;i--)
+    for(int i=SIZE; i>=1; i--)
     {
         BufferPacket packet(sizeof(int));
         packet << i;
@@ -31,24 +31,24 @@ int main()
             cout << "error put:" << i << endl;
     }
 
-    for(int i=1;i <= 100;i++)
+    for(int i=1; i <= 100; i++)
     {
-    	BufferPacket packet(sizeof(int));
+        BufferPacket packet(sizeof(int));
         packet << i;
         Slice key(packet.getData(),sizeof(int));
-    	assert(db -> remove(key) == true);
+        assert(db -> remove(key) == true);
     }
 
-    for(int i=100;i >= 1;i--)
+    for(int i=100; i >= 1; i--)
     {
-    	BufferPacket packet(sizeof(int));
+        BufferPacket packet(sizeof(int));
         packet << i;
         Slice key(packet.getData(),sizeof(int));
         Slice slice = db -> get(key);
         assert(slice.size() == 0);
     }
 
-    for(int i=101;i<=SIZE;i++)
+    for(int i=101; i<=SIZE; i++)
     {
         BufferPacket packet(sizeof(int));
         packet << i;

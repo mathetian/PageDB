@@ -1,6 +1,7 @@
 #include "LRULMCache.h"
 
-namespace customdb{
+namespace customdb
+{
 
 LRULimitedMemoryCache::LRULimitedMemoryCache(int cacheLimitInMB) :\
     LimitedMemoryCache(cacheLimitInMB) { }
@@ -22,11 +23,11 @@ Slice LRULimitedMemoryCache::get(const Slice & key)
     ScopeMutex scope(&m_mutex);
 
     Slice value = LimitedMemoryCache::get(key);
-    
+
     list <Slice>::iterator itDq = sQue.begin();
 
     while(itDq != sQue.end() && *itDq != key) itDq++;
-    
+
     if(itDq != sQue.end())
     {
         sQue.erase(itDq);
@@ -51,7 +52,7 @@ bool   LRULimitedMemoryCache::remove(const Slice & key)
         log -> _Warn("Not exist in LRULimitedMemoryCache remove?\n");
     else
         sQue.erase(itDq);
-    
+
     return true;
 }
 

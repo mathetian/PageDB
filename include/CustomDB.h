@@ -25,22 +25,30 @@ public:
         if(factory) delete factory;
         if(cache)   delete cache;
 
-        factory = NULL; cache = NULL;
+        factory = NULL;
+        cache = NULL;
     }
 
     void   close()
     {
         if(factory) factory -> fflush();
-        
+
         if(factory) delete factory;
         if(cache)   delete cache;
 
-        factory = NULL; cache = NULL;
+        factory = NULL;
+        cache = NULL;
     }
 
-    void   dump() { factory -> dump(); }
+    void   dump()
+    {
+        factory -> dump();
+    }
 
-    void   cleanCACHE() { cache -> clear(); }
+    void   cleanCACHE()
+    {
+        cache -> clear();
+    }
 
     void   destoryDB(const char * filename)
     {
@@ -58,24 +66,30 @@ public:
     {
         factory -> fflush();
     }
-    
+
 public:
     bool 	open(const Options & option);
     bool 	put(const Slice & key,const Slice & value);
     Slice   get(const Slice & key);
     bool 	remove(const Slice & key);
-    
+
     bool	getError();
 
-    void    write(const WriteBatch * pbatch) { factory -> runBatch(pbatch); }
+    void    write(const WriteBatch * pbatch)
+    {
+        factory -> runBatch(pbatch);
+    }
 
-    void    tWrite(WriteBatch * pbatch) { factory -> write(pbatch); }
+    void    tWrite(WriteBatch * pbatch)
+    {
+        factory -> write(pbatch);
+    }
 
     void    compact()
     {
         factory -> compact();
     }
-    
+
     void    runBatch2(const WriteBatch * pbatch)
     {
         factory -> runBatch2(pbatch);
@@ -87,7 +101,7 @@ private:
     BaseCache * cache;
     Log       * log;
     int         errorStatus;
-    
+
 public:
     bool init();
 };

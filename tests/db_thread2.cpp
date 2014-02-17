@@ -30,37 +30,38 @@ CustomDB * db;
 
 void* thrFunc(void * data)
 {
-	int flag = *(int*)data;
-	const int beg  = flag*BATCHSIZE;
-	int round = (BATCHSIZE + SUBSIZE - 1)/SUBSIZE;
-	TimeStamp thrtime; char buf[50];
+    int flag = *(int*)data;
+    const int beg  = flag*BATCHSIZE;
+    int round = (BATCHSIZE + SUBSIZE - 1)/SUBSIZE;
+    TimeStamp thrtime;
+    char buf[50];
 
-	printf("thread %d begin\n", flag);
+    printf("thread %d begin\n", flag);
 
-	thrtime.StartTime();
-	for(int i = 0;i < round;i++)
-	{
-		WriteBatch batch(SUBSIZE);
+    thrtime.StartTime();
+    for(int i = 0; i < round; i++)
+    {
+        WriteBatch batch(SUBSIZE);
 
-		for(int j = 0;j < SUBSIZE;j++)
-		{
-			int k = beg + i*SUBSIZE + j;
+        for(int j = 0; j < SUBSIZE; j++)
+        {
+            int k = beg + i*SUBSIZE + j;
 
-    		BufferPacket packet(sizeof(int));
-	        packet << k;
-	        Slice key(packet.getData(),sizeof(int));
-	        Slice value(packet.getData(),sizeof(int));
-    		batch.put(key, value);	
-		}
+            BufferPacket packet(sizeof(int));
+            packet << k;
+            Slice key(packet.getData(),sizeof(int));
+            Slice value(packet.getData(),sizeof(int));
+            batch.put(key, value);
+        }
 
-		db -> runBatch2(&batch);
+        db -> runBatch2(&batch);
         printf("thread %d finished round %d\n", flag, i);
-	}
+    }
 
-	sprintf(buf, "Thread %d has been completed, spend time :", flag);
-	thrtime.StopTime(buf);
+    sprintf(buf, "Thread %d has been completed, spend time :", flag);
+    thrtime.StopTime(buf);
 
-	return NULL;
+    return NULL;
 }
 
 /**
@@ -70,7 +71,7 @@ void RunTest2()
 {
     option.logOption.disabled = true;
     option.logOption.logLevel = LOG_FATAL;
-    
+
     db = new CustomDB;
     TimeStamp total;
 
@@ -80,51 +81,54 @@ void RunTest2()
 
         int ids[THRNUM];
         Thread thrs[THRNUM];
-        
+
         total.StartTime();
 
-        for(int i = 0;i < THRNUM;i++)
+        for(int i = 0; i < THRNUM; i++)
         {
             ids[i]  = i;
             thrs[i] = Thread(thrFunc, &ids[i]);
             thrs[i].run();
-        }  
+        }
 
-        for(int i = 0;i < THRNUM;i++) thrs[i].join();
+        for(int i = 0; i < THRNUM; i++) thrs[i].join();
 
         total.StopTime("Total PutTime(Thread Version): ");
 
-     //   db -> dump();
+        //   db -> dump();
 
         db -> close();
-    }   
-    
+    }
+
     int freq = 0;
-    
+
     {
         db -> open(option);
         printf("open successful\n");
 
         printf("Begin Check\n");
-        
+
         total.StartTime();
-        for(int i=0;i < SIZE;i++)
+        for(int i=0; i < SIZE; i++)
         {
-            BufferPacket packet(sizeof(int)); packet << i;
-            
+            BufferPacket packet(sizeof(int));
+            packet << i;
+
             Slice key(packet.getData(), sizeof(int));
 
             Slice value = db -> get(key);
 
             BufferPacket packet2(sizeof(int));
-            
-            packet2 << value; packet2.setBeg();
-            
-            int num = -1; packet2 >> num;
+
+            packet2 << value;
+            packet2.setBeg();
+
+            int num = -1;
+            packet2 >> num;
             if(i != num)
-               freq++;
+                freq++;
             //   cout<<i<<" "<<num<<endl;
-          //  EXPECT_EQ(i,num);
+            //  EXPECT_EQ(i,num);
         }
         total.StopTime("GetTime(Without Cache): ");
 
@@ -135,7 +139,7 @@ void RunTest2()
 }
 
 int main()
-{   
+{
     RunTest2();
     printf("Passed All Test, Congratulations\n");
 

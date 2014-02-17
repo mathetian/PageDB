@@ -25,82 +25,108 @@ typedef shared_ptr<WorkThread> SWork;
 typedef shared_ptr<ThreadPool> SPool;
 typedef shared_ptr<thread>     SThread;
 
-class ThreadPool : public enable_shared_from_this<ThreadPool>{
+class ThreadPool : public enable_shared_from_this<ThreadPool>
+{
 private:
     typedef function<void()> Task;
 
 public:
     ThreadPool(int threadNum = 5);
 
-   ~ThreadPool();
+    ~ThreadPool();
 
 public:
-  void schedule(const Task & task);
+    void schedule(const Task & task);
 
-  void wait() const;
+    void wait() const;
 
-  /**Without implementation, can't understand the format for time.**/
-  void timedwait(struct timeval & spec) const;
+    /**Without implementation, can't understand the format for time.**/
+    void timedwait(struct timeval & spec) const;
 
-  void timedwait(chrono::steady_clock::time_point abs_time) const;
+    void timedwait(chrono::steady_clock::time_point abs_time) const;
 
-  bool resize(int targetNum = 0);
+    bool resize(int targetNum = 0);
 
 public:
-  int  activeNum() const { return m_actThreadNum; }
-  
-  int  pendingNum() const { return m_Tasks.size(); }
+    int  activeNum() const
+    {
+        return m_actThreadNum;
+    }
 
-  void clear() { }
+    int  pendingNum() const
+    {
+        return m_Tasks.size();
+    }
 
-  bool empty() { return m_Tasks.size() == 0 ? 1 : 0; }
+    void clear() { }
 
-private:
-  void workerDestructed(SWork worker);
-
-  bool executeTask();
-
-  void killAllThreads();
-
-private:
-  int    m_threadNum;
-  int    m_actThreadNum;
-  int    m_targetNum;
+    bool empty()
+    {
+        return m_Tasks.size() == 0 ? 1 : 0;
+    }
 
 private:
-  queue  < Task> m_Tasks;
-  vector <SWork> m_terminatedWorks;
+    void workerDestructed(SWork worker);
+
+    bool executeTask();
+
+    void killAllThreads();
 
 private:
-  mutable mutex              m_monitor;
-  mutable condition_variable m_taskCIN;
-  mutable condition_variable m_tasksFinishedOrTerminated;
-  
-  friend class WorkThread;
+    int    m_threadNum;
+    int    m_actThreadNum;
+    int    m_targetNum;
+
+private:
+    queue  < Task> m_Tasks;
+    vector <SWork> m_terminatedWorks;
+
+private:
+    mutable mutex              m_monitor;
+    mutable condition_variable m_taskCIN;
+    mutable condition_variable m_tasksFinishedOrTerminated;
+
+    friend class WorkThread;
 };
 
 class WorkThread
 {
 public:
-    static void createThread(SPool const & pool); 
-   ~WorkThread() { }
+    static void createThread(SPool const & pool);
+    ~WorkThread() { }
 
 public:
-    void run() { while(m_pool -> executeTask()) {} }
-    void join() { m_thread -> join(); }
+    void run()
+    {
+        while(m_pool -> executeTask()) {}
+    }
+    void join()
+    {
+        m_thread -> join();
+    }
 
 private:
-    WorkThread(SPool const & pool) : m_pool(pool) { assert(pool); }
+    WorkThread(SPool const & pool) : m_pool(pool)
+    {
+        assert(pool);
+    }
 
 private:
-    SPool    m_pool;     
-    SThread  m_thread; 
+    SPool    m_pool;
+    SThread  m_thread;
 };
 
-class ScopeMutex{
+class ScopeMutex
+{
 public:
-    ScopeMutex() { m_mutex.lock(); }
-    ~ScopeMutex() { m_mutex.unlock(); }
+    ScopeMutex()
+    {
+        m_mutex.lock();
+    }
+    ~ScopeMutex()
+    {
+        m_mutex.unlock();
+    }
 private:
     mutable mutex m_mutex;
 };
@@ -108,10 +134,11 @@ private:
 /**
   As C++ standard doesn't provide RWLock, so I just implement here.
 **/
-class RWLock{
+class RWLock
+{
 public:
     RWLock() : m_nReader(0), m_nWriter(0), m_wReader(0), m_wWriter(0) { }
-   ~RWLock() { }
+    ~RWLock() { }
 
 public:
     void readLock();
@@ -128,16 +155,17 @@ private:
     int  m_wWriter;
 
 private:
-  mutable mutex m_monitor;
-  mutable condition_variable m_condRead;
-  mutable condition_variable m_condWrite;
+    mutable mutex m_monitor;
+    mutable condition_variable m_condRead;
+    mutable condition_variable m_condWrite;
 };
 
 /**
   Java, C# style's Thread
 **/
 
-class Thread{
+class Thread
+{
 private:
     typedef function<void()> Task;
 
@@ -147,7 +175,7 @@ public:
         m_task = task;
         m_pthr = NULL;
     }
-   ~Thread() { }
+    ~Thread() { }
 
 public:
     void run()
@@ -162,8 +190,8 @@ public:
     {
         m_pthr -> join();
     }
-    
-private: 
+
+private:
     Task  m_task;
 
 private:

@@ -7,21 +7,23 @@ using namespace std;
 #include <time.h>
 
 #ifdef _WIN32
-    #pragma warning(disable : 4786)
-    #pragma warning(disable : 4996)
-    #include <Windows.h>  
+#pragma warning(disable : 4786)
+#pragma warning(disable : 4996)
+#include <Windows.h>
 #else
-    #include <sys/time.h>
+#include <sys/time.h>
 #endif
 
-namespace utils{
+namespace utils
+{
 
-class TimeStamp{
+class TimeStamp
+{
 public:
     void StartTime();
     void StopTime();
     void StopTime(const char * str);
-    void ElapseTime(const char * str); 
+    void ElapseTime(const char * str);
     struct timeval GetDiffTime();
 
 private:
@@ -32,8 +34,9 @@ private:
     struct timeval starttime, curtime, difference;
 };
 
-class TimeAccumulator{
-public: 
+class TimeAccumulator
+{
+public:
     TimeAccumulator();
 public:
     void ResetTime();

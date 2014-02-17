@@ -3,10 +3,10 @@
 bool CustomDB::open(const Options & option)
 {
     this -> option = option;
-    
+
     log = Log::GetInstance();
     log -> SetLogInfo(option.logOption.logLevel, option.logOption.logPrefix, option.logOption.disabled);
-    
+
 
     switch(option.cacheOption.cacheType)
     {
@@ -22,7 +22,7 @@ bool CustomDB::open(const Options & option)
     }
     if(cache == NULL)
         log -> _Fatal("CustomDB::open::new cache error\n");
-    
+
     switch(option.factoryOption.factoryType)
     {
     case EHASH:
@@ -34,13 +34,13 @@ bool CustomDB::open(const Options & option)
     default:
         log -> _Fatal("CustomDB::open::factory error\n");
     }
-    
+
     if(factory == NULL)
         log -> _Fatal("CustomDB::open::new factory error\n");
 
     if(factory -> init(option.fileOption.fileName) == false)
         log -> _Fatal("CustomDB::open::init factory error\n");
-    
+
     log -> _Trace("CustomDB::open initialization successfully\n");
     return true;
 }
@@ -54,7 +54,7 @@ bool CustomDB::put(const Slice & key,const Slice & value)
     else
     {
         log -> _Trace("CustomDB::put::not exist in cache\n");
-        
+
         if(!factory -> put(key,value))
             log -> _Warn("CustomDB::put::factory put error\n");
         else
@@ -71,7 +71,7 @@ Slice CustomDB::get(const Slice & key)
 {
     errorStatus = ERROR;
     Slice rs = cache -> get(key);
-    if(rs.size() != 0) 
+    if(rs.size() != 0)
         errorStatus = SUCCE;
     else
     {
@@ -106,7 +106,7 @@ bool CustomDB::remove(const Slice & key)
 
     if((factory -> remove(key)) == 0)
         log -> _Error("CustomDB::remove::factory remove error\n");
-    
+
     errorStatus = SUCCE;
     return errorStatus;
 }
