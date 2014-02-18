@@ -12,9 +12,8 @@ class Random
 private:
     uint32_t seed_;
 public:
-    explicit Random(uint32_t s) : seed_(s & 0x7fffffffu)
+    Random(uint32_t s) : seed_(s & 0x7fffffffu)
     {
-        // Avoid bad seeds.
         if (seed_ == 0 || seed_ == 2147483647L)
         {
             seed_ = 1;
@@ -24,12 +23,9 @@ public:
     {
         static const uint32_t M = 2147483647L;   // 2^31-1
         static const uint64_t A = 16807;  // bits 14, 8, 7, 5, 2, 1, 0
-        // We are computing
+        // 
         //       seed_ = (seed_ * A) % M,    where M = 2^31-1
         //
-        // seed_ must not be zero or M, or else all subsequent computed values
-        // will be zero or M respectively.  For all other values, seed_ will end
-        // up cycling through every number in [1,M-1]
         uint64_t product = seed_ * A;
 
         // Compute (product % M) using the fact that ((x << 31) % M) == x.

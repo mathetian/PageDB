@@ -10,27 +10,23 @@
 #include <sstream>
 using namespace std;
 
-#include "Random.h"
+#include "db_leveldb.h"
 
 #include "Option.h"
 #include "CustomDB.h"
 #include "TimeStamp.h"
+using namespace customdb;
+using namespace utils;
 
-static const char* FLAGS_benchmarks = "fillrandom,readrandom";
+#include <string.h>
+
+static const char* FLAGS_benchmarks = "fillrandom,readrandom,fillbatch,fillparallel";
 
 // Number of key/values to place in database
-static int FLAGS_num = 100000;
+static int FLAGS_num = 200000;
 
 // Size of each value
 static int FLAGS_value_size = 100;
-
-// Number of bytes to buffer in memtable before compacting
-// (initialized to default value by "main")
-static int FLAGS_write_buffer_size = 0;
-
-// Number of bytes to use as a cache of uncompressed data.
-// Negative means use default settings.
-static int FLAGS_cache_size = 0;
 
 // If true, do not destroy the existing database.  If you set this
 // flag and also specify a benchmark that wants a fresh database, that
@@ -40,6 +36,7 @@ static bool FLAGS_use_existing_db = false;
 // Use the db with the following name.
 static const char* FLAGS_db = NULL;
 
+// Use the log with the following name.
 static const char* FLAGS_log =  NULL;
 
 class RandomGenerator
@@ -56,9 +53,9 @@ public:
         // large enough to serve all typical value sizes we want to write.
         Random rnd(301);
         std::string piece;
+
         while (data_.size() < 1048576)
         {
-            //Todo list
             uint32_t rr = rnd.Next();
             stringstream ss;
             ss << rr;
@@ -87,11 +84,13 @@ static Slice TrimSpace(Slice s)
     {
         start++;
     }
+
     int limit = s.size();
     while (limit > start && isspace(s[limit-1]))
     {
         limit--;
     }
+    
     return Slice(s.c_str() + start, limit - start);
 }
 
@@ -105,113 +104,8 @@ static void AppendWithSpace(std::string* str, Slice msg)
     str->append(msg.c_str(), msg.size());
 }
 
-int kMajorVersion = 0;
-int kMinorVersion = 1;
-
-class Stats
-{
-private:
-    double start_;
-    double finish_;
-    double seconds_;
-    int done_;
-    int next_report_;
-    int64_t bytes_;
-    double last_op_finish_;
-    std::string message_;
-
-public:
-    Stats()
-    {
-        Start();
-    }
-
-    void Start()
-    {
-        next_report_ = 100;
-        last_op_finish_ = start_;
-        done_ = 0;
-        bytes_ = 0;
-        seconds_ = 0;
-        //start_ = Env::Default()->NowMicros();
-        start_ = TimeStamp::GetCurTimeAsDouble();
-        finish_ = start_;
-        message_.clear();
-    }
-
-    void Merge(const Stats& other)
-    {
-        done_ += other.done_;
-        bytes_ += other.bytes_;
-        seconds_ += other.seconds_;
-        if (other.start_ < start_) start_ = other.start_;
-        if (other.finish_ > finish_) finish_ = other.finish_;
-
-        // Just keep the messages from one thread
-        if (message_.empty()) message_ = other.message_;
-    }
-
-    void Stop()
-    {
-        finish_ = TimeStamp::GetCurTimeAsDouble();
-        seconds_ = (finish_ - start_) * 1e-6;
-    }
-
-    void AddMessage(Slice msg)
-    {
-        AppendWithSpace(&message_, msg);
-    }
-
-    void FinishedSingleOp()
-    {
-
-        done_++;
-        if (done_ >= next_report_)
-        {
-            if      (next_report_ < 1000)   next_report_ += 100;
-            else if (next_report_ < 5000)   next_report_ += 500;
-            else if (next_report_ < 10000)  next_report_ += 1000;
-            else if (next_report_ < 50000)  next_report_ += 5000;
-            else if (next_report_ < 100000) next_report_ += 10000;
-            else if (next_report_ < 500000) next_report_ += 50000;
-            else                            next_report_ += 100000;
-            fprintf(stderr, "... finished %d ops%30s\r", done_, "");
-            fflush(stderr);
-        }
-    }
-
-    void AddBytes(int64_t n)
-    {
-        bytes_ += n;
-    }
-
-    void Report(const Slice& name)
-    {
-        // Pretend at least one op was done in case we are running a benchmark
-        // that does not call FinishedSingleOp().
-        if (done_ < 1) done_ = 1;
-
-        std::string extra;
-        if (bytes_ > 0)
-        {
-            // Rate is computed on actual elapsed time, not the sum of per-thread
-            // elapsed times.
-            double elapsed = (finish_ - start_) * 1e-6;
-            char rate[100];
-            snprintf(rate, sizeof(rate), "%6.1f MB/s",
-                     (bytes_ / 1048576.0) / elapsed);
-            extra = rate;
-        }
-        AppendWithSpace(&extra, message_);
-
-        fprintf(stdout, "%-12s : %11.3f micros/op;%s%s\n",
-                name.c_str(),
-                seconds_ * 1e6 / done_,
-                (extra.empty() ? "" : " "),
-                extra.c_str());
-        fflush(stdout);
-    }
-};
+int kMajorVersion = 1;
+int kMinorVersion = 0;
 
 class Benchmark
 {
@@ -228,13 +122,10 @@ private:
         const int kKeySize = 16;
         PrintEnvironment();
         fprintf(stdout, "Keys:       %d bytes each\n", kKeySize);
-        fprintf(stdout, "Values:     %d bytes each (%d bytes after compression)\n",
-                FLAGS_value_size,
-                static_cast<int>(FLAGS_value_size + 0.5));
+        fprintf(stdout, "Values:     %d bytes each\n", FLAGS_value_size);
         fprintf(stdout, "Entries:    %d\n", num_);
         fprintf(stdout, "RawSize:    %.1f MB (estimated)\n",
-                ((static_cast<int64_t>(kKeySize + FLAGS_value_size) * num_)
-                 / 1048576.0));
+                ((static_cast<int64_t>(kKeySize + FLAGS_value_size) * num_) / 1048576.0));
         fprintf(stdout, "FileSize:   %.1f MB (estimated)\n",
                 (((kKeySize + FLAGS_value_size) * num_)
                  / 1048576.0));
@@ -244,23 +135,13 @@ private:
 
     void PrintWarnings()
     {
-#if defined(__GNUC__) && !defined(__OPTIMIZE__)
-        fprintf(stdout,
-                "WARNING: Optimization is disabled: benchmarks unnecessarily slow\n"
-               );
-#endif
-#ifndef NDEBUG
-        fprintf(stdout,
-                "WARNING: Assertions are enabled; benchmarks unnecessarily slow\n");
-#endif
+        fprintf(stdout, "WARNING: Log is disabled, for better benchmarks\n" );
     }
 
     void PrintEnvironment()
     {
-        fprintf(stderr, "CustomDB:    version %d.%d\n",
-                kMajorVersion, kMinorVersion);
+        fprintf(stderr, "CustomDB:    version %d.%d\n", kMajorVersion, kMinorVersion);
 
-#if defined(__linux)
         time_t now = time(NULL);
         fprintf(stderr, "Date:       %s", ctime(&now));  // ctime() adds newline
 
@@ -294,7 +175,6 @@ private:
             fprintf(stderr, "CPU:        %d * %s\n", num_cpus, cpu_type.c_str());
             fprintf(stderr, "CPUCache:   %s\n", cache_size.c_str());
         }
-#endif
     }
 
 public:
@@ -305,8 +185,10 @@ public:
 
         if(FLAGS_db) option_.fileOption.fileName = FLAGS_db;
         if(FLAGS_log) option_.logOption.logPrefix = FLAGS_log;
-        if(FLAGS_cache_size != 0) option_.cacheOption.cacheLimitInMB = FLAGS_cache_size;
+        
         option_.logOption.logLevel = LOG_FATAL;
+        option_.logOption.disabled = true;
+
         if (!FLAGS_use_existing_db)
         {
             DestroyDB();
@@ -321,9 +203,9 @@ public:
     void Run()
     {
         PrintHeader();
-        Open();
 
         const char* benchmarks = FLAGS_benchmarks;
+
         while (benchmarks != NULL)
         {
             const char* sep = strchr(benchmarks, ',');
@@ -363,22 +245,15 @@ public:
                 {
                     fprintf(stderr, "unknown benchmark '%s'\n", name.toString().c_str());
                 }
+                continue;
             }
 
             if (fresh_db)
             {
-                if (FLAGS_use_existing_db)
-                {
-                    fprintf(stdout, "%-12s : skipped (--use_existing_db is true)\n",
-                            name.toString().c_str());
-                    method = NULL;
-                }
-                else
-                {
-                    DestroyDB();
-                    Open();
-                }
+                DestroyDB();
             }
+
+            Open();
 
             if (method != NULL)
             {
@@ -386,8 +261,8 @@ public:
                 RunBenchmark(name, method);
             }
 
+            db_ -> close();
         }
-        db_ -> close();
     }
 
 private:
@@ -398,8 +273,6 @@ private:
 
     void Open()
     {
-        if(db_ == NULL) db_ = new CustomDB;
-        assert(db_ != NULL);
         int flag = db_ -> open(option_);
 
         if (!flag)
@@ -411,46 +284,61 @@ private:
 
     void WriteRandom()
     {
-        DoWrite(false);
-    }
-
-    void DoWrite(bool seq)
-    {
-        if (num_ != FLAGS_num)
-        {
-            char msg[100];
-            snprintf(msg, sizeof(msg), "(%d ops)", num_);
-        }
         RandomGenerator gen;
 
         int64_t bytes = 0;
 
         Random rnd(31);
         char key1[100];
+        
+        TimeStamp m_tms;
+        m_tms.StartTime();
 
         for(int i = 0; i < num_; i++)
         {
-            if(i%10000 == 0) cout<<i<<endl;
+            if(i%10000 == 0)
+                printf("WriteRandom %d\n", i);
+
             int k = rnd.Next() & ((1<<19)-1);
             snprintf(key1, sizeof(key1), "%016d", k);
+
             Slice key(key1,16);
             Slice value(gen.Generate(FLAGS_value_size));
-            db_->put(key,value);
+            
+            db_->put(key, value);
         }
+
+        m_tms.StopTime("WriteRandom spend time:");
+    }
+
+    void WriteBatch()
+    {
 
     }
 
+    void WriteThreadBatch()
+    {
+
+    }
+
+    void WriteParallelBatch()
+    {
+
+    }
+
+
     void ReadRandom()
     {
-        db_ -> cleanCACHE();
         int found = 0;
 
         Random rnd(32);
-        char key1[100];
 
+        char key1[100];
+        
         for (int i = 0; i < reads_; i++)
         {
-            if(i%10000==0) cout<<i<<endl;
+            if(i%10000==0)
+                printf("ReadRandom %d\n", i);
             const int k = rnd.Next() & ((1<<19)-1);
             snprintf(key1, sizeof(key1), "%016d", k);
             Slice key(key1,16);
@@ -504,10 +392,6 @@ int main(int argc, char** argv)
         else if (sscanf(argv[i], "--value_size=%d%c", &n, &junk) == 1)
         {
             FLAGS_value_size = n;
-        }
-        else if (sscanf(argv[i], "--cache_size=%d%c", &n, &junk) == 1)
-        {
-            FLAGS_cache_size = n;
         }
         else if (strncmp(argv[i], "--db=", 5) == 0)
         {
