@@ -9,6 +9,9 @@ SOURCES = cache/*.cpp core/*.cpp helpers/*.cpp dbimpl/*/*.cpp utils/*.cpp
  
 LDLIBS  = -L. -lcustomDB
 
+tests   = test_slice test_batch test_thread test_rw
+dbtests = db_smalltest db_largetest db_smallbatch db_largebatch db_batch_thread db_parallel_thread
+
 lib:compile
 	${AR} rv ${LIBMISC} *.o
 	${RANLIB} ${LIBMISC}
@@ -16,6 +19,8 @@ lib:compile
 compile:
 	${CXX} -g -O0 ${HEADER} -lpthread -c ${SOURCES} 
 
+dbtests: $(dbtests)
+	
 db_smalltest: tests/db_smalltest.cpp libcustomDB.a
 	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread tests/db_smalltest.cpp -o $@ ${LDLIBS}
 
@@ -31,28 +36,25 @@ db_largebatch: tests/db_largebatch.cpp libcustomDB.a
 db_batch_thread: tests/db_batch_thread.cpp libcustomDB.a
 	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread tests/db_batch_thread.cpp -o $@ ${LDLIBS}
 
-db_bench:  tests/db_bench.cpp
-	$(CXX) ${CXXFLAGS} ${HEADER} $^ -o $@ ${LDLIBS}
+db_parallel_thread: tests/db_parallel_thread.cpp libcustomDB.a
+	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread tests/db_parallel_thread.cpp -o $@ ${LDLIBS}
 
+db_leveldb: tests/db_leveldb.cpp libcustomDB.a
+	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread tests/db_leveldb.cpp -o $@ ${LDLIBS}
 
+tests: $(tests)
 
-db_thread2: tests/db_thread2.cpp libcustomDB.a
-	$(CXX) ${CXXFLAGS} ${HEADER} tests/db_thread2.cpp -lpthread -o $@ ${LDLIBS}
+test_slice: tests/test_slice.cpp libcustomDB.a
+	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread tests/test_slice.cpp -o $@ ${LDLIBS}
 
-slice_test: tests/slice_test.cpp libcustomDB.a
-	$(CXX) ${CXXFLAGS} ${HEADER} tests/slice_test.cpp -o $@ ${LDLIBS}
+test_batch: tests/test_batch.cpp libcustomDB.a
+	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread tests/test_batch.cpp -o $@ ${LDLIBS}
 
-batch_test: tests/batch_test.cpp libcustomDB.a
-	$(CXX) ${CXXFLAGS} ${HEADER} tests/batch_test.cpp -o $@ ${LDLIBS}
+test_thread: tests/test_thread.cpp libcustomDB.a
+	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread tests/test_thread.cpp -o $@ ${LDLIBS}
 
-
-thread_test: tests/thread_test.cpp
-	$(CXX) ${CXXFLAGS} tests/thread_test.cpp -lpthread -o $@ 
-
-
-
-rw_test:  tests/rw_test.cpp
-	$(CXX) ${CXXFLAGS} tests/rw_test.cpp -lpthread -o $@ 
+test_rw:  tests/test_rw.cpp
+	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread tests/test_rw.cpp     -o $@ ${LDLIBS}
 
 clean: 
-	rm -f *.o *.idx *.dat test demo* mp_test thread *_test* db_bench db_* *log *bak test3 test4
+	rm -f *.o *.idx *.dat demo* test_* db_*

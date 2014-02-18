@@ -476,15 +476,6 @@ void    PageDB::runBatch(const WriteBatch * pbatch)
     pcache -> free();
 }
 
-struct PageDB::Writer
-{
-    WriteBatch* batch;
-    bool sync;
-    bool done;
-    CondVar cv;
-    explicit Writer(Mutex* mu) : cv(mu) { }
-};
-
 void    PageDB::runBatchParallel(const WriteBatch * pbatch)
 {
     BufferPacket phyPacket(pbatch->getTotalSize());
@@ -1118,6 +1109,15 @@ void     PageDB::fullAddLocalD(int cur, uint64_t num, uint64_t pos1, uint64_t po
         flag = !flag;
     }
 }
+
+struct PageDB::Writer
+{
+    WriteBatch* batch;
+    bool sync;
+    bool done;
+    CondVar cv;
+    explicit Writer(Mutex* mu) : cv(mu) { }
+};
 
 WriteBatch * PageDB::BuildBatchGroup(Writer ** last_writer)
 {

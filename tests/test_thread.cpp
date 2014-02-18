@@ -1,4 +1,6 @@
-#include "../helpers/Thread.h"
+#include "Thread.h"
+using namespace utils;
+
 #include <unistd.h>
 #include <stdio.h>
 #include <assert.h>
@@ -121,6 +123,13 @@ void RunTest3()
 
 int main()
 {
+    RunTest1();
+    printf("Passed Test1\n");
+    RunTest2();
+    printf("Passed Test2\n");
     RunTest3();
+    printf("Passed Test3\n");
+    
+    printf("Passed All Tests\n");
     return 0;
 }

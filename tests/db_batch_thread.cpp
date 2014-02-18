@@ -12,7 +12,7 @@ using namespace customdb;
 
 
 /**
-	Create 5 four thread, each put 250000 items.
+	Create four thread, each put 250000 items.
 	For each thread, each time, it compute 5000 items.
 **/
 #define SIZE 1000000

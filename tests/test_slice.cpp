@@ -3,12 +3,13 @@ using namespace std;
 
 #include "Slice.h"
 #include "BufferPacket.h"
+using namespace customdb;
 
 #include <assert.h>
 
 #define EXPECT_EQ(a,b) assert(a == b)
 
-void Test()
+void Test1()
 {
     BufferPacket packet(sizeof(int));
     packet << 15545;
@@ -35,7 +36,9 @@ void Test3()
 
 int main()
 {
+    Test1();
     Test2();
+    Test3();
     printf("All Test has Passed\n");
     return 0;
 }

@@ -50,7 +50,7 @@ int Mutex::trylock()
     return pthread_mutex_trylock(&m_mutex);
 }
 
-CondVar::CondVar(Mutex* mutex)
+CondVar::CondVar(Mutex* mutex) : m_mutex(mutex)
 {
     pthread_cond_init(&m_cond, NULL);
 }

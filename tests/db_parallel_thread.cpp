@@ -4,23 +4,21 @@ using namespace std;
 #include "CustomDB.h"
 #include "Option.h"
 #include "TimeStamp.h"
+#include "BufferPacket.h"
+using namespace customdb;
+using namespace utils;
 
 #include <assert.h>
 
 
 /**
-	Create 5 four thread, each put 250000 items.
+	Create four thread, each put 250000 items.
 	For each thread, each time, it compute 5000 items.
 **/
 #define SIZE      1000000
 #define BATCHSIZE 250000
 #define SUBSIZE   50000
 #define THRNUM    4
-
-// #define SIZE      1500
-//  #define BATCHSIZE 750
-//  #define SUBSIZE   250
-//  #define THRNUM    2
 
 #define EXPECT_EQ(a,b) assert(a == b)
 #define EXPECT_EQ_S(a,b) assert(strcmp(a,b) == 1)
@@ -54,7 +52,7 @@ void* thrFunc(void * data)
             batch.put(key, value);
         }
 
-        db -> runBatch2(&batch);
+        db -> runBatchParallel(&batch);
         printf("thread %d finished round %d\n", flag, i);
     }
 
@@ -67,7 +65,7 @@ void* thrFunc(void * data)
 /**
     Test for Batch-Digest
 **/
-void RunTest2()
+void RunTest1()
 {
     option.logOption.disabled = true;
     option.logOption.logLevel = LOG_FATAL;
@@ -94,9 +92,6 @@ void RunTest2()
         for(int i = 0; i < THRNUM; i++) thrs[i].join();
 
         total.StopTime("Total PutTime(Thread Version): ");
-
-        //   db -> dump();
-
         db -> close();
     }
 
@@ -131,7 +126,7 @@ void RunTest2()
             //  EXPECT_EQ(i,num);
         }
         total.StopTime("GetTime(Without Cache): ");
-
+        
         db -> close();
     }
     cout<<freq<<endl;
@@ -140,7 +135,7 @@ void RunTest2()
 
 int main()
 {
-    RunTest2();
+    RunTest1();
     printf("Passed All Test, Congratulations\n");
 
     return 0;

@@ -1,8 +1,9 @@
-#include "../helpers/Thread.h"
-#include <unistd.h>
+#include "Thread.h"
+using namespace utils;
+
+#include <unistd.h> // for sleep
 #include <stdio.h>
 #include <assert.h>
-
 
 Mutex mutex;
 RWLock rwlock(&mutex);
@@ -15,6 +16,7 @@ void * func1(void *)
     sleep(1);
     rwlock.writeLock();
     printf("567\n");
+    rwlock.writeUnlock();
 }
 
 void * func2(void *)
@@ -31,7 +33,7 @@ void * func3(void *)
     printf("123\n");
     sleep(5);
     rwlock.writeUnlock();
-    //sleep(1);
+    sleep(1);
     rwlock.writeLock();
     printf("567\n");
     rwlock.writeUnlock();
@@ -72,6 +74,8 @@ void RunTest2()
 
 int main()
 {
+    RunTest1();
     RunTest2();
+    printf("Passed All Tests\n");
     return 0;
 }

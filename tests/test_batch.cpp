@@ -1,11 +1,16 @@
 #include <iostream>
 using namespace std;
 
-#include "BufferPacket.h"
 #include "Batch.h"
 #include "Slice.h"
+#include "BufferPacket.h"
+using namespace customdb;
 
-int main()
+#include <assert.h>
+
+#define EXPECT_EQ(a,b) assert(a == b)
+
+void RunTest1()
 {
     BufferPacket packet(sizeof(int)*3);
     packet << 1;
@@ -22,11 +27,17 @@ int main()
 
     WriteBatch::Iterator iterator(&batch);
     typedef pair<Slice, Slice> Node;
+
     for(const Node * node = iterator.first(); node != iterator.end(); node = iterator.next())
     {
         Slice a = node -> first;
         Slice b = node -> second;
-        cout<<a.returnAsInt()<<" "<<b.returnAsInt()<<endl;
+        EXPECT_EQ(a, b);
     }
+}
+
+int main()
+{
+    printf("Passed All Tests\n");
     return 0;
 }
