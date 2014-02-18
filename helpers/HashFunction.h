@@ -6,7 +6,7 @@
 
 #include <stdint.h>
 
-#include "../include/Slice.h"
+#include "Slice.h"
 
 namespace customdb
 {

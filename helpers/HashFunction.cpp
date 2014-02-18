@@ -2,7 +2,8 @@
 // domain. The author hereby disclaims copyright to this source code.
 
 #include "HashFunction.h"
-using namespace customdb;
+
+namespace customdb{
 
 #define ROTL32(x,y) rotl32(x,y)
 #define ROTL64(x,y) rotl64(x,y)
@@ -108,3 +109,5 @@ uint32_t defaultHashFunc(const Slice & key)
 
     return value;
 }
+
+};

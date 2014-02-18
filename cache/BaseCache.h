@@ -6,10 +6,10 @@
 using std::map;
 using std::vector;
 
-#include "../include/Log.h"
-#include "../include/Slice.h"
+#include "Log.h"
+#include "Slice.h"
 
-#include "../utils/Thread.h"
+#include "Thread.h"
 using utils::Mutex;
 using utils::Atomic;
 using utils::ScopeMutex;

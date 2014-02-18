@@ -1,6 +1,8 @@
 #include "BufferPacket.h"
 
-using namespace customdb;
+#include <assert.h>
+
+namespace customdb{
 
 BufferPacket::BufferPacket(int size) : m_size(size), m_cur(0)
 {
@@ -276,3 +278,5 @@ BufferPacket & BufferPacket::operator >> (char * str)
 
     return *this;
 }
+
+};

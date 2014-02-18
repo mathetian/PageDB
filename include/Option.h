@@ -6,6 +6,8 @@ using namespace std;
 
 #include "Log.h"
 
+namespace customdb{
+
 /******************************/
 #define CUSTOMDB_W  0
 #define CUSTOMDB_R  1
@@ -79,6 +81,9 @@ struct Options_t
     FileOption    fileOption;
 };
 
-typedef struct Options_t Options;
+typedef struct Options_t Options;  
+
+};
+
 
 #endif

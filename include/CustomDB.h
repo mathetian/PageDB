@@ -5,12 +5,13 @@
 #include "Batch.h"
 #include "Slice.h"
 #include "Option.h"
-#include "Factory.h"
-#include "CacheImpl.h"
-#include "FactoryImpl.h"
+#include "BaseCache.h"
+#include "DBInternal.h"
 
 #include <string>
 using namespace std;
+
+namespace customdb{
 
 #define ERROR 0
 #define SUCCE 1
@@ -18,92 +19,34 @@ using namespace std;
 class CustomDB
 {
 public:
-    CustomDB() : factory(NULL), cache(NULL) {  }
-
-    virtual ~CustomDB()
-    {
-        if(factory) delete factory;
-        if(cache)   delete cache;
-
-        factory = NULL;
-        cache = NULL;
-    }
-
-    void   close()
-    {
-        if(factory) factory -> fflush();
-
-        if(factory) delete factory;
-        if(cache)   delete cache;
-
-        factory = NULL;
-        cache = NULL;
-    }
-
-    void   dump()
-    {
-        factory -> dump();
-    }
-
-    void   cleanCACHE()
-    {
-        cache -> clear();
-    }
-
-    void   destoryDB(const char * filename)
-    {
-        string sfilename(filename, filename + strlen(filename));
-        string idxName = sfilename + ".idx";
-        string datName = sfilename +  ".dat";
-
-        idxName = "rm " + idxName;
-        datName = "rm " + datName;
-        system(idxName.c_str());
-        system(datName.c_str());
-    }
-
-    void fflush()
-    {
-        factory -> fflush();
-    }
+    CustomDB();
+    virtual ~CustomDB();
 
 public:
-    bool 	open(const Options & option);
-    bool 	put(const Slice & key,const Slice & value);
-    Slice   get(const Slice & key);
-    bool 	remove(const Slice & key);
+    void   close();
+    void   dump();
+    void   cleanCACHE();
+    void   destoryDB(const char * filename);
+    void   fflush();
 
-    bool	getError();
-
-    void    write(const WriteBatch * pbatch)
-    {
-        factory -> runBatch(pbatch);
-    }
-
-    void    tWrite(WriteBatch * pbatch)
-    {
-        factory -> write(pbatch);
-    }
-
-    void    compact()
-    {
-        factory -> compact();
-    }
-
-    void    runBatch2(const WriteBatch * pbatch)
-    {
-        factory -> runBatch2(pbatch);
-    }
+public:
+    bool   open(const Options & option);
+    bool   put(const Slice & key,const Slice & value);
+    Slice  get(const Slice & key);
+    bool   remove(const Slice & key);
+    bool   getError();
+    void   write(const WriteBatch * pbatch);
+    void   tWrite(WriteBatch * pbatch);
+    void   compact();
+    void   runBatchParallel(const WriteBatch * pbatch);
 
 private:
     Options   	option;
-    Factory   * factory;
+    DBInternal *dbimpl;
     BaseCache * cache;
     Log       * log;
     int         errorStatus;
-
-public:
-    bool init();
 };
 
+};
 #endif

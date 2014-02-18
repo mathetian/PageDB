@@ -1,6 +1,84 @@
-#include "CustomDB.h"
+#include "../include/CustomDB.h"
+#include "../cache/FIFOLMCache.h"
+#include "../cache/LRULMCache.h"
 
-bool CustomDB::open(const Options & option)
+#include "../dbimpl/PageDBImpl.h"
+#include "../dbimpl/ChainHashDBImpl.h"
+
+#include <string.h>
+
+namespace customdb{
+
+CustomDB::CustomDB() : dbimpl(NULL), cache(NULL) {  }
+
+CustomDB::~CustomDB()
+{
+    if(dbimpl) delete dbimpl;
+    if(cache)   delete cache;
+
+    dbimpl = NULL;
+    cache = NULL;
+}
+
+void   CustomDB::close()
+{
+    if(dbimpl)  dbimpl -> fflush();
+
+    if(dbimpl)  delete dbimpl;
+    if(cache)   delete cache;
+
+    dbimpl = NULL;
+    cache = NULL;
+}
+
+void   CustomDB::dump()
+{
+    dbimpl -> dump();
+}
+
+void   CustomDB::cleanCACHE()
+{
+    cache -> clear();
+}
+
+void   CustomDB::destoryDB(const char * filename)
+{
+    string sfilename(filename, filename + strlen(filename));
+    string idxName = sfilename + ".idx";
+    string datName = sfilename +  ".dat";
+
+    idxName = "rm " + idxName;
+    datName = "rm " + datName;
+    system(idxName.c_str());
+    system(datName.c_str());
+}
+
+void CustomDB::fflush()
+{
+    dbimpl -> fflush();
+}
+
+ void CustomDB::write(const WriteBatch * pbatch)
+{
+    dbimpl -> runBatch(pbatch);
+}
+
+void  CustomDB::tWrite(WriteBatch * pbatch)
+{
+    dbimpl -> write(pbatch);
+}
+
+void  CustomDB::compact()
+{
+    dbimpl -> compact();
+}
+
+void  CustomDB::runBatchParallel(const WriteBatch * pbatch)
+{
+    dbimpl -> runBatchParallel(pbatch);
+}
+
+bool  CustomDB::open(const Options & option)
 {
     this -> option = option;
 
@@ -26,20 +104,20 @@ bool CustomDB::open(const Options & option)
     switch(option.factoryOption.factoryType)
     {
     case EHASH:
-        factory = new ExtendibleHash;
+        dbimpl = new PageDB;
         break;
     case CHASH:
-        factory = new ChainHash;
+        dbimpl = new ChainDB;
         break;
     default:
-        log -> _Fatal("CustomDB::open::factory error\n");
+        log -> _Fatal("CustomDB::open::dbimpl error\n");
     }
 
-    if(factory == NULL)
-        log -> _Fatal("CustomDB::open::new factory error\n");
+    if(dbimpl == NULL)
+        log -> _Fatal("CustomDB::open::new dbimpl error\n");
 
-    if(factory -> init(option.fileOption.fileName) == false)
-        log -> _Fatal("CustomDB::open::init factory error\n");
+    if(dbimpl -> init(option.fileOption.fileName) == false)
+        log -> _Fatal("CustomDB::open::init dbimpl error\n");
 
     log -> _Trace("CustomDB::open initialization successfully\n");
     return true;
@@ -55,11 +133,11 @@ bool CustomDB::put(const Slice & key,const Slice & value)
     {
         log -> _Trace("CustomDB::put::not exist in cache\n");
 
-        if(!factory -> put(key,value))
-            log -> _Warn("CustomDB::put::factory put error\n");
+        if(!dbimpl -> put(key,value))
+            log -> _Warn("CustomDB::put::dbimpl put error\n");
         else
         {
-            log -> _Trace("CustomDB::put::factory put successfully\n");
+            log -> _Trace("CustomDB::put::dbimpl put successfully\n");
             cache -> put(key,value);
             errorStatus = SUCCE;
         }
@@ -75,10 +153,10 @@ Slice CustomDB::get(const Slice & key)
         errorStatus = SUCCE;
     else
     {
-        log -> _Trace("CustomDB::get::factory not in cache\n");
-        rs = factory -> get(key);
+        log -> _Trace("CustomDB::get::dbimpl not in cache\n");
+        rs = dbimpl -> get(key);
         if(rs.size() == 0)
-            log -> _Warn("CustomDB::get::factory get warning\n");
+            log -> _Warn("CustomDB::get::dbimpl get warning\n");
         else
         {
             cache -> put(key,rs);
@@ -104,8 +182,8 @@ bool CustomDB::remove(const Slice & key)
         else log -> _Trace("CustomDB::remove::cache remove successfully\n");
     }
 
-    if((factory -> remove(key)) == 0)
-        log -> _Error("CustomDB::remove::factory remove error\n");
+    if((dbimpl -> remove(key)) == 0)
+        log -> _Error("CustomDB::remove::dbimpl remove error\n");
 
     errorStatus = SUCCE;
     return errorStatus;
@@ -115,3 +193,5 @@ bool CustomDB::getError()
 {
     return errorStatus;
 }
+
+};
