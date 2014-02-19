@@ -25,7 +25,7 @@ private:
 
 public:
     Thread(Task task = NULL, void * args = NULL) : m_task(task), m_args(args), m_tid(THRINIT) { }
-    Thread(const Thread & thr) : m_task(thr.m_task), m_args(thr.m_args) { }
+    Thread(const Thread & thr) : m_task(thr.m_task), m_args(thr.m_args), m_tid(thr.m_tid) { }
     ThreadID run();
     void     join();
     void     cancel();

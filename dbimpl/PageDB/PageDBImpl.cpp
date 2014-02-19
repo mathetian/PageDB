@@ -67,7 +67,6 @@ bool     PageDB::put(const Slice & key,const Slice & value)
         printf("double tables\n");
         
         gd += 1;
-        pn = 2*pn;
 
         uint32_t oldSize = entries.size();
         for(uint32_t i = 0; i < oldSize; i++)
@@ -143,6 +142,8 @@ bool     PageDB::put(const Slice & key,const Slice & value)
 
         delete p2;
         p2 = NULL;
+
+        pn += 1;
     }
     else
     {
@@ -394,7 +395,6 @@ void    PageDB::runBatch(const WriteBatch * pbatch)
         if(page -> full() && page -> d == gd)
         {
             gd++;
-            pn = 2*pn;
 
             int oldSize = entries.size();
             for(int i = 0; i < oldSize; i++)
@@ -460,6 +460,8 @@ void    PageDB::runBatch(const WriteBatch * pbatch)
 
             BufferPacket packe2 = p2 -> getPacket();
             datfs.write(packe2.getData(), packe2.getSize());
+
+            pn += 1;
         }
         else
         {
@@ -619,7 +621,6 @@ LABLE:
             }
 
             gd++;
-            pn = 2*pn;
 
             int oldSize = entries.size();
             for(int i = 0; i < oldSize; i++)
@@ -702,6 +703,8 @@ LABLE:
 
             delete p2;
             p2 = NULL;
+
+            pn+=1;
         }
         else
         {

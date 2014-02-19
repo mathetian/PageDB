@@ -162,7 +162,6 @@ void   PageTable::replaceQ(const Slice & key, const Slice & value, uint32_t hash
             
             if(slice != key)
             {
-                printf("notice here, same hashVal, different key\n");
                 continue;
             }
 
