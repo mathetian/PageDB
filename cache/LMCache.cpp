@@ -19,7 +19,7 @@ bool LimitedMemoryCache::put(const Slice & key,const Slice & value)
 
     int  valueSize       = value.size();
     bool putSuccessfully = false;
-    
+
     int  curCacheSize    = cacheSize;
     if(valueSize < cacheLimit)
     {
@@ -27,22 +27,22 @@ bool LimitedMemoryCache::put(const Slice & key,const Slice & value)
         {
             Slice removedKey   = removeNext();
             Slice removedValue = BaseCache::get(removedKey);
-           
+
             if (hardCache.erase(removedKey))
             {
                 curCacheSize = cacheSize.addAndGet(-removedValue.size());
             }
         }
-       
+
         hardCache.insert(key);
-       
+
         cacheSize.addAndGet(valueSize);
-       
+
         putSuccessfully = true;
         BaseCache::put(key, value);
     }
     else log -> _Warn("Large size, can't be put into cache\n");
-   
+
     return putSuccessfully;
 }
 

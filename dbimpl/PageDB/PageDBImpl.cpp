@@ -8,7 +8,7 @@ namespace customdb
 #define FILEMODE2 (fstream::out | fstream::app)
 
 PageDB::PageDB(HASH hashFunc) : hashFunc(hashFunc), gd(0), pn(1), \
-        fb(-1), globalLock(&tmplock), MOD((1ull << 56) - 1)
+    fb(-1), globalLock(&tmplock), MOD((1ull << 56) - 1)
 {
     pcache = new PageCache(this);
     m_tmpBatch = new WriteBatch;
@@ -18,19 +18,19 @@ PageDB::~PageDB()
 {
     fflush();
 
-    if(idxfs) 
+    if(idxfs)
         writeToIdxFile();
-    
-    if(idxfs) 
+
+    if(idxfs)
         idxfs.close();
-    
-    if(datfs) 
+
+    if(datfs)
         datfs.close();
-    
-    if(pcache) 
+
+    if(pcache)
         delete pcache;
-    
-    if(m_tmpBatch) 
+
+    if(m_tmpBatch)
         delete m_tmpBatch;
 }
 
@@ -65,7 +65,7 @@ bool     PageDB::put(const Slice & key,const Slice & value)
     {
         log -> _Trace("ExtendibleHash :: put :: full, so double-entries\n");
         printf("double tables\n");
-        
+
         gd += 1;
 
         uint32_t oldSize = entries.size();
@@ -600,7 +600,7 @@ LABLE:
             {
                 ScopeMutex lock(&datLock);
                 assert(cur < entries.size());
-                
+
                 datfs.seekg(addr, ios_base::beg);
                 datfs.read(packet.getData(), packet.getSize());
             }
@@ -1067,7 +1067,7 @@ int      PageDB::findSuitableOffset(int size)
 
 void     PageDB::printThisPage(PageTable * page)
 {
-    for(int i = 0;i < page -> curNum; i++)
+    for(int i = 0; i < page -> curNum; i++)
     {
         datfs.seekg(page -> elements[i].m_datPos, ios_base::beg);
         BufferPacket packet(2*SINT);
@@ -1223,7 +1223,7 @@ void     PageDB::write(WriteBatch* pbatch)
 
 void PageDB::reOpenDB()
 {
-     /**Sorry for that, I don't find better solution.**/
+    /**Sorry for that, I don't find better solution.**/
     idxfs.open (idxName.c_str(), FILEMODE2);
     datfs.open (datName.c_str(), FILEMODE2);
 

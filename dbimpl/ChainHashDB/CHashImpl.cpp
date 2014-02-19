@@ -4,11 +4,11 @@ namespace customdb
 {
 
 ChainDB::ChainDB(int chainCount, HASH hashFunc) :\
-        chainCount(chainCount), hashFunc(hashFunc) { }
+    chainCount(chainCount), hashFunc(hashFunc) { }
 
 ChainDB::~ChainDB()
 {
-	datfs.close();
+    datfs.close();
 
     for(int index = 0; index < chainCount; index++)
     {
@@ -19,14 +19,14 @@ ChainDB::~ChainDB()
 
 bool     ChainDB::put(const Slice & key,const Slice & value)
 {
- 	uint32_t hashVal   = hashFunc(key);
+    uint32_t hashVal   = hashFunc(key);
     ChainTable * chain = headers.at(hashVal % chainCount);
     return chain -> put(key, value, hashVal);
 }
 
 Slice    ChainDB::get(const Slice & key)
 {
-	uint32_t hashVal = hashFunc(key);
+    uint32_t hashVal = hashFunc(key);
     ChainTable * chain = headers.at(hashVal % chainCount);
     /**Problem ?**/
     return chain -> get(key, hashVal);
@@ -34,7 +34,7 @@ Slice    ChainDB::get(const Slice & key)
 
 bool     ChainDB::remove(const Slice & key)
 {
- 	uint32_t hashVal = hashFunc(key);
+    uint32_t hashVal = hashFunc(key);
     ChainTable * chain = headers.at(hashVal % chainCount);
     /**Problem ?**/
     return chain -> remove(key, hashVal);
@@ -42,7 +42,7 @@ bool     ChainDB::remove(const Slice & key)
 
 bool	 ChainDB::init(const char * filename)
 {
-	struct stat buf;
+    struct stat buf;
     string datFileName = filename;
     datFileName += ".dat";
 
@@ -63,8 +63,8 @@ bool	 ChainDB::init(const char * filename)
         headers[index] = new ChainTable(this, entries.at(index));
 }
 
-void     ChainDB::removeAll(const char * filename) 
-{ 
+void     ChainDB::removeAll(const char * filename)
+{
 
 }
 
@@ -106,7 +106,7 @@ void     ChainDB::recycle(int offset, int size)
 
 void     ChainDB::writeToFile()
 {
- 	BufferPacket packet(SINT * 2 + SINT * chainCount);
+    BufferPacket packet(SINT * 2 + SINT * chainCount);
     Slice slice((char*)&entries[0], SINT * chainCount);
 
     packet << chainCount << fb << slice;
@@ -117,7 +117,7 @@ void     ChainDB::writeToFile()
 
 void     ChainDB::readFromFile()
 {
-	BufferPacket packet(SINT * 2 + SINT * chainCount);
+    BufferPacket packet(SINT * 2 + SINT * chainCount);
     packet >> chainCount >> fb;
 
     entries = vector<int>(chainCount, -1);

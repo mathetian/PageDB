@@ -2,7 +2,8 @@
 
 #include <assert.h>
 
-namespace customdb{
+namespace customdb
+{
 
 BufferPacket::BufferPacket(int size) : m_size(size), m_cur(0)
 {

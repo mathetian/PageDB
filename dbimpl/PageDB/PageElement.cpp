@@ -1,6 +1,7 @@
 #include "PageDBImpl.h"
 
-namespace customdb{
+namespace customdb
+{
 
 PageElement::PageElement(): m_hashVal(0), \
     m_datPos(-1), m_keySize(-1), m_datSize(-1) { }

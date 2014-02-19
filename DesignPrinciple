@@ -1,0 +1,69 @@
+TODO List:
+
+1. Test
+2. JSON
+3. Lock
+4. Parallel
+5. Other support
+6. Vim or others
+
+------------------------------------------
+
+I guess I will make some other tasks to implement the DB, like 3.
+
+Also,
+
+7. Memory Pool 
+8. Thread Pool
+9. AIO, IOCP
+
+Are very import in this project.
+
+-------------------------------------------------------------
+Basic performance, put 65s/1M, read 33s/1M. Without any external cache. 33% usage. use cache `4s`?
+-------------------------------------------------------------
+V0.02, add page-cache feature, performance is bad than previous experiment.
+
+Got it why the result looks good in previous failed experiment(Almost not change page, -1).
+
+Advice: use background thread to save page or pageelement into files.
+--------------------------------------------------------------
+V0.03, add batch mode(maybe slient batch)
+
+Speed performance, 25s/100M, and the speed will be slow enough with the increasing of the test data.
+
+V0.035, the fasted record is 10.5s/100M in my experiment.
+--------------------------------------------------------------
+V0.04, add multiple-threading programming technology.
+Speed is almost same as previous experiment(I guess the parallel technology I take affects it).
+
+Add another mp technolgy, however, the performance is still the same. Bottleneck is in disk?
+
+V0.045, add `log lock` and `cache lock`. The style of `cache lock` is very ugly.
+
+How to use lock(atomic or others)?
+--------------------------------------------------------------
+V0.05, add async-w/r technology.
+--------------------------------------------------------------
+V0.06, add compact feature, add log disabled option
+Performance, when we disabled the log, the read performance has obvious advancement.
+
+Great, achieve compact. However. the efficiency of compact is very slow when we use batch in write phase. However, it can achieve 34M/57M performance in general put method. Further optimization can be adopted. However, very hard and time-consuming.
+--------------------------------------------------------------
+V0.07 Add fast search in Split
+
+10%~20% performance improvement. Not very ideal.
+--------------------------------------------------------------
+Best practise in coding life,
+1. Build it
+2. Write(find) a basic test to testify it
+--------------------------------------------------------------
+Bottleneck has been found, the updated time of page.
+
+Three method to remedy it.
+
+1. AIO
+2. Use fcntl(However, need much times to implement it.)
+3. MMAP + dup, maybe.
+--------------------------------------------------------------
+Zero Tolerable Policy.

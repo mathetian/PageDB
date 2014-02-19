@@ -11,7 +11,8 @@
 #include <string>
 using namespace std;
 
-namespace customdb{
+namespace customdb
+{
 
 #define ERROR 0
 #define SUCCE 1

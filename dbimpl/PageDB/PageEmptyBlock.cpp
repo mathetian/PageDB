@@ -1,9 +1,10 @@
 #include "PageDBImpl.h"
 
-namespace customdb{
+namespace customdb
+{
 
 PageEmptyBlock::PageEmptyBlock() : \
-curNum(0), nextBlock(-1) { }
+    curNum(0), nextBlock(-1) { }
 
 bool PageEmptyBlock::checkSuitable(int size, int & pos)
 {
@@ -23,9 +24,9 @@ PageEmptyBlock PageEmptyBlock::split()
 
     for(index = 0; index < curNum; index++)
     {
-        if(index & 1) 
+        if(index & 1)
             newblock.eles[cn1++] = eles[index];
-        else 
+        else
             eles[cn2++] = eles[index];
     }
 

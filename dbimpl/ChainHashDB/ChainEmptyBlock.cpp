@@ -10,7 +10,7 @@ ChainEmptyBlock::ChainEmptyBlock() : curNum(0), nextBlock(-1)
 
 bool ChainEmptyBlock::checkSuitable(int size, int & pos)
 {
- 	for(pos = curNum - 1; pos >= 0; pos--)
+    for(pos = curNum - 1; pos >= 0; pos--)
     {
         if(eles[pos].size > size)
             return true;
@@ -20,12 +20,12 @@ bool ChainEmptyBlock::checkSuitable(int size, int & pos)
 
 void ChainEmptyBlock::newBlock(int size)
 {
-	//Todo list
+    //Todo list
 }
 
 ChainEmptyBlock ChainEmptyBlock::split()
 {
-	ChainEmptyBlock newblock;
+    ChainEmptyBlock newblock;
 
     int cn1 = 0, cn2 = 0;
 

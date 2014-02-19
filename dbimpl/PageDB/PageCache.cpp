@@ -1,10 +1,11 @@
 #include "PageDBImpl.h"
 
-namespace customdb{
-    
+namespace customdb
+{
+
 PageCache::PageCache(PageDB * db) : \
-    cur(0), db(db) 
-{ 
+    cur(0), db(db)
+{
 
 }
 

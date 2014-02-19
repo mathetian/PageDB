@@ -1,6 +1,7 @@
 #include "PageDBImpl.h"
 
-namespace customdb{
+namespace customdb
+{
 
 PageTable::PageTable(PageDB * db) : d(0), curNum(0), db(db)
 {
@@ -28,10 +29,10 @@ void PageTable::setByBucket(BufferPacket & packet)
 
 bool   PageTable::full()
 {
-    if(curNum >= PAGESIZE + 3) 
+    if(curNum >= PAGESIZE + 3)
         printf("xxx:%d\n", curNum);
     assert(curNum < PAGESIZE + 3);
-    
+
     return curNum >= PAGESIZE;
 }
 
@@ -58,10 +59,10 @@ bool   PageTable::put(const Slice & key,const Slice & value, uint32_t hashVal)
     }
 
     /**
-        Find an suitable empty block, 
+        Find an suitable empty block,
         if not allocated it at the end of the file
     **/
-    
+
     BufferPacket packet(key.size() + value.size());
     packet << key << value;
 
@@ -84,7 +85,7 @@ bool   PageTable::put(const Slice & key,const Slice & value, uint32_t hashVal)
 
 Slice  PageTable::get(const Slice & key, uint32_t hashVal)
 {
-    for(int index = 0;index < curNum; index++)
+    for(int index = 0; index < curNum; index++)
     {
         if(elements[index].m_hashVal == hashVal && elements[index].m_keySize == key.size())
         {
@@ -104,7 +105,7 @@ Slice  PageTable::get(const Slice & key, uint32_t hashVal)
         }
     }
     return "";
-}   
+}
 
 bool   PageTable::remove(const Slice & key, uint32_t hashVal)
 {
@@ -159,7 +160,7 @@ void   PageTable::replaceQ(const Slice & key, const Slice & value, uint32_t hash
             }
 
             packet >> slice;
-            
+
             if(slice != key)
             {
                 continue;

@@ -126,7 +126,7 @@ void RunTest1()
             //  EXPECT_EQ(i,num);
         }
         total.StopTime("GetTime(Without Cache): ");
-        
+
         db -> close();
     }
     cout<<freq<<endl;

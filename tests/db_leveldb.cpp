@@ -21,7 +21,7 @@ using namespace utils;
 
 #include <string.h>
 
-static const char* FLAGS_benchmarks = "fillparallel,fillthreadbatch,fillbatch,fillrandom,readrandom";
+static const char* FLAGS_benchmarks = "fillrandom,fillbatch,fillthreadbatch,fillparallel,readrandom";
 
 // Number of key/values to place in database
 static int FLAGS_num = 1000000;
@@ -87,7 +87,7 @@ static Slice TrimSpace(Slice s)
     {
         limit--;
     }
-    
+
     return Slice(s.c_str() + start, limit - start);
 }
 
@@ -184,7 +184,7 @@ public:
 
         if(FLAGS_db) option_.fileOption.fileName = FLAGS_db;
         if(FLAGS_log) option_.logOption.logPrefix = FLAGS_log;
-        
+
         option_.logOption.logLevel = LOG_ERROR;
         option_.logOption.disabled = true;
 
@@ -304,7 +304,7 @@ private:
 
         Random rnd(31);
         char key1[100];
-        
+
         TimeStamp m_tms;
         m_tms.StartTime();
 
@@ -312,7 +312,7 @@ private:
         {
             if(i%10000 == 0)
                 printf("WriteRandom %d\n", i);
-            
+
             int k = rnd.Next() & ((1<<25)-1);
             snprintf(key1, sizeof(key1), "%016d", k);
             Slice key(key1,16);
@@ -326,22 +326,23 @@ private:
     void WriteBatch2()
     {
         int batchNum = (num_ + batchsize_ - 1)/batchsize_;
-        
+
         RandomGenerator gen;
 
         Random rnd(32);
-        char key1[100]; char str[256];
+        char key1[100];
+        char str[256];
         TimeStamp total, part;
 
         total.StartTime();
 
-        for(int i = 0;i < batchNum;i++)
+        for(int i = 0; i < batchNum; i++)
         {
             part.StartTime();
-            
+
             WriteBatch batch(batchsize_);
 
-            for(int j = 0;j < batchsize_;j++)
+            for(int j = 0; j < batchsize_; j++)
             {
                 int k = rnd.Next() & ((1<<25)-1);
                 snprintf(key1, sizeof(key1), "%016d", k);
@@ -349,21 +350,22 @@ private:
                 Slice value(gen.Generate(FLAGS_value_size));
                 batch.put(key, value);
             }
-            
+
             db_ -> write(&batch);
-            
+
             sprintf(str, "In round %d, PutTime: ", i);
             part.StopTime(str);
         }
 
         total.StopTime("WriteBatch Total Time: ");
     }
-  
-  struct ThreadArg {
-    Benchmark* bm;
-    int thrid;
-    void* (Benchmark::*method)(int);
-  };
+
+    struct ThreadArg
+    {
+        Benchmark* bm;
+        int thrid;
+        void* (Benchmark::*method)(int);
+    };
 
     static void* ThreadBody(void *arg)
     {
@@ -374,7 +376,8 @@ private:
     void* ThreadBatchBody(int thrid)
     {
         RandomGenerator gen;
-        char str[256];Random rnd(32);
+        char str[256];
+        Random rnd(32);
         char key1[100];
 
         int eachNum = (num_ + num_cpus - 1)/num_cpus;
@@ -382,13 +385,13 @@ private:
         printf("Thread %d start, batchNum %d\n", thrid, batchNum);
 
         TimeStamp m_tms;
-        
+
         m_tms.StartTime();
-        for(int i = 0;i < batchNum;i++)
+        for(int i = 0; i < batchNum; i++)
         {
             WriteBatch batch(batchsize_);
-            
-            for(int j = 0;j < batchsize_;j++)
+
+            for(int j = 0; j < batchsize_; j++)
             {
                 int k = rnd.Next() & ((1<<25)-1);
                 snprintf(key1, sizeof(key1), "%016d", k);
@@ -406,7 +409,8 @@ private:
     void* ThreadParallelBatchBody(int thrid)
     {
         RandomGenerator gen;
-        char str[256];Random rnd(32);
+        char str[256];
+        Random rnd(32);
         char key1[100];
 
         int eachNum = (num_ + num_cpus - 1)/num_cpus;
@@ -414,13 +418,13 @@ private:
         printf("Thread %d start, batchNum %d\n", thrid, batchNum);
 
         TimeStamp m_tms;
-        
+
         m_tms.StartTime();
-        for(int i = 0;i < batchNum;i++)
+        for(int i = 0; i < batchNum; i++)
         {
             WriteBatch batch(batchsize_);
-            
-            for(int j = 0;j < batchsize_;j++)
+
+            for(int j = 0; j < batchsize_; j++)
             {
                 int k = rnd.Next() & ((1<<25)-1);
                 snprintf(key1, sizeof(key1), "%016d", k);
@@ -439,8 +443,8 @@ private:
     {
         vector<Thread> thrs;
         ThreadArg *args = new ThreadArg[num_cpus];
-        
-        for(uint64_t i = 0;i < num_cpus;i++)
+
+        for(uint64_t i = 0; i < num_cpus; i++)
         {
             args[i].method = &Benchmark::ThreadBatchBody;
             args[i].bm     = this;
@@ -449,20 +453,21 @@ private:
             thrs[thrs.size()-1].run();
         }
 
-        for(uint64_t i = 0;i < num_cpus;i++)
+        for(uint64_t i = 0; i < num_cpus; i++)
         {
             thrs[i].join();
         }
 
-        delete [] args; args = NULL;
+        delete [] args;
+        args = NULL;
     }
 
     void WriteParallelBatch()
     {
         vector<Thread> thrs;
         ThreadArg *args = new ThreadArg[num_cpus];
-        
-        for(uint64_t i = 0;i < num_cpus;i++)
+
+        for(uint64_t i = 0; i < num_cpus; i++)
         {
             args[i].method = &Benchmark::ThreadParallelBatchBody;
             args[i].bm     = this;
@@ -471,12 +476,13 @@ private:
             thrs[thrs.size()-1].run();
         }
 
-        for(uint64_t i = 0;i < num_cpus;i++)
+        for(uint64_t i = 0; i < num_cpus; i++)
         {
             thrs[i].join();
         }
 
-        delete [] args; args = NULL;
+        delete [] args;
+        args = NULL;
     }
 
     void ReadRandom()
@@ -486,27 +492,27 @@ private:
         Random rnd(32);
 
         char key1[100];
-        
+
         TimeStamp m_tms;
         m_tms.StartTime();
 
         for (int i = 0; i < reads_; i++)
         {
-            if(i%10000==0) 
+            if(i%10000==0)
                 printf("ReadRandom %d\n", i);
-            
+
             const int k = rnd.Next() & ((1<<25)-1);
             snprintf(key1, sizeof(key1), "%016d", k);
-            
+
             Slice key(key1,16);
             Slice value;
-            
+
             value = db_ -> get(key);
-            
+
             if(value.size()!=0) found++;
         }
 
-        char msg[100]; 
+        char msg[100];
         snprintf(msg, sizeof(msg), "(%d of %d found)", found, num_);
         cout<<msg<<endl;
         m_tms.StopTime("ReadRandom spend time:");

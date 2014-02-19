@@ -16,11 +16,11 @@ private:
 #ifdef __WIN32
     typedef HANDLE ThreadID;
     typedef unsigned(WINAPI *Task)(void *);
-    #define THRINIT NULL
+#define THRINIT NULL
 #else
     typedef pthread_t ThreadID;
     typedef void *(*Task)(void *);
-    #define THRINIT -1
+#define THRINIT -1
 #endif
 
 public:

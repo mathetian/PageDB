@@ -3,7 +3,8 @@
 
 #include "HashFunction.h"
 
-namespace customdb{
+namespace customdb
+{
 
 #define ROTL32(x,y) rotl32(x,y)
 #define ROTL64(x,y) rotl64(x,y)

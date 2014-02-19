@@ -7,7 +7,8 @@
 
 #include <string.h>
 
-namespace customdb{
+namespace customdb
+{
 
 CustomDB::CustomDB() : dbimpl(NULL), cache(NULL) {  }
 
@@ -58,7 +59,7 @@ void CustomDB::fflush()
     dbimpl -> fflush();
 }
 
- void CustomDB::write(const WriteBatch * pbatch)
+void CustomDB::write(const WriteBatch * pbatch)
 {
     dbimpl -> runBatch(pbatch);
 }

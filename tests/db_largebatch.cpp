@@ -62,9 +62,10 @@ void RunTest1()
         printf("open successful\n");
 
         total.StartTime();
-        for(int i=SIZE-1;i>=0;i--)
+        for(int i=SIZE-1; i>=0; i--)
         {
-            BufferPacket packet(sizeof(int)); packet << i;
+            BufferPacket packet(sizeof(int));
+            packet << i;
 
             Slice key(packet.getData(), sizeof(int));
 
@@ -72,14 +73,16 @@ void RunTest1()
 
             BufferPacket packet2(sizeof(int));
 
-            packet2 << value; packet2.setBeg();
+            packet2 << value;
+            packet2.setBeg();
 
-            int num = -1; packet2 >> num;
+            int num = -1;
+            packet2 >> num;
             if(i!=num)
                 cout << i <<" "<<num <<" ) ";
         }
         total.StopTime("GetTime(Without Cache): ");
-        
+
         db -> close();
     }
 
@@ -90,5 +93,5 @@ int main()
 {
     RunTest1();
     printf("Passed All Tests\n");
-    return 0;   
+    return 0;
 }

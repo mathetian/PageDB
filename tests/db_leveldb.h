@@ -23,7 +23,7 @@ public:
     {
         static const uint32_t M = 2147483647L;   // 2^31-1
         static const uint64_t A = 16807;  // bits 14, 8, 7, 5, 2, 1, 0
-        // 
+        //
         //       seed_ = (seed_ * A) % M,    where M = 2^31-1
         //
         uint64_t product = seed_ * A;

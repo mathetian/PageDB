@@ -4,14 +4,14 @@ namespace customdb
 {
 
 ChainTable::ChainTable(ChainDB * db, int defaultFirstOffset) : db(db),\
-    firstoffset(defaultFirstOffset) 
-{ 
+    firstoffset(defaultFirstOffset)
+{
 
 }
 
 bool     ChainTable::put(const Slice & key,const Slice & value, uint32_t hashVal)
 {
-	if(check(key, hashVal) != 0)
+    if(check(key, hashVal) != 0)
         return false;
 
     ChainElement elem(firstoffset, key.size(), value.size(), hashVal);
@@ -33,7 +33,7 @@ bool     ChainTable::put(const Slice & key,const Slice & value, uint32_t hashVal
 
 Slice    ChainTable::get(const Slice & key, uint32_t hashVal)
 {
-	int offset = firstoffset;
+    int offset = firstoffset;
     ChainElement elem;
 
     while(offset != -1)
@@ -83,7 +83,7 @@ bool   ChainTable::check(const Slice & key, uint32_t hashVal)
 
 bool     ChainTable::remove(const Slice & key, uint32_t hashVal)
 {
-	int offset = firstoffset, oldoffset = offset;
+    int offset = firstoffset, oldoffset = offset;
     ChainElement elem;
 
     while(offset != -1)

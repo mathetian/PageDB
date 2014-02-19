@@ -17,11 +17,11 @@ void RunTest1()
     Options option;
 
     CustomDB * db = new CustomDB;
-    
+
     {
         db -> open(option);
         printf("open successful\n");
-        
+
         WriteBatch batch;
         batch.put("hello","world");
         batch.put("hello1","world1");
@@ -34,7 +34,7 @@ void RunTest1()
     {
         db -> open(option);
         printf("open successful\n");
-        
+
         EXPECT_EQ(db->get("hello"), "world");
         EXPECT_EQ(db->get("hello1"), "world1");
         EXPECT_EQ(db->get("hello12"), "world123");
