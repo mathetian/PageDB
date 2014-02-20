@@ -52,7 +52,7 @@ bool     PageDB::put(const Slice & key,const Slice & value)
         page = new PageTable(this);
         index = pcache -> putInto(page, addr);
 
-        BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
+        BufferPacket packet(SPAGETABLE);
 
         datfs.seekg(addr, ios_base::beg);
         datfs.read(packet.getData(), packet.getSize());
@@ -179,7 +179,7 @@ Slice    PageDB::get(const Slice & key)
         page = new PageTable(this);
         pcache -> putInto(page, addr);
 
-        BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
+        BufferPacket packet(SPAGETABLE);
 
         datfs.seekg(addr, ios_base::beg);
         datfs.read(packet.getData(), packet.getSize());
@@ -208,7 +208,7 @@ bool     PageDB::remove(const Slice & key)
         page = new PageTable(this);
         index = pcache -> putInto(page, addr);
 
-        BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
+        BufferPacket packet(SPAGETABLE);
 
         datfs.seekg(addr, ios_base::beg);
         datfs.read(packet.getData(), packet.getSize());
@@ -300,7 +300,7 @@ void     PageDB::dump()
 
         uint64_t addr    = entries.at(cur) & MOD;
 
-        BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
+        BufferPacket packet(SPAGETABLE);
         datfs.seekg(addr, ios_base::beg);
         datfs.read(packet.getData(), packet.getSize());
 
@@ -386,7 +386,7 @@ void    PageDB::runBatch(const WriteBatch * pbatch)
             page  = new PageTable(this);
             index = pcache -> putInto(page, addr);
 
-            BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
+            BufferPacket packet(SPAGETABLE);
             datfs.seekg(addr, ios_base::beg);
             datfs.read(packet.getData(), packet.getSize());
             page -> setByBucket(packet);
@@ -596,7 +596,7 @@ LABLE:
                     printf("notice4\n");
             }
 
-            BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
+            BufferPacket packet(SPAGETABLE);
 
             {
                 ScopeMutex lock(&datLock);
@@ -761,7 +761,7 @@ void    PageDB::compact()
 
         uint64_t addr    = entries.at(cur) & MOD;
 
-        BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
+        BufferPacket packet(SPAGETABLE);
         datfs.seekg(addr, ios_base::beg);
         datfs.read(packet.getData(), packet.getSize());
 
@@ -855,7 +855,7 @@ void    PageDB::compact()
                 entries[ids.at(j)] = uds | (k << 56);
             }
 
-            BufferPacket packet(2*SINT + SPELEMENT*(PAGESIZE + 5));
+            BufferPacket packet(SPAGETABLE);
             int nmeb = fread(packet.getData(), packet.getSize(), 1, tmpfile1);
 
             assert(GetFileLen(tmpfile1) != 0);

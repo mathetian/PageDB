@@ -61,7 +61,7 @@ public:
 
 private:
     uint32_t   m_hashVal, m_datPos;
-    uint32_t   m_keySize, m_datSize;
+    uint8_t    m_keySize, m_datSize;
     friend ostream & operator << (ostream & os, PageElement & e);
 
 private:
