@@ -462,6 +462,7 @@ void    PageDB::runBatch(const WriteBatch * pbatch)
             datfs.write(packe2.getData(), packe2.getSize());
 
             pn += 1;
+            delete p2; p2 = NULL;
         }
         else
         {

@@ -1,9 +1,11 @@
-#include "../include/CustomDB.h"
-#include "../cache/FIFOLMCache.h"
-#include "../cache/LRULMCache.h"
+#include "CustomDB.h"
+#include "FIFOLMCache.h"
+#include "LRULMCache.h"
 
-#include "../dbimpl/PageDBImpl.h"
-#include "../dbimpl/ChainHashDBImpl.h"
+#include "PageDBImpl.h"
+#include "ChainHashDBImpl.h"
+
+#include "EmptyCache.h"
 
 #include <string.h>
 
@@ -87,7 +89,11 @@ bool  CustomDB::open(const Options & option)
     log -> SetLogInfo(option.logOption.logLevel, option.logOption.logPrefix, option.logOption.disabled);
 
 
-    switch(option.cacheOption.cacheType)
+    if(option.cacheOption.disabled == true)
+    {
+        cache = new EmptyCache();
+    }
+    else switch(option.cacheOption.cacheType)
     {
     case FIFO:
         cache = new FIFOLimitedMemoryCache();

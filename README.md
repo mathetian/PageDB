@@ -48,7 +48,7 @@ WARNING:    Cache is disabled, for better benchmarks.
 The "fill" benchmarks create a brand new database, in random order. The "fillsync" benchmark flushes data from the operating system to the disk after every operation; the other write operations leave the data sitting in the operating system buffer cache for a while.
 
 ```
-fillsync        :      110.0 us/op;   1.01 MB/s     
+fillsync        :       55.0 us/op;   2.01 MB/s     
 fillbatch       :       10.0 us/op;   16.1 MB/s 
 fillthreadbatch :       18.0 us/op;   8.88 MB/s
 fillthreadbatch :       21.0 us/op;   7.61 MB/s

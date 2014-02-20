@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sstream>
+#include <string>
 using namespace std;
 
 #include "db_leveldb.h"
@@ -21,10 +22,10 @@ using namespace utils;
 
 #include <string.h>
 
-static const char* FLAGS_benchmarks = "fillrandom,fillbatch,fillthreadbatch,fillparallel,readrandom";
+//static const char* FLAGS_benchmarks = "fillrandom,fillbatch,fillthreadbatch,fillparallel,readrandom";
+static const char* FLAGS_benchmarks = "fillbatch";
 
-// Number of key/values to place in database
-static int FLAGS_num = 1000000;
+static int FLAGS_num = 10000000;
 
 static int FLAGS_value_size = 100;
 
@@ -39,15 +40,12 @@ static const char* FLAGS_log =  NULL;
 class RandomGenerator
 {
 private:
-    std::string data_;
+    string data_;
     int pos_;
 
 public:
     RandomGenerator()
     {
-        // We use a limited amount of data over and over again and ensure
-        // that it is larger than the compression window (32KB), and also
-        // large enough to serve all typical value sizes we want to write.
         Random rnd(301);
         std::string piece;
 
@@ -91,42 +89,52 @@ static Slice TrimSpace(Slice s)
     return Slice(s.c_str() + start, limit - start);
 }
 
-static void AppendWithSpace(std::string* str, Slice msg)
-{
-    if (msg.empty()) return;
-    if (!str->empty())
-    {
-        str->push_back(' ');
-    }
-    str->append(msg.c_str(), msg.size());
-}
-
 int kMajorVersion = 1;
 int kMinorVersion = 0;
 
 class Benchmark
 {
-private:
-    CustomDB* db_;
-    Options option_;
+public:
+    Benchmark() : db_(NULL), num_(FLAGS_num), value_size_(FLAGS_value_size), \
+        reads_(FLAGS_num), batchsize_(FLAGS_batch_size)
+    {
+        db_ =  new CustomDB;
+        assert(db_);
 
-    int num_;
-    int value_size_;
-    int reads_;
-    int batchsize_;
+        if(FLAGS_db) option_.fileOption.fileName = FLAGS_db;
+        if(FLAGS_log) option_.logOption.logPrefix = FLAGS_log;
+
+        option_.logOption.logLevel   = LOG_ERROR;
+        option_.logOption.disabled   = true;
+        option_.cacheOption.disabled = true;
+
+        if (!FLAGS_use_existing_db)
+        {
+            DestroyDB();
+        }
+    }
+
+    ~Benchmark()
+    {
+        db_ -> close();
+        delete db_;
+    }
+
+public:
 
     void PrintHeader()
     {
         const int kKeySize = 16;
         PrintEnvironment();
         fprintf(stdout, "Keys:       %d bytes each\n", kKeySize);
-        fprintf(stdout, "Values:     %d bytes each\n", FLAGS_value_size);
+        fprintf(stdout, "Values:     %d bytes each\n", value_size_);
         fprintf(stdout, "Entries:    %d\n", num_);
-        fprintf(stdout, "RawSize:    %.1f MB (estimated)\n",
-                ((static_cast<int64_t>(kKeySize + FLAGS_value_size) * num_) / 1048576.0));
-        fprintf(stdout, "FileSize:   %.1f MB (estimated)\n",
-                (((kKeySize + FLAGS_value_size) * num_)
-                 / 1048576.0));
+        int pagenum = (num_/100.0) * 1.7 * 1.6;
+        int filesize = ((kKeySize + value_size_) * num_)/1000000;
+        int totalsize = (pagenum*1000 + (kKeySize + value_size_) * num_)/1000000;
+
+        fprintf(stdout, "RawSize:    %d MB (estimated)\n", totalsize);
+        fprintf(stdout, "FileSize:   %d MB (estimated)\n", filesize );
         PrintWarnings();
         fprintf(stdout, "------------------------------------------------\n");
     }
@@ -134,6 +142,7 @@ private:
     void PrintWarnings()
     {
         fprintf(stdout, "WARNING: Log is disabled, for better benchmarks\n" );
+        fprintf(stdout, "WARNING: Cache is disabled, for better benchmarks\n");
     }
 
     void PrintEnvironment()
@@ -147,7 +156,7 @@ private:
         if (cpuinfo != NULL)
         {
             char line[1000];
-            num_cpus = 0;
+            num_cpus_ = 0;
             std::string cpu_type;
             std::string cache_size;
             while (fgets(line, sizeof(line), cpuinfo) != NULL)
@@ -161,7 +170,7 @@ private:
                 Slice val = TrimSpace(Slice(sep + 1));
                 if (key == "model name")
                 {
-                    ++num_cpus;
+                    ++num_cpus_;
                     cpu_type = val.toString();
                 }
                 else if (key == "cache size")
@@ -170,33 +179,9 @@ private:
                 }
             }
             fclose(cpuinfo);
-            fprintf(stderr, "CPU:        %d * %s\n", num_cpus, cpu_type.c_str());
+            fprintf(stderr, "CPU:        %d * %s\n", num_cpus_, cpu_type.c_str());
             fprintf(stderr, "CPUCache:   %s\n", cache_size.c_str());
         }
-    }
-
-public:
-    Benchmark() : db_(NULL), num_(FLAGS_num), value_size_(FLAGS_value_size), \
-        reads_(FLAGS_num), batchsize_(FLAGS_batch_size)
-    {
-        db_ =  new CustomDB;
-        assert(db_ != NULL);
-
-        if(FLAGS_db) option_.fileOption.fileName = FLAGS_db;
-        if(FLAGS_log) option_.logOption.logPrefix = FLAGS_log;
-
-        option_.logOption.logLevel = LOG_ERROR;
-        option_.logOption.disabled = true;
-
-        if (!FLAGS_use_existing_db)
-        {
-            DestroyDB();
-        }
-    }
-
-    ~Benchmark()
-    {
-        delete db_;
     }
 
     void Run()
@@ -219,11 +204,6 @@ public:
                 name = Slice(benchmarks, sep - benchmarks);
                 benchmarks = sep + 1;
             }
-
-            // Reset parameters that may be overriddden bwlow
-            num_ = FLAGS_num;
-            reads_ = FLAGS_num;
-            value_size_ = FLAGS_value_size;
 
             void (Benchmark::*method)() = NULL;
 
@@ -299,10 +279,8 @@ private:
     void WriteRandom()
     {
         RandomGenerator gen;
-
-        int64_t bytes = 0;
-
         Random rnd(31);
+        
         char key1[100];
 
         TimeStamp m_tms;
@@ -325,17 +303,16 @@ private:
 
     void WriteBatch2()
     {
-        int batchNum = (num_ + batchsize_ - 1)/batchsize_;
-
         RandomGenerator gen;
-
         Random rnd(32);
         char key1[100];
-        char str[256];
+        char str1[256];
+
+        int batchNum = (num_ + batchsize_ - 1)/batchsize_;
+
         TimeStamp total, part;
 
         total.StartTime();
-
         for(int i = 0; i < batchNum; i++)
         {
             part.StartTime();
@@ -347,14 +324,14 @@ private:
                 int k = rnd.Next() & ((1<<25)-1);
                 snprintf(key1, sizeof(key1), "%016d", k);
                 Slice key(key1,16);
-                Slice value(gen.Generate(FLAGS_value_size));
+                Slice value(gen.Generate(value_size_));
                 batch.put(key, value);
             }
 
             db_ -> write(&batch);
 
-            sprintf(str, "In round %d, PutTime: ", i);
-            part.StopTime(str);
+            sprintf(str1, "In round %d, PutTime: ", i);
+            part.StopTime(str1);
         }
 
         total.StopTime("WriteBatch Total Time: ");
@@ -363,25 +340,29 @@ private:
     struct ThreadArg
     {
         Benchmark* bm;
-        int thrid;
-        void* (Benchmark::*method)(int);
+        int        thrid;
+        void* (Benchmark::*method)(void*);
     };
 
     static void* ThreadBody(void *arg)
     {
         ThreadArg *thrargs = (ThreadArg*)arg;
-        (thrargs->bm->*(thrargs->method))(thrargs->thrid);
+        (thrargs->bm->*(thrargs->method))(&(thrargs->thrid));
     }
 
-    void* ThreadBatchBody(int thrid)
+    void* ThreadBatchBody(void *arg)
     {
-        RandomGenerator gen;
-        char str[256];
-        Random rnd(32);
-        char key1[100];
+        int thrid = *(int*)arg;
 
-        int eachNum = (num_ + num_cpus - 1)/num_cpus;
+        RandomGenerator gen;
+        Random rnd(33 + thrid);
+
+        char key1[100];
+        char str[256];
+
+        int eachNum =  (num_    + num_cpus_  - 1)/num_cpus_;
         int batchNum = (eachNum + batchsize_ - 1)/batchsize_;
+
         printf("Thread %d start, batchNum %d\n", thrid, batchNum);
 
         TimeStamp m_tms;
@@ -396,7 +377,7 @@ private:
                 int k = rnd.Next() & ((1<<25)-1);
                 snprintf(key1, sizeof(key1), "%016d", k);
                 Slice key(key1,16);
-                Slice value(gen.Generate(FLAGS_value_size));
+                Slice value(gen.Generate(value_size_));
                 batch.put(key, value);
             }
             db_ -> tWrite(&batch);
@@ -406,20 +387,23 @@ private:
         m_tms.StopTime(str);
     }
 
-    void* ThreadParallelBatchBody(int thrid)
+    void* ThreadParallelBatchBody(void *arg)
     {
+        int thrid = *(int*)arg;
+
         RandomGenerator gen;
         char str[256];
-        Random rnd(32);
+        Random rnd(34 + thrid);
         char key1[100];
 
-        int eachNum = (num_ + num_cpus - 1)/num_cpus;
-        int batchNum = (eachNum + batchsize_ - 1)/batchsize_;
+        int eachNum =  (num_     + num_cpus_  - 1)/num_cpus_;
+        int batchNum = (eachNum  + batchsize_ - 1)/batchsize_;
         printf("Thread %d start, batchNum %d\n", thrid, batchNum);
 
         TimeStamp m_tms;
 
         m_tms.StartTime();
+        
         for(int i = 0; i < batchNum; i++)
         {
             WriteBatch batch(batchsize_);
@@ -429,12 +413,13 @@ private:
                 int k = rnd.Next() & ((1<<25)-1);
                 snprintf(key1, sizeof(key1), "%016d", k);
                 Slice key(key1,16);
-                Slice value(gen.Generate(FLAGS_value_size));
+                Slice value(gen.Generate(value_size_));
                 batch.put(key, value);
             }
             db_ -> runBatchParallel(&batch);
             printf("thread %d finished round %d\n", thrid, i);
         }
+
         sprintf(str, "Thread %d finished: ", thrid);
         m_tms.StopTime(str);
     }
@@ -442,9 +427,9 @@ private:
     void WriteThreadBatch()
     {
         vector<Thread> thrs;
-        ThreadArg *args = new ThreadArg[num_cpus];
+        ThreadArg *args = new ThreadArg[num_cpus_];
 
-        for(uint64_t i = 0; i < num_cpus; i++)
+        for(uint64_t i = 0; i < num_cpus_; i++)
         {
             args[i].method = &Benchmark::ThreadBatchBody;
             args[i].bm     = this;
@@ -453,7 +438,7 @@ private:
             thrs[thrs.size()-1].run();
         }
 
-        for(uint64_t i = 0; i < num_cpus; i++)
+        for(uint64_t i = 0; i < num_cpus_; i++)
         {
             thrs[i].join();
         }
@@ -465,9 +450,9 @@ private:
     void WriteParallelBatch()
     {
         vector<Thread> thrs;
-        ThreadArg *args = new ThreadArg[num_cpus];
+        ThreadArg *args = new ThreadArg[num_cpus_];
 
-        for(uint64_t i = 0; i < num_cpus; i++)
+        for(uint64_t i = 0; i < num_cpus_; i++)
         {
             args[i].method = &Benchmark::ThreadParallelBatchBody;
             args[i].bm     = this;
@@ -476,7 +461,7 @@ private:
             thrs[thrs.size()-1].run();
         }
 
-        for(uint64_t i = 0; i < num_cpus; i++)
+        for(uint64_t i = 0; i < num_cpus_; i++)
         {
             thrs[i].join();
         }
@@ -489,7 +474,7 @@ private:
     {
         int found = 0;
 
-        Random rnd(32);
+        Random rnd(40);
 
         char key1[100];
 
@@ -514,7 +499,7 @@ private:
 
         char msg[100];
         snprintf(msg, sizeof(msg), "(%d of %d found)", found, num_);
-        cout<<msg<<endl;
+        puts(msg);
         m_tms.StopTime("ReadRandom spend time:");
     }
 
@@ -532,54 +517,21 @@ private:
     }
 
 private:
-    int num_cpus;
+    CustomDB* db_;
+    Options option_;
+
+    int num_;
+    int value_size_;
+    int reads_;
+    int batchsize_;
+    int num_cpus_;
+
 };
 
 int main(int argc, char** argv)
 {
-    std::string default_db_path;
-
-    for (int i = 1; i < argc; i++)
-    {
-        double d;
-        int n;
-        char junk;
-        string str = argv[i];
-
-        if (str.find("--benchmarks="))
-        {
-            FLAGS_benchmarks = argv[i] + strlen("--benchmarks=");
-        }
-        else if (sscanf(argv[i], "--use_existing_db=%d%c", &n, &junk) == 1 && (n == 0 || n == 1))
-        {
-            FLAGS_use_existing_db = n;
-        }
-        else if (sscanf(argv[i], "--num=%d%c", &n, &junk) == 1)
-        {
-            FLAGS_num = n;
-        }
-        else if (sscanf(argv[i], "--value_size=%d%c", &n, &junk) == 1)
-        {
-            FLAGS_value_size = n;
-        }
-        else if (strncmp(argv[i], "--db=", 5) == 0)
-        {
-            FLAGS_db = argv[i] + 5;
-        }
-        else
-        {
-            fprintf(stderr, "Invalid flag '%s'\n", argv[i]);
-            exit(1);
-        }
-    }
-
-    if (FLAGS_db == NULL)
-    {
-        default_db_path = "dbbench";
-        FLAGS_db = default_db_path.c_str();
-    }
-
     Benchmark benchmark;
     benchmark.Run();
+ 
     return 0;
 }

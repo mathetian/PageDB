@@ -29,12 +29,14 @@ struct FileOption_t
 
 struct CacheOption_t
 {
-    int cacheType;
-    int cacheLimitInMB;
+    int  cacheType;
+    int  cacheLimitInMB;
+    bool disabled;
     CacheOption_t()
     {
         cacheLimitInMB = 4;
-        cacheType = FIFO;
+        cacheType      = FIFO;
+        disabled       = false;
     }
 };
 
