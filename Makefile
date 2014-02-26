@@ -56,5 +56,8 @@ test_thread: tests/test_thread.cpp libcustomDB.a
 test_rw:  tests/test_rw.cpp
 	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread tests/test_rw.cpp     -o $@ ${LDLIBS}
 
+test_aio: tests/test_aio.cpp utils/Thread.cpp
+	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread $^     -o $@ ${LDLIBS} -laio
+
 clean: 
 	rm -f *.o *.idx *.dat demo* test_* db_*
