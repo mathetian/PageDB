@@ -121,6 +121,46 @@ void RunTest3()
     assert(&aa.m_mutex == &bb.m_mutex);
 }
 
+class CA
+{
+public:
+    void A()
+    {
+        m_lock.lock();
+        printf("Function A %d\n", (int)Thread::getIDType());
+        B();
+        m_lock.unlock();
+    }
+
+    void B()
+    {
+        m_lock.lock();
+        printf("Function B %d\n", (int)Thread::getIDType());
+        sleep(10);
+        m_lock.unlock();
+    }
+
+private:
+    ReentrantLock m_lock;
+};
+
+CA ca;
+
+void *ffff4(void*)
+{
+    ca.A();
+}
+
+void RunTest4()
+{
+    int a1 = 0, b1 = 1;
+    Thread thr1(ffff4, NULL);
+    Thread thr2(ffff4, NULL);
+
+    thr1.run(); thr2.run();
+    thr1.join(); thr2.join();
+}
+
 int main()
 {
     RunTest1();
@@ -129,6 +169,8 @@ int main()
     printf("Passed Test2\n");
     RunTest3();
     printf("Passed Test3\n");
+    RunTest4();
+    printf("Passed Test4\n");
 
     printf("Passed All Tests\n");
     return 0;

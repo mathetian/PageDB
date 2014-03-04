@@ -10,28 +10,28 @@
 namespace utils
 {
 
-class Thread
-{
-private:
 #ifdef __WIN32
-    typedef HANDLE ThreadID;
+    typedef HANDLE id_type;
     typedef unsigned(WINAPI *Task)(void *);
 #define THRINIT NULL
 #else
-    typedef pthread_t ThreadID;
+    typedef pthread_t id_type;
     typedef void *(*Task)(void *);
 #define THRINIT -1
 #endif
 
+class Thread
+{
 public:
     Thread(Task task = NULL, void * args = NULL) : m_task(task), m_args(args), m_tid(THRINIT) { }
     Thread(const Thread & thr) : m_task(thr.m_task), m_args(thr.m_args), m_tid(thr.m_tid) { }
-    ThreadID run();
+    id_type  run();
     void     join();
     void     cancel();
+    static id_type  getIDType();
 
 private:
-    ThreadID  m_tid;
+    id_type  m_tid;
     Task   m_task;
     void * m_args;
 };
@@ -138,6 +138,17 @@ private:
 /**Todo list**/
 class ReentrantLock
 {
+public:
+    ReentrantLock() : m_id(-1), m_cond(&m_tmplock), m_time(0) { }
+    void  lock();
+    void  unlock();
+    bool  trylock();
+private:
+    Mutex m_lock;
+    id_type m_id;
+    Mutex m_tmplock;
+    CondVar m_cond;
+    int   m_time;
 };
 
 class Atomic

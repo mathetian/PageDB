@@ -10,7 +10,7 @@
 #include <stdint.h>
 
 #include <assert.h>
-
+#include <errno.h> 
 #include <iostream>
 using namespace std;
 
@@ -167,7 +167,6 @@ public:
         
         struct iocb  iocb;
         struct iocb* iocbs = &iocb;
-        cout<<buf<<" "<<offset<<" "<<size<<endl;
         AIORequest *req = new AIORequest(size, index, callback);
         io_prep_pwrite(&iocb, fd, buf, size, offset);
         iocb.data = req;
