@@ -23,16 +23,13 @@ void    PageCache::free()
         {
             PageTable * page = cacheElems[i].page;
             assert(page);
-            db -> datfs.seekg(cacheElems[i].entry, ios_base::beg);
             BufferPacket packet = page -> getPacket();
-            db -> datfs.write(packet.getData(),packet.getSize());
+            db -> m_datfile.IO_Write(packet.getData(), cacheElems[i].entry, packet.getSize());
         }
         cacheElems[i].reset();
     }
 
     cur = 0;
-
-    db -> datfs.flush();
 }
 
 void    PageCache::freeWithLock()
@@ -51,18 +48,12 @@ void    PageCache::freeWithLock()
             BufferPacket packet = page -> getPacket();
             {
                 ScopeMutex scope2(&(db -> datLock));
-                db -> datfs.seekg(cacheElems[i].entry, ios_base::beg);
-                db -> datfs.write(packet.getData(),packet.getSize());
+                db -> m_datfile.IO_Write(packet.getData(), cacheElems[i].entry, packet.getSize());
             }
         }
         cacheElems[i].reset();
     }
     cur = 0;
-
-    {
-        ScopeMutex scope(&(db -> datLock));
-        db -> datfs.flush();
-    }
 }
 
 
@@ -152,8 +143,7 @@ void   PageCache::resetWithDatLock(int index)
 
     {
         ScopeMutex scope(&(db -> datLock));
-        db -> datfs.seekg(cacheElems[index].entry, ios_base::beg);
-        db -> datfs.write(packet.getData(),packet.getSize());
+        db -> m_datfile.IO_Write(packet.getData(), cacheElems[index].entry, packet.getSize());
     }
 }
 
@@ -163,8 +153,7 @@ void   PageCache::reset(int index)
     assert(page1 != NULL);
     BufferPacket packet = page1 -> getPacket();
 
-    db -> datfs.seekg(cacheElems[index].entry, ios_base::beg);
-    db -> datfs.write(packet.getData(),packet.getSize());
+    db -> m_datfile.IO_Write(packet.getData(), cacheElems[index].entry, packet.getSize());
 }
 
 
@@ -175,9 +164,8 @@ void   PageCache::fflush()
         if(cacheElems[i].updated == true)
         {
             PageTable * page = cacheElems[i].page;
-            db -> datfs.seekg(cacheElems[i].entry, ios_base::beg);
             BufferPacket packet = page -> getPacket();
-            db -> datfs.write(packet.getData(),packet.getSize());
+            db -> m_datfile.IO_Write(packet.getData(), cacheElems[i].entry, packet.getSize());
             cacheElems[i].updated = false;
         }
     }
@@ -194,9 +182,8 @@ void   PageCache::fflushWithLock()
         if(cacheElems[i].updated == true)
         {
             PageTable * page = cacheElems[i].page;
-            db -> datfs.seekg(cacheElems[i].entry, ios_base::beg);
             BufferPacket packet = page -> getPacket();
-            db -> datfs.write(packet.getData(),packet.getSize());
+            db -> m_datfile.IO_Write(packet.getData(), cacheElems[i].entry, packet.getSize());
             cacheElems[i].updated = false;
         }
     }

@@ -10,11 +10,13 @@ using std::deque;
 #include "TimeStamp.h"
 #include "HashFunction.h"
 #include "Utils.h"
+#include "../extras/AIO.h"
 using namespace utils;
 
 #include <sys/stat.h>
 
 #include "DBInternal.h"
+
 
 namespace customdb
 {
@@ -140,7 +142,8 @@ private:
 private:
     HASH        hashFunc;
     bool        updated, eupdated;
-    fstream     idxfs, datfs;
+    AIOFile     m_idxfile;
+    AIOFile     m_datfile;
     PageCache * pcache;
 
 private:

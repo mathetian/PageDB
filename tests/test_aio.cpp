@@ -9,8 +9,8 @@ using namespace std;
 #include <string.h>
 
 
-#define STRLEN 150
-#define STRCNT 150
+#define STRLEN 250
+#define STRCNT 250
 
 string getrandstr()
 {

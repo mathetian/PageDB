@@ -187,14 +187,6 @@ public:
 private:
     void AIO_Read2(char * buf, int offset, int size, void *data)
     {
-        if(offset == -1)
-        {
-            offset = File_Len();
-            fileLen += size;   
-        }
-        else if(offset + size > fileLen)
-            fileLen = offset + size;
-
         struct iocb  iocb;
         struct iocb* iocbs = &iocb;
         
@@ -212,14 +204,6 @@ private:
 
     void AIO_Write2(char * buf, int offset, int size, void *data)
     {
-        if(offset == -1) 
-        {
-            offset = File_Len();
-            fileLen += size;
-        }
-        else if(offset + size > fileLen)
-            fileLen = offset + size;
-
         struct iocb  iocb;
         struct iocb* iocbs = &iocb;
         
@@ -236,8 +220,16 @@ private:
     }
 
 public:
-    void IO_Read(char * buf, int offset, int size)
+    uint32_t IO_Read(char * buf, int offset, int size)
     {
+        if(offset == -1)
+        {
+            offset = File_Len();
+            fileLen += size;   
+        }
+        else if(offset + size > fileLen)
+            fileLen = offset + size;
+
         BIORequest* request = new BIORequest(size);
 
         request->m_mutex.lock();
@@ -249,10 +241,20 @@ public:
         request->m_mutex.unlock();
         
         delete request; request = NULL;
+
+        return offset;
     }
 
-    void IO_Write(char * buf, int offset, int size)
+    uint32_t IO_Write(char * buf, int offset, int size)
     {
+        if(offset == -1) 
+        {
+            offset = File_Len();
+            fileLen += size;
+        }
+        else if(offset + size > fileLen)
+            fileLen = offset + size;
+
         BIORequest* request = new BIORequest(size);
 
         request->m_mutex.lock();
@@ -263,7 +265,9 @@ public:
         request->m_cond.wait();
         request->m_mutex.unlock();
 
-        delete request; request = NULL;     
+        delete request; request = NULL;   
+
+        return offset;  
     }   
 
     uint32_t File_Len()

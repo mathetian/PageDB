@@ -47,9 +47,7 @@ bool   PageTable::put(const Slice & key,const Slice & value, uint32_t hashVal)
             BufferPacket packet(element.m_keySize);
             Slice        slice(element.m_keySize);
 
-            db -> datfs.seekg(element.m_datPos, ios_base::beg);
-            db -> datfs.read(packet.getData(), packet.getSize());
-
+            db -> m_datfile.IO_Read(packet.getData(), element.m_datPos, packet.getSize());
             packet.setBeg();
             packet >> slice;
 
@@ -68,9 +66,7 @@ bool   PageTable::put(const Slice & key,const Slice & value, uint32_t hashVal)
 
     int offset = db -> findSuitableOffset(packet.getSize());
 
-    db -> datfs.seekg(offset, ios_base::beg);
-    db -> datfs.write(packet.getData(), packet.getSize());
-
+    db -> m_datfile.IO_Write(packet.getData(), offset, packet.getSize());
     /**
         Modify the page index
     **/
@@ -94,10 +90,7 @@ Slice  PageTable::get(const Slice & key, uint32_t hashVal)
             Slice slice1(elements[index].m_datSize);
             Slice slice2(elements[index].m_keySize);
 
-            db -> datfs.seekg(elements[index].m_datPos, ios_base::beg);
-
-            db -> datfs.read(packet.getData(), packet.getSize());
-
+            db -> m_datfile.IO_Read(packet.getData(), elements[index].m_datPos, packet.getSize());
             packet >> slice2 >> slice1;
 
             if(slice2 == key)
@@ -117,9 +110,7 @@ bool   PageTable::remove(const Slice & key, uint32_t hashVal)
             BufferPacket packet(elements[index].m_keySize);
             Slice slice(elements[index].m_keySize);
 
-            db -> datfs.seekg(elements[index].m_datPos, ios_base::beg);
-            db -> datfs.read(packet.getData(), packet.getSize());
-
+            db -> m_datfile.IO_Read(packet.getData(), elements[index].m_datPos, packet.getSize());
             packet >> slice;
 
             if(slice == key) break;
@@ -155,8 +146,7 @@ void   PageTable::replaceQ(const Slice & key, const Slice & value, uint32_t hash
 
             {
                 ScopeMutex scope(&(db -> datLock));
-                db -> datfs.seekg(element.m_datPos, ios_base::beg);
-                db -> datfs.read(packet.getData(), packet.getSize());
+                db -> m_datfile.IO_Read(packet.getData(), element.m_datPos, packet.getSize());
             }
 
             packet >> slice;

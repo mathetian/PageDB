@@ -18,14 +18,10 @@ PageDB::~PageDB()
 {
     fflush();
 
-    if(idxfs)
-        writeToIdxFile();
+    writeToIdxFile();
 
-    if(idxfs)
-        idxfs.close();
-
-    if(datfs)
-        datfs.close();
+    m_datfile.AIO_Close();
+    m_idxfile.AIO_Close();
 
     if(pcache)
         delete pcache;
@@ -54,8 +50,7 @@ bool     PageDB::put(const Slice & key,const Slice & value)
 
         BufferPacket packet(SPAGETABLE);
 
-        datfs.seekg(addr, ios_base::beg);
-        datfs.read(packet.getData(), packet.getSize());
+        m_datfile.IO_Read(packet.getData(), -1, packet.getSize());
 
         page -> setByBucket(packet);
         assert(page -> curNum < PAGESIZE + 5);
@@ -120,10 +115,8 @@ bool     PageDB::put(const Slice & key,const Slice & value)
         page -> curNum = curNum2;
         p2   -> curNum = curNum3;
 
-        datfs.seekg(0, ios_base::end);
-
         uint64_t oldpos  = addr;
-        uint64_t oldpos2 = datfs.tellg();
+        uint64_t oldpos2 = m_datfile.File_Len();
 
         assert(pageNum - 1 >= 0);
         pageNum--;
@@ -138,8 +131,8 @@ bool     PageDB::put(const Slice & key,const Slice & value)
         page -> d = p2 -> d = (page -> d) + 1;
 
         BufferPacket packe2 = p2 -> getPacket();
-        datfs.write(packe2.getData(), packe2.getSize());
-
+        m_datfile.IO_Write(packe2.getData(), -1, packe2.getSize());
+        
         delete p2;
         p2 = NULL;
 
@@ -157,7 +150,6 @@ bool     PageDB::put(const Slice & key,const Slice & value)
             return false;
         }
     }
-    datfs.flush();
     writeToIdxFile();
 
     return true;
@@ -181,10 +173,8 @@ Slice    PageDB::get(const Slice & key)
 
         BufferPacket packet(SPAGETABLE);
 
-        datfs.seekg(addr, ios_base::beg);
-        datfs.read(packet.getData(), packet.getSize());
-
-        page -> setByBucket(packet);
+        m_datfile.IO_Read(packet.getData(), addr, packet.getSize());
+        page -> setByBucket(packet);    
     }
 
     Slice rs = page -> get(key, hashVal);
@@ -195,7 +185,7 @@ Slice    PageDB::get(const Slice & key)
 bool     PageDB::remove(const Slice & key)
 {
     uint32_t hashVal = hashFunc(key);
-    uint32_t cur   = hashVal & ((1 << gd) -1);
+    uint32_t cur     = hashVal & ((1 << gd) -1);
 
     uint32_t index = 0;
 
@@ -210,9 +200,7 @@ bool     PageDB::remove(const Slice & key)
 
         BufferPacket packet(SPAGETABLE);
 
-        datfs.seekg(addr, ios_base::beg);
-        datfs.read(packet.getData(), packet.getSize());
-
+        m_datfile.IO_Read(packet.getData(), addr, packet.getSize());
         page -> setByBucket(packet);
     }
 
@@ -222,9 +210,7 @@ bool     PageDB::remove(const Slice & key)
     {
         BufferPacket npacket = page -> getPacket();
 
-        datfs.seekg(addr, ios_base::beg);
-        datfs.write(npacket.getData(), npacket.getSize());
-
+        m_datfile.IO_Read(npacket.getData(), addr, npacket.getSize());
         pcache -> setUpdated(index);
     }
     else
@@ -249,25 +235,17 @@ bool     PageDB::init(const char * filename)
         pn = 1;
 
         entries.push_back(0);
-
-        PageTable * page = new PageTable(this);
-        idxfs.seekg(0,ios_base::beg);
+        PageTable * page = new PageTable(this);       
         writeToIdxFile();
-        datfs.seekg(0,ios_base::beg);
-        uint32_t pos = datfs.tellg();
         BufferPacket packet = page -> getPacket();
-        datfs.write(packet.getData(),packet.getSize());
+        uint32_t pos = m_datfile.IO_Write(packet.getData(), -1, packet.getSize());
         pcache -> putInto(page, pos);
     }
-    else
-    {
-        readFromFile();
-    }
+    else readFromFile();
 
     if(fb == -1)
     {
-        datfs.seekg(0, ios_base::end);
-        fb = datfs.tellg();
+        fb = m_datfile.File_Len();
 
         PageEmptyBlock block;
 
@@ -275,8 +253,8 @@ bool     PageDB::init(const char * filename)
         block.eles[0].size = SEEBLOCK;
         block.curNum       = 1;
 
-        datfs.write((char*)&block, SEEBLOCK);
-        datfs.write((char*)&block, SEEBLOCK);
+        m_datfile.IO_Write((char*)&block, -1, SEEBLOCK);
+        m_datfile.IO_Write((char*)&block, -1, SEEBLOCK);
     }
 
     return true;
@@ -301,18 +279,16 @@ void     PageDB::dump()
         uint64_t addr    = entries.at(cur) & MOD;
 
         BufferPacket packet(SPAGETABLE);
-        datfs.seekg(addr, ios_base::beg);
-        datfs.read(packet.getData(), packet.getSize());
 
+        m_datfile.IO_Read(packet.getData(), addr, packet.getSize());
         page -> setByBucket(packet);
 
         cout << "Page(size:"<<page -> curNum <<") " << index++ <<" "<<cur <<" "<<page -> d<<":";
 
         for(j = 0; j < page -> curNum; j++)
         {
-            datfs.seekg(page -> elements[j].m_datPos, ios_base::beg);
             BufferPacket packet(2*SINT);
-            datfs.read(packet.getData(),packet.getSize());
+            m_datfile.IO_Read(packet.getData(),page -> elements[j].m_datPos,packet.getSize());
             int a, b;
             uint32_t hashVal = page -> elements[j].m_hashVal;
             packet >> a >> b;
@@ -342,27 +318,15 @@ void     PageDB::removeDB(const char * filename)
 void    PageDB::fflush()
 {
     pcache -> free();
-
-    {
-        ScopeMutex scope(&datLock);
-        datfs.flush();
-    }
-
-    {
-        globalLock.writeLock();
-        idxfs.flush();
-        globalLock.writeUnlock();
-    }
 }
 
 void    PageDB::runBatch(const WriteBatch * pbatch)
 {
-    datfs.seekg(0, ios_base::end);
-    uint32_t curpos = datfs.tellg();
+    uint32_t curpos = m_datfile.File_Len();
 
     BufferPacket phyPacket(pbatch->getTotalSize());
-    datfs.write(phyPacket.getData(), phyPacket.getSize());
-
+    m_datfile.IO_Write(phyPacket.getData(), -1, phyPacket.getSize());
+    
     uint32_t totalSize = 0;
     WriteBatch::Iterator iterator(pbatch);
 
@@ -387,8 +351,8 @@ void    PageDB::runBatch(const WriteBatch * pbatch)
             index = pcache -> putInto(page, addr);
 
             BufferPacket packet(SPAGETABLE);
-            datfs.seekg(addr, ios_base::beg);
-            datfs.read(packet.getData(), packet.getSize());
+
+            m_datfile.IO_Read(packet.getData(), addr, packet.getSize());
             page -> setByBucket(packet);
         }
 
@@ -441,10 +405,9 @@ void    PageDB::runBatch(const WriteBatch * pbatch)
 
             page -> curNum = curNum2;
             p2   -> curNum = curNum3;
-            datfs.seekg(0, ios_base::end);
 
             uint64_t oldpos = addr;
-            uint64_t oldpos2 = datfs.tellg();
+            uint64_t oldpos2 = m_datfile.File_Len();
 
             assert(pageNum - 1 >= 0);
             pageNum--;
@@ -459,8 +422,8 @@ void    PageDB::runBatch(const WriteBatch * pbatch)
             page -> d = p2 -> d = (page -> d) + 1;
 
             BufferPacket packe2 = p2 -> getPacket();
-            datfs.write(packe2.getData(), packe2.getSize());
-
+            m_datfile.IO_Write(packe2.getData(), -1, packe2.getSize());
+            
             pn += 1;
             delete p2; p2 = NULL;
         }
@@ -473,8 +436,8 @@ void    PageDB::runBatch(const WriteBatch * pbatch)
             pcache -> setUpdated(index);
         }
     }
-    datfs.seekg(curpos, ios_base::beg);
-    datfs.write(phyPacket.getData(), phyPacket.getSize());
+    
+    m_datfile.IO_Write(phyPacket.getData(), curpos, phyPacket.getSize());
     writeToIdxFile();
     pcache -> free();
 }
@@ -489,9 +452,8 @@ void    PageDB::runBatchParallel(const WriteBatch * pbatch)
     {
         ScopeMutex scope(&datLock);
 
-        datfs.seekg(0, ios_base::end);
-        curpos = datfs.tellg();
-        datfs.write(phyPacket.getData(), phyPacket.getSize());
+        curpos = m_datfile.File_Len();
+        m_datfile.IO_Write(phyPacket.getData(), -1, phyPacket.getSize());
     }
 
     WriteBatch::Iterator iterator(pbatch);
@@ -602,8 +564,7 @@ LABLE:
                 ScopeMutex lock(&datLock);
                 assert(cur < entries.size());
 
-                datfs.seekg(addr, ios_base::beg);
-                datfs.read(packet.getData(), packet.getSize());
+                m_datfile.IO_Read(packet.getData(), addr, packet.getSize());
             }
 
             page -> setByBucket(packet);
@@ -685,9 +646,8 @@ LABLE:
 
             {
                 ScopeMutex scope(&datLock);
-                datfs.seekg(0, ios_base::end);
-                oldpos2 = datfs.tellg();
-                datfs.write(packe2.getData(), packe2.getSize());
+                oldpos2 = m_datfile.File_Len();
+                m_datfile.IO_Write(packe2.getData(), -1, packe2.getSize());
             }
 
             uint64_t oldpos = addr;
@@ -732,177 +692,167 @@ LABLE:
 
     {
         ScopeMutex scope(&datLock);
-        datfs.seekg(curpos, ios_base::beg);
-        datfs.write(phyPacket.getData(), phyPacket.getSize());
+        m_datfile.IO_Write(phyPacket.getData(), curpos, phyPacket.getSize());
     }
 }
 
 void    PageDB::compact()
 {
-    fflush();
+    // fflush();
 
-    PageTable * page = new PageTable(this);
+    // PageTable * page = new PageTable(this);
 
-    FILE * tmpfile1 = fopen("tmppage.bak","w+");
-    FILE * tmpfile2 = fopen("tmpcon.bak","w+");
-    assert(tmpfile1 && tmpfile2);
+    // FILE * tmpfile1 = fopen("tmppage.bak","w+");
+    // FILE * tmpfile2 = fopen("tmpcon.bak","w+");
+    // assert(tmpfile1 && tmpfile2);
 
-    WriteBatch * pbatch =  new WriteBatch(PAGESIZE*2);
+    // WriteBatch * pbatch =  new WriteBatch(PAGESIZE*2);
 
-    for(int cur = 0; cur < entries.size(); cur++)
-    {
-        int j;
-        for(j = 0; j < cur; j++)
-        {
-            if(entries.at(j) ==  entries.at(cur)) break;
-        }
+    // for(int cur = 0; cur < entries.size(); cur++)
+    // {
+    //     int j;
+    //     for(j = 0; j < cur; j++)
+    //     {
+    //         if(entries.at(j) ==  entries.at(cur)) break;
+    //     }
 
-        if(j != cur) continue;
+    //     if(j != cur) continue;
 
-        uint64_t addr    = entries.at(cur) & MOD;
+    //     uint64_t addr    = entries.at(cur) & MOD;
 
-        BufferPacket packet(SPAGETABLE);
-        datfs.seekg(addr, ios_base::beg);
-        datfs.read(packet.getData(), packet.getSize());
+    //     BufferPacket packet(SPAGETABLE);
 
-        page -> setByBucket(packet);
+    //     m_datfile.IO_Read(packet.getData(), addr, packet.getSize());
+    //     page -> setByBucket(packet);
 
-        for(j = 0; j < page -> curNum; j++)
-        {
-            PageElement element = page -> elements[j];
+    //     for(j = 0; j < page -> curNum; j++)
+    //     {
+    //         PageElement element = page -> elements[j];
 
-            datfs.seekg(element.m_datPos, ios_base::beg);
-            BufferPacket packet1(element.m_keySize + element.m_datSize);
-            datfs.read(packet1.getData(),packet1.getSize());
-            Slice a(element.m_keySize), b(element.m_datSize);
-            packet1 >> a >> b;
-            pbatch -> put(a,b);
-        }
+    //         BufferPacket packet1(element.m_keySize + element.m_datSize);
+    //         m_datfile.IO_Read(packet1.getData(), element.m_datPos, packet1.getSize());
+    //         Slice a(element.m_keySize), b(element.m_datSize);
+    //         packet1 >> a >> b;
+    //         pbatch -> put(a,b);
+    //     }
 
-        int nmeb = fwrite(packet.getData(), packet.getSize(), 1, tmpfile1);
-        assert(nmeb == 1);
-        BufferPacket packet1(WriteBatchInternal::ByteSize(pbatch));
-        WriteBatch::Iterator iter(pbatch);
-        for(const Node * node = iter.first(); node != iter.end(); node = iter.next())
-        {
-            packet1 << (node -> first) << (node -> second);
-        }
-        uint32_t size = packet1.getSize();
+    //     int nmeb = fwrite(packet.getData(), packet.getSize(), 1, tmpfile1);
+    //     assert(nmeb == 1);
+    //     BufferPacket packet1(WriteBatchInternal::ByteSize(pbatch));
+    //     WriteBatch::Iterator iter(pbatch);
+    //     for(const Node * node = iter.first(); node != iter.end(); node = iter.next())
+    //     {
+    //         packet1 << (node -> first) << (node -> second);
+    //     }
+    //     uint32_t size = packet1.getSize();
 
-        fwrite((char*)&(size), sizeof(uint32_t), 1, tmpfile2);
-        nmeb = fwrite(packet1.getData(), packet1.getSize(), 1, tmpfile2);
-        assert(nmeb == 1);
+    //     fwrite((char*)&(size), sizeof(uint32_t), 1, tmpfile2);
+    //     nmeb = fwrite(packet1.getData(), packet1.getSize(), 1, tmpfile2);
+    //     assert(nmeb == 1);
 
-        pbatch -> clear();
-    }
+    //     pbatch -> clear();
+    // }
 
-    idxfs.close();
-    datfs.close();
+    // string nidxName = "rm " + idxName;
+    // string ndatName = "rm " + datName;
+    // system(nidxName.c_str());
+    // system(ndatName.c_str());
 
-    string nidxName = "rm " + idxName;
-    string ndatName = "rm " + datName;
-    system(nidxName.c_str());
-    system(ndatName.c_str());
+    // reOpenDB();
 
-    reOpenDB();
+    // vector<char> used(entries.size(), 0);
 
-    vector<char> used(entries.size(), 0);
+    // fseek(tmpfile1,0,SEEK_SET);
+    // fseek(tmpfile2,0,SEEK_SET);
 
-    fseek(tmpfile1,0,SEEK_SET);
-    fseek(tmpfile2,0,SEEK_SET);
+    // fclose(tmpfile1);
+    // fclose(tmpfile2);
+    // tmpfile1 = fopen("tmppage.bak","rb+");
+    // tmpfile2 = fopen("tmpcon.bak","rb+");
+    // assert(tmpfile1 && tmpfile2);
 
-    fclose(tmpfile1);
-    fclose(tmpfile2);
-    tmpfile1 = fopen("tmppage.bak","rb+");
-    tmpfile2 = fopen("tmpcon.bak","rb+");
-    assert(tmpfile1 && tmpfile2);
+    // fseek(tmpfile1, 0, SEEK_SET);
+    // fseek(tmpfile2, 0, SEEK_SET);
 
-    fseek(tmpfile1, 0, SEEK_SET);
-    fseek(tmpfile2, 0, SEEK_SET);
+    // assert(ftell(tmpfile1) == 0);
+    // assert(ftell(tmpfile2) == 0);
 
-    assert(ftell(tmpfile1) == 0);
-    assert(ftell(tmpfile2) == 0);
+    // uint32_t uds = 0;
+    // for(int cur = 0; cur < entries.size(); cur++)
+    // {
+    //     if(used.at(cur) == 0)
+    //     {
+    //         vector<int> ids;
+    //         ids.push_back(cur);
 
-    uint32_t uds = 0;
-    for(int cur = 0; cur < entries.size(); cur++)
-    {
-        if(used.at(cur) == 0)
-        {
-            vector<int> ids;
-            ids.push_back(cur);
+    //         for(int j = cur + 1; j < entries.size(); j++)
+    //         {
+    //             if(entries.at(cur) == entries.at(j))
+    //             {
+    //                 used[j] = 1;
+    //                 ids.push_back(j);
+    //             }
+    //         }
 
-            for(int j = cur + 1; j < entries.size(); j++)
-            {
-                if(entries.at(cur) == entries.at(j))
-                {
-                    used[j] = 1;
-                    ids.push_back(j);
-                }
-            }
+    //         if(ids.size() != 1)
+    //             assert(ids.size() % 2 == 0);
 
-            if(ids.size() != 1)
-                assert(ids.size() % 2 == 0);
+    //         for(int j=0; j<ids.size(); j++)
+    //         {
+    //             uint64_t pageNum = ids.size();
+    //             uint64_t k = 0;
+    //             while(pageNum > 1)
+    //             {
+    //                 k++;
+    //                 pageNum >>= 1;
+    //             }
+    //             entries[ids.at(j)] = uds | (k << 56);
+    //         }
 
-            for(int j=0; j<ids.size(); j++)
-            {
-                uint64_t pageNum = ids.size();
-                uint64_t k = 0;
-                while(pageNum > 1)
-                {
-                    k++;
-                    pageNum >>= 1;
-                }
-                entries[ids.at(j)] = uds | (k << 56);
-            }
+    //         BufferPacket packet(SPAGETABLE);
+    //         int nmeb = fread(packet.getData(), packet.getSize(), 1, tmpfile1);
 
-            BufferPacket packet(SPAGETABLE);
-            int nmeb = fread(packet.getData(), packet.getSize(), 1, tmpfile1);
+    //         assert(GetFileLen(tmpfile1) != 0);
+    //         assert(nmeb == 1);
 
-            assert(GetFileLen(tmpfile1) != 0);
-            assert(nmeb == 1);
+    //         page -> setByBucket(packet);
 
-            page -> setByBucket(packet);
+    //         uint32_t size;
+    //         nmeb = fread((char*)&size, sizeof(uint32_t), 1, tmpfile2);
+    //         assert(nmeb == 1);
 
-            uint32_t size;
-            nmeb = fread((char*)&size, sizeof(uint32_t), 1, tmpfile2);
-            assert(nmeb == 1);
+    //         BufferPacket packet1(size);
+    //         nmeb = fread(packet1.getData(), packet1.getSize(), 1, tmpfile2);
+    //         assert(nmeb == 1);
 
-            BufferPacket packet1(size);
-            nmeb = fread(packet1.getData(), packet1.getSize(), 1, tmpfile2);
-            assert(nmeb == 1);
+    //         int fpos = uds + packet.getSize();
+    //         for(int j=0; j<page->curNum; j++)
+    //         {
+    //             page->elements[j].m_datPos = fpos;
+    //             fpos += page->elements[j].m_keySize + page->elements[j].m_datSize;
+    //         }
 
-            int fpos = uds + packet.getSize();
-            for(int j=0; j<page->curNum; j++)
-            {
-                page->elements[j].m_datPos = fpos;
-                fpos += page->elements[j].m_keySize + page->elements[j].m_datSize;
-            }
+    //         packet = page->getPacket();
 
-            packet = page->getPacket();
-            datfs.write(packet.getData(), packet.getSize());
-            datfs.write(packet1.getData(), packet1.getSize());
+    //         uds += packet.getSize() + packet1.getSize();
+    //     }
+    // }
 
-            uds += packet.getSize() + packet1.getSize();
-        }
-    }
+    // this -> fb = -1;
+    // writeToIdxFile();
 
-    this -> fb = -1;
-    datfs.flush();
-    writeToIdxFile();
-    idxfs.flush();
+    // fclose(tmpfile1);
+    // fclose(tmpfile2);
 
-    fclose(tmpfile1);
-    fclose(tmpfile2);
+    // delete page;
+    // page = NULL;
+    // delete pbatch;
+    // pbatch = NULL;
 
-    delete page;
-    page = NULL;
-    delete pbatch;
-    pbatch = NULL;
-
-    nidxName = "rm tmppage.bak";
-    ndatName = "rm tmpcon.bak";
-    system(nidxName.c_str());
-    system(ndatName.c_str());
+    // nidxName = "rm tmppage.bak";
+    // ndatName = "rm tmpcon.bak";
+    // system(nidxName.c_str());
+    // system(ndatName.c_str());
 }
 
 void    PageDB::recycle(int offset, int size)
@@ -917,48 +867,37 @@ void    PageDB::recycle(int offset, int size)
         return;
     }
 
-    datfs.seekg(fb,      ios_base::beg);
-    datfs.read((char*)&block, SEEBLOCK);
-
+    m_datfile.IO_Read((char*)&block, fb, SEEBLOCK);
     if(block.curNum == PAGESIZE)
     {
-        datfs.seekg(0, ios_base::end);
-
         int nn = block.nextBlock;
 
         PageEmptyBlock nnBlock = block.split();
         nnBlock.nextBlock   = nn;
-        block.nextBlock     = datfs.tellg();
+        block.nextBlock     = m_datfile.File_Len();
 
-        datfs.write((char*)&nnBlock, SEEBLOCK);
+        m_datfile.IO_Write((char*)&nnBlock, -1, SEEBLOCK);
     }
 
     block.eles[block.curNum].pos    = offset;
     block.eles[block.curNum++].size = size;
 
-    datfs.seekg(fb, ios_base::beg);
-    datfs.write((char*)&block,SEEBLOCK);
-
-    datfs.flush();
+    m_datfile.IO_Write((char*)&block, fb, SEEBLOCK);
 }
 
 void     PageDB::writeToIdxFile()
 {
-    idxfs.seekg(0,ios_base::beg);
-
     BufferPacket packet(SINT * 3 + entries.size()*SINT64);
     packet << gd << pn << fb;
     packet.write((char*)&entries[0], entries.size()*SINT64);
 
-    idxfs.write(packet.getData(),packet.getSize());
+    m_idxfile.IO_Write(packet.getData(), -1, packet.getSize());
 }
 
 void     PageDB::readFromFile()
 {
-    idxfs.seekg(0,ios_base::beg);
-
     BufferPacket packet(SINT * 3);
-    idxfs.read(packet.getData(), packet.getSize());
+    m_idxfile.IO_Read(packet.getData(), 0, packet.getSize());
 
     int gd1, pn1, fb1;
     packet >> gd1 >> pn1 >> fb1;
@@ -968,7 +907,7 @@ void     PageDB::readFromFile()
 
     entries = vector<uint64_t> (1 << gd, 0);
 
-    idxfs.read((char*)&entries[0], entries.size()*SINT64);
+    m_idxfile.IO_Read((char*)&entries[0], SINT * 3, entries.size()*SINT64);
 }
 
 int      PageDB::findSuitableOffset(int size)
@@ -977,8 +916,7 @@ int      PageDB::findSuitableOffset(int size)
     int offset, pos;
     assert(fb != -1);
 
-    datfs.seekg(fb, ios_base::beg);
-    datfs.read((char*)&block, SEEBLOCK);
+    m_datfile.IO_Read((char*)&block, fb, SEEBLOCK);
 
     if(block.nextBlock != -1)
     {
@@ -988,15 +926,12 @@ int      PageDB::findSuitableOffset(int size)
 
             int old = block.nextBlock;
 
-            datfs.seekg(block.nextBlock, ios_base::beg);
-            datfs.read((char*)&nnBlock, SEEBLOCK);
+            m_datfile.IO_Write((char*)&nnBlock, block.nextBlock, SEEBLOCK);
 
             int index = 0;
             int bnum = block.curNum;
 
             block.nextBlock = nnBlock.nextBlock;
-
-            datfs.seekg(0, ios_base::end);
 
             for(; index < nnBlock.curNum; index++)
             {
@@ -1005,9 +940,9 @@ int      PageDB::findSuitableOffset(int size)
                 {
                     PageEmptyBlock nnn = block.split();
                     nnn.nextBlock   = block.nextBlock;
-                    block.nextBlock = datfs.tellg();
+                    block.nextBlock = m_datfile.File_Len();
 
-                    datfs.write((char*)&nnn, SEEBLOCK);
+                    m_datfile.IO_Write((char*)&nnn,-1, SEEBLOCK);
                 }
             }
 
@@ -1015,9 +950,9 @@ int      PageDB::findSuitableOffset(int size)
             {
                 PageEmptyBlock nnn = block.split();
                 nnn.nextBlock   = block.nextBlock;
-                block.nextBlock = datfs.tellg();
+                block.nextBlock = m_datfile.File_Len();
 
-                datfs.write((char*)&nnn, SEEBLOCK);
+                m_datfile.IO_Write((char*)&nnn, -1, SEEBLOCK);
             }
             block.eles[block.curNum].pos    = old;
             block.eles[block.curNum++].size = SEEBLOCK;
@@ -1042,27 +977,27 @@ int      PageDB::findSuitableOffset(int size)
     {
         if(block.curNum == PAGESIZE)
         {
-            datfs.seekg(0, ios_base::end);
 
             PageEmptyBlock nnn = block.split();
             nnn.nextBlock   = block.nextBlock;
-            block.nextBlock = datfs.tellg();
+            block.nextBlock = m_datfile.File_Len();
 
-            datfs.write((char*)&nnn,SEEBLOCK);
+            m_datfile.IO_Write((char*)&nnn, -1, SEEBLOCK);
         }
 
-        datfs.seekg(2 * size,ios_base::end);
+        char *str = new char[2*size];
+        memset(str, 0, 2*size);
+        m_datfile.IO_Write(str, -1, 2*size);
+        delete str;
 
-        offset = datfs.tellg();
+        offset  = m_datfile.File_Len();
         offset -= size;
 
         block.eles[block.curNum].pos    = offset - size;
         block.eles[block.curNum++].size = size;
     }
 
-    datfs.seekg(fb, ios_base::beg);
-    datfs.write((char*)&block, SEEBLOCK);
-
+    m_datfile.IO_Write((char*)&block, fb, SEEBLOCK);
     return offset;
 }
 
@@ -1070,9 +1005,8 @@ void     PageDB::printThisPage(PageTable * page)
 {
     for(int i = 0; i < page -> curNum; i++)
     {
-        datfs.seekg(page -> elements[i].m_datPos, ios_base::beg);
         BufferPacket packet(2*SINT);
-        datfs.read(packet.getData(),packet.getSize());
+        m_datfile.IO_Read(packet.getData(),page -> elements[i].m_datPos, packet.getSize());
         int a, b;
         packet >> a >> b;
         cout << a <<" " << b << " ";
@@ -1224,15 +1158,8 @@ void     PageDB::write(WriteBatch* pbatch)
 
 void PageDB::reOpenDB()
 {
-    /**Sorry for that, I don't find better solution.**/
-    idxfs.open (idxName.c_str(), FILEMODE2);
-    datfs.open (datName.c_str(), FILEMODE2);
-
-    idxfs.close();
-    datfs.close();
-
-    idxfs.open (idxName.c_str(), FILEMODE1);
-    datfs.open (datName.c_str(), FILEMODE1);
+    m_idxfile.AIO_Open(idxName.c_str());
+    m_datfile.AIO_Open(datName.c_str());
 }
 
 };
