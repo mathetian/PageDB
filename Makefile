@@ -60,4 +60,4 @@ test_aio: tests/test_aio.cpp utils/Thread.cpp
 	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread $^     -o $@ ${LDLIBS} -laio
 
 clean: 
-	rm -f *.o *.idx *.dat demo* test_* db_*
+	rm -f *.o *.idx *.dat demo* test_* db_* *.txt

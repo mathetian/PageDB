@@ -25,3 +25,4 @@ test4
 db_test2
 *.orig
 db_leveldb
+AIO

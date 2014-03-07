@@ -65,18 +65,19 @@ public:
 public:
     void PostExecute(int status)
     {
+        if(status != m_size)
+            cout<<status<<" "<<m_size<<endl;
         assert(status == m_size);
         
         if(m_data == NULL)
         {
             if(callback)
-            callback(m_index);
+                callback(m_index);
         }   
         else
         {
             ThreadArg2 *parg = (ThreadArg2*)m_data;
             (parg->bm->*(parg->method))(status);
-
         }
     }
 
@@ -86,21 +87,15 @@ private:
     friend class AIOFile;
 };
 
-
 class AIOFile{
 public:
-    AIOFile() : fd(-1), thr(NULL), ioctx(0) { }
+    AIOFile() : fd(-1), thr(NULL), ioctx(0), m_stop(false) { }
    
    ~AIOFile() 
    { 
-        if(thr) 
-        {
-            thr -> join(); 
-            delete thr; thr = NULL; 
-        }
-
-        if(fd != -1) close(fd);
-    }
+        if(fd>=0)
+        AIO_Close();
+   }
 
 public:
     struct ThreadArg
@@ -118,8 +113,7 @@ public:
 public:
     void AIO_Open(const char * fileName, int oflag = O_RDWR, mode_t mode = 0644)
     {
-
-        fd = open(fileName, oflag | O_DIRECT | O_CREAT, mode);
+        fd = open(fileName, oflag | O_CREAT, 0644);
         assert((fd != -1) && ("AIO_Open error\n"));
         assert(io_setup(100, &ioctx) == 0);
 
@@ -129,13 +123,17 @@ public:
         thr = new Thread(&AIOFile::ThreadBody, &sarg);
         thr -> run();
         fileLen = lseek(fd, 0, SEEK_END);
+        
         assert(fileLen != -1);        
+        cout<< "fileLen: "<< fileLen<<endl;
     }
 
     void AIO_Close()
     {
-        ScopeMutex scope(&m_mutex);        
+        ScopeMutex scope(&m_mutex);  
+        m_stop = true;      
         thr -> join();
+        fsync(fd);
         close(fd);
     }
 
@@ -146,6 +144,8 @@ public:
             offset = File_Len();
             fileLen += size;   
         }  
+        else if(offset + size > fileLen)
+            fileLen = offset + size;
 
         struct iocb  iocb;
         struct iocb* iocbs = &iocb;
@@ -154,24 +154,34 @@ public:
         io_prep_pread(&iocb, fd, buf, size, offset);
         iocb.data = req;
 
-        assert( io_submit(ioctx, 1, &iocbs) == 1);
+        if(io_submit(ioctx, 1, &iocbs) != 1)
+        {
+            printf("Error: %s\n",strerror(errno));
+            assert(0);
+        }
     }
 
     void AIO_Write(char * buf, int offset, int size, int index = -1, Callback callback = NULL)
     {
         if(offset == -1) 
         {
-            offset = File_Len();
+            offset   = File_Len();
             fileLen += size;
         }
-        
+        else if(offset + size > fileLen)
+            fileLen = offset + size;
+
         struct iocb  iocb;
         struct iocb* iocbs = &iocb;
         AIORequest *req = new AIORequest(size, index, callback);
         io_prep_pwrite(&iocb, fd, buf, size, offset);
         iocb.data = req;
 
-        assert(io_submit(ioctx, 1, &iocbs) == 1);
+        if(io_submit(ioctx, 1, &iocbs) != 1)
+        {
+            printf("Error: %s\n",strerror(errno));
+            assert(0);
+        }
     }
 
 private:
@@ -181,7 +191,9 @@ private:
         {
             offset = File_Len();
             fileLen += size;   
-        }  
+        }
+        else if(offset + size > fileLen)
+            fileLen = offset + size;
 
         struct iocb  iocb;
         struct iocb* iocbs = &iocb;
@@ -191,7 +203,11 @@ private:
         io_prep_pread(&iocb, fd, buf, size, offset);
         iocb.data = req;
 
-        assert( io_submit(ioctx, 1, &iocbs) == 1);
+        if(io_submit(ioctx, 1, &iocbs) != 1)
+        {
+            printf("Error: %s\n",strerror(errno));
+            assert(0);
+        }
     }
 
     void AIO_Write2(char * buf, int offset, int size, void *data)
@@ -201,6 +217,8 @@ private:
             offset = File_Len();
             fileLen += size;
         }
+        else if(offset + size > fileLen)
+            fileLen = offset + size;
 
         struct iocb  iocb;
         struct iocb* iocbs = &iocb;
@@ -210,7 +228,11 @@ private:
         io_prep_pwrite(&iocb, fd, buf, size, offset);
         iocb.data = req;
 
-        assert(io_submit(ioctx, 1, &iocbs) == 1);
+        if(io_submit(ioctx, 1, &iocbs) != 1)
+        {
+            printf("Error: %s\n",strerror(errno));
+            assert(0);
+        }
     }
 
 public:
@@ -254,7 +276,7 @@ private:
     {
         struct io_event* events = new io_event[100];
 
-        while(true)
+        while(m_stop == false)
         {
             struct timespec timeout;
             timeout.tv_sec = 0;
@@ -263,11 +285,20 @@ private:
             int num_events;
             num_events = io_getevents(ioctx, 1, 100, events, &timeout);
 
+            if (num_events < 0) 
+            {
+                if (-num_events != EINTR) 
+                {
+                    cout << "io_getevents error: " << strerror(-num_events);
+                    break;
+                } else
+                    continue;
+            }
+
             for (int i = 0; i < num_events; i++) 
             {
               struct io_event event = events[i];
               AIORequest* req = static_cast<AIORequest*>(event.data);
-              cout<<event.res<<":res"<<endl;
               req -> PostExecute(event.res);
               
               delete req;
@@ -285,6 +316,8 @@ private:
     Thread * thr; 
     uint32_t fileLen;
     ThreadArg  sarg;
+    bool   m_stop;
+
 };
 
 }
