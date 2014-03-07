@@ -7,7 +7,7 @@ CXXFLAGS = -g -O0
 
 SOURCES = cache/*.cpp core/*.cpp helpers/*.cpp dbimpl/*/*.cpp utils/*.cpp
  
-LDLIBS  = -L. -lcustomDB
+LDLIBS  = -L. -lcustomDB -laio
 
 tests   = test_slice test_batch test_thread test_rw
 dbtests = db_smalltest db_largetest db_smallbatch db_largebatch db_batch_thread db_parallel_thread

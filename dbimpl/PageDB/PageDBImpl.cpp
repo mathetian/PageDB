@@ -50,7 +50,7 @@ bool     PageDB::put(const Slice & key,const Slice & value)
 
         BufferPacket packet(SPAGETABLE);
 
-        m_datfile.IO_Read(packet.getData(), -1, packet.getSize());
+        m_datfile.IO_Read(packet.getData(), addr, packet.getSize());
 
         page -> setByBucket(packet);
         assert(page -> curNum < PAGESIZE + 5);
@@ -231,6 +231,7 @@ bool     PageDB::init(const char * filename)
 
     if((stat(idxName.c_str(), &buf) == -1) || buf.st_size == 0)
     {
+        assert(m_idxfile.File_Len() == 0 && m_datfile.File_Len() == 0);
         gd = 0;
         pn = 1;
 
@@ -288,7 +289,7 @@ void     PageDB::dump()
         for(j = 0; j < page -> curNum; j++)
         {
             BufferPacket packet(2*SINT);
-            m_datfile.IO_Read(packet.getData(),page -> elements[j].m_datPos,packet.getSize());
+            m_datfile.IO_Read(packet.getData(), page -> elements[j].m_datPos, packet.getSize());
             int a, b;
             uint32_t hashVal = page -> elements[j].m_hashVal;
             packet >> a >> b;
@@ -1006,7 +1007,7 @@ void     PageDB::printThisPage(PageTable * page)
     for(int i = 0; i < page -> curNum; i++)
     {
         BufferPacket packet(2*SINT);
-        m_datfile.IO_Read(packet.getData(),page -> elements[i].m_datPos, packet.getSize());
+        m_datfile.IO_Read(packet.getData(), page -> elements[i].m_datPos, packet.getSize());
         int a, b;
         packet >> a >> b;
         cout << a <<" " << b << " ";

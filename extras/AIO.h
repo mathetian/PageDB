@@ -234,9 +234,10 @@ public:
 
         request->m_mutex.lock();
         ThreadArg2 arg2;
-        arg2.bm = request;
+        arg2.bm     = request;
         arg2.method = &BIORequest::PostExecute;
         AIO_Read2(buf, offset, size, &arg2);        
+        
         request->m_cond.wait();
         request->m_mutex.unlock();
         
@@ -259,7 +260,7 @@ public:
 
         request->m_mutex.lock();
         ThreadArg2 arg2;
-        arg2.bm = request;
+        arg2.bm     = request;
         arg2.method = &BIORequest::PostExecute;
         AIO_Write2(buf, offset, size, &arg2);
         request->m_cond.wait();

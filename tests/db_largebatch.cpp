@@ -11,7 +11,7 @@ using namespace utils;
 #include <assert.h>
 
 #define SIZE      1000000
-#define BATCHSIZE 50000
+#define BATCHSIZE 500
 
 void RunTest1()
 {
