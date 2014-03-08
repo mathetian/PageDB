@@ -697,161 +697,138 @@ LABLE:
 
 void    PageDB::compact()
 {
-    // fflush();
+    fflush();
 
-    // PageTable * page = new PageTable(this);
+    PageTable * page = new PageTable(this);
 
-    // FILE * tmpfile1 = fopen("tmppage.bak","w+");
-    // FILE * tmpfile2 = fopen("tmpcon.bak","w+");
-    // assert(tmpfile1 && tmpfile2);
+    AIOFile tmpfile1, tmpfile2;
+    tmpfile1.AIO_Open("tmppage.bak");
+    tmpfile2.AIO_Open("tmpcon.bak");
+    tmpfile1.Truncate(0);
+    tmpfile2.Truncate(0);
 
-    // WriteBatch * pbatch =  new WriteBatch(PAGESIZE*2);
+    WriteBatch * pbatch =  new WriteBatch(PAGESIZE*2);
 
-    // for(int cur = 0; cur < entries.size(); cur++)
-    // {
-    //     int j;
-    //     for(j = 0; j < cur; j++)
-    //     {
-    //         if(entries.at(j) ==  entries.at(cur)) break;
-    //     }
+    for(int cur = 0; cur < entries.size(); cur++)
+    {
+        int j;
+        for(j = 0; j < cur; j++)
+        {
+            if(entries.at(j) ==  entries.at(cur)) break;
+        }
 
-    //     if(j != cur) continue;
+        if(j != cur) continue;
 
-    //     uint64_t addr    = entries.at(cur) & MOD;
+        uint64_t addr    = entries.at(cur) & MOD;
 
-    //     BufferPacket packet(SPAGETABLE);
+        BufferPacket packet(SPAGETABLE);
 
-    //     m_datfile.IO_Read(packet.getData(), addr, packet.getSize());
-    //     page -> setByBucket(packet);
+        m_datfile.IO_Read(packet.getData(), addr, packet.getSize());
+        page -> setByBucket(packet);
 
-    //     for(j = 0; j < page -> curNum; j++)
-    //     {
-    //         PageElement element = page -> elements[j];
+        for(j = 0; j < page -> curNum; j++)
+        {
+            PageElement element = page -> elements[j];
 
-    //         BufferPacket packet1(element.m_keySize + element.m_datSize);
-    //         m_datfile.IO_Read(packet1.getData(), element.m_datPos, packet1.getSize());
-    //         Slice a(element.m_keySize), b(element.m_datSize);
-    //         packet1 >> a >> b;
-    //         pbatch -> put(a,b);
-    //     }
+            BufferPacket packet1(element.m_keySize + element.m_datSize);
+            m_datfile.IO_Read(packet1.getData(), element.m_datPos, packet1.getSize());
+            Slice a(element.m_keySize), b(element.m_datSize);
+            packet1 >> a >> b;
+            pbatch -> put(a,b);
+        }
 
-    //     int nmeb = fwrite(packet.getData(), packet.getSize(), 1, tmpfile1);
-    //     assert(nmeb == 1);
-    //     BufferPacket packet1(WriteBatchInternal::ByteSize(pbatch));
-    //     WriteBatch::Iterator iter(pbatch);
-    //     for(const Node * node = iter.first(); node != iter.end(); node = iter.next())
-    //     {
-    //         packet1 << (node -> first) << (node -> second);
-    //     }
-    //     uint32_t size = packet1.getSize();
+        tmpfile1.IO_Write(packet.getData(), -1, packet.getSize());
 
-    //     fwrite((char*)&(size), sizeof(uint32_t), 1, tmpfile2);
-    //     nmeb = fwrite(packet1.getData(), packet1.getSize(), 1, tmpfile2);
-    //     assert(nmeb == 1);
+        BufferPacket packet1(WriteBatchInternal::ByteSize(pbatch));
+        WriteBatch::Iterator iter(pbatch);
+        for(const Node * node = iter.first(); node != iter.end(); node = iter.next())
+        {
+            packet1 << (node -> first) << (node -> second);
+        }
+        uint32_t size = packet1.getSize();
 
-    //     pbatch -> clear();
-    // }
+        tmpfile2.IO_Write((char*)&(size), -1, sizeof(uint32_t));
+        tmpfile2.IO_Write(packet1.getData(), -1, packet1.getSize());
 
-    // string nidxName = "rm " + idxName;
-    // string ndatName = "rm " + datName;
-    // system(nidxName.c_str());
-    // system(ndatName.c_str());
+        pbatch -> clear();
+    }
 
-    // reOpenDB();
+    m_datfile.Truncate(0);
+    m_idxfile.Truncate(0);
 
-    // vector<char> used(entries.size(), 0);
+    vector<char> used(entries.size(), 0);
 
-    // fseek(tmpfile1,0,SEEK_SET);
-    // fseek(tmpfile2,0,SEEK_SET);
+    uint32_t uds = 0; int pos1 = 0, pos2 = 0;
+    for(int cur = 0; cur < entries.size(); cur++)
+    {
+        if(used.at(cur) == 0)
+        {
+            vector<int> ids;
+            ids.push_back(cur);
 
-    // fclose(tmpfile1);
-    // fclose(tmpfile2);
-    // tmpfile1 = fopen("tmppage.bak","rb+");
-    // tmpfile2 = fopen("tmpcon.bak","rb+");
-    // assert(tmpfile1 && tmpfile2);
+            for(int j = cur + 1; j < entries.size(); j++)
+            {
+                if(entries.at(cur) == entries.at(j))
+                {
+                    used[j] = 1;
+                    ids.push_back(j);
+                }
+            }
 
-    // fseek(tmpfile1, 0, SEEK_SET);
-    // fseek(tmpfile2, 0, SEEK_SET);
+            if(ids.size() != 1)
+                assert(ids.size() % 2 == 0);
 
-    // assert(ftell(tmpfile1) == 0);
-    // assert(ftell(tmpfile2) == 0);
+            for(int j=0; j<ids.size(); j++)
+            {
+                uint64_t pageNum = ids.size();
+                uint64_t k = 0;
+                while(pageNum > 1)
+                {
+                    k++;
+                    pageNum >>= 1;
+                }
+                entries[ids.at(j)] = uds | (k << 56);
+            }
 
-    // uint32_t uds = 0;
-    // for(int cur = 0; cur < entries.size(); cur++)
-    // {
-    //     if(used.at(cur) == 0)
-    //     {
-    //         vector<int> ids;
-    //         ids.push_back(cur);
+            BufferPacket packet(SPAGETABLE);
+            tmpfile1.IO_Read(packet.getData(), pos1, packet.getSize());
+            pos1 += packet.getSize();
 
-    //         for(int j = cur + 1; j < entries.size(); j++)
-    //         {
-    //             if(entries.at(cur) == entries.at(j))
-    //             {
-    //                 used[j] = 1;
-    //                 ids.push_back(j);
-    //             }
-    //         }
+            page -> setByBucket(packet);
 
-    //         if(ids.size() != 1)
-    //             assert(ids.size() % 2 == 0);
+            uint32_t size;
+            tmpfile2.IO_Read((char*)&size, pos2, sizeof(uint32_t));
+            pos2 += sizeof(uint32_t);
 
-    //         for(int j=0; j<ids.size(); j++)
-    //         {
-    //             uint64_t pageNum = ids.size();
-    //             uint64_t k = 0;
-    //             while(pageNum > 1)
-    //             {
-    //                 k++;
-    //                 pageNum >>= 1;
-    //             }
-    //             entries[ids.at(j)] = uds | (k << 56);
-    //         }
+            BufferPacket packet1(size);
+            tmpfile2.IO_Read(packet1.getData(), pos2, packet1.getSize());
+            pos2 += packet1.getSize();
 
-    //         BufferPacket packet(SPAGETABLE);
-    //         int nmeb = fread(packet.getData(), packet.getSize(), 1, tmpfile1);
+            int fpos = uds + packet.getSize();
+            for(int j=0; j<page->curNum; j++)
+            {
+                page->elements[j].m_datPos = fpos;
+                fpos += page->elements[j].m_keySize + page->elements[j].m_datSize;
+            }
 
-    //         assert(GetFileLen(tmpfile1) != 0);
-    //         assert(nmeb == 1);
+            packet = page->getPacket();
+            m_datfile.IO_Write(packet.getData(), -1, packet.getSize());
+            m_datfile.IO_Write(packet1.getData(), -1, packet1.getSize());
 
-    //         page -> setByBucket(packet);
+            uds += packet.getSize() + packet1.getSize();
+        }
+    }
 
-    //         uint32_t size;
-    //         nmeb = fread((char*)&size, sizeof(uint32_t), 1, tmpfile2);
-    //         assert(nmeb == 1);
+    this -> fb = -1;
+    writeToIdxFile();
 
-    //         BufferPacket packet1(size);
-    //         nmeb = fread(packet1.getData(), packet1.getSize(), 1, tmpfile2);
-    //         assert(nmeb == 1);
+    delete page;
+    page = NULL;
+    delete pbatch;
+    pbatch = NULL;
 
-    //         int fpos = uds + packet.getSize();
-    //         for(int j=0; j<page->curNum; j++)
-    //         {
-    //             page->elements[j].m_datPos = fpos;
-    //             fpos += page->elements[j].m_keySize + page->elements[j].m_datSize;
-    //         }
-
-    //         packet = page->getPacket();
-
-    //         uds += packet.getSize() + packet1.getSize();
-    //     }
-    // }
-
-    // this -> fb = -1;
-    // writeToIdxFile();
-
-    // fclose(tmpfile1);
-    // fclose(tmpfile2);
-
-    // delete page;
-    // page = NULL;
-    // delete pbatch;
-    // pbatch = NULL;
-
-    // nidxName = "rm tmppage.bak";
-    // ndatName = "rm tmpcon.bak";
-    // system(nidxName.c_str());
-    // system(ndatName.c_str());
+    tmpfile1.Truncate(0);
+    tmpfile2.Truncate(0);
 }
 
 void    PageDB::recycle(int offset, int size)

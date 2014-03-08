@@ -1,20 +1,15 @@
 #ifndef _AIO_H
 #define _AIO_H
 
-#include <aio.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include <libaio.h>
 #include <unistd.h>
-#include <strings.h>
 #include <stdint.h>
-
 #include <assert.h>
 #include <errno.h> 
-#include <iostream>
-using namespace std;
 
-#include "../utils/Thread.h"
+#include "Thread.h"
 
 #define DefaultMode S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH
 
@@ -42,16 +37,11 @@ public:
 
     void PostExecute(int status)
     {
+        ScopeMutex scope(&m_mutex);
         m_wake = 1;
-        while(m_wake == 1) m_cond.signal();
+        m_cond.signal();
     }
 
-    virtual ~BIORequest()
-    {
-        if(m_wake == 1)
-            m_cond.signal();
-    }
-    
 private:
     Mutex   m_mutex;
     CondVar m_cond;
@@ -73,8 +63,7 @@ public:
 public:
     void PostExecute(int status)
     {
-        if(status != m_size)
-            cout<<status<<" "<<m_size<<endl;
+        if(status != m_size) printf("Error, %d %d\n", status, m_size);
         assert(status == m_size);
         if(m_data == NULL)
         {
@@ -250,6 +239,9 @@ public:
         request->m_mutex.unlock();
         delete request; request = NULL;
 
+        // assert(lseek(fd, offset, SEEK_SET)  == offset);
+        // assert(read(fd, buf, size) == size);
+
         return offset;
     }
 
@@ -263,20 +255,25 @@ public:
         else if(offset + size > fileLen)
             fileLen = offset + size;
 
-        BIORequest* request = new BIORequest(size);
+        // BIORequest* request = new BIORequest(size);
 
-        request->m_mutex.lock();
-        ThreadArg2 arg2;
-        arg2.bm     = request;
-        arg2.method = &BIORequest::PostExecute;
-        AIO_Write2(buf, offset, size, &arg2);
+        // request->m_mutex.lock();
+        // ThreadArg2 arg2;
+        // arg2.bm     = request;
+        // arg2.method = &BIORequest::PostExecute;
+        // AIO_Write2(buf, offset, size, &arg2);
 
-        while(request->m_wake==0)
-            request->m_cond.wait();
-        request -> m_wake = 2;
-        request->m_mutex.unlock();
+        // while(request->m_wake==0)
+        //     request->m_cond.wait();
+        // request -> m_wake = 2;
+        // request->m_mutex.unlock();
 
-        delete request; request = NULL;   
+        //  delete request; request = NULL;   
+
+        AIO_Write(buf, offset, size);
+        
+        // assert(lseek(fd, offset, SEEK_SET) == offset);
+        // assert(write(fd, buf, size) == size);
 
         return offset;  
     }   
@@ -284,6 +281,12 @@ public:
     uint32_t File_Len()
     {
         return fileLen;
+    }
+
+    void     Truncate(int length)
+    {
+        assert(ftruncate(fd, length) == 0);
+        fileLen = length;
     }
 
 private:
@@ -304,7 +307,7 @@ private:
             {
                 if (-num_events != EINTR) 
                 {
-                    cout << "io_getevents error: " << strerror(-num_events);
+                    printf("io_getevents error: %s", strerror(-num_events));
                     break;
                 } else
                     continue;

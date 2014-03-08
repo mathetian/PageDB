@@ -24,7 +24,7 @@ void    PageCache::free()
             PageTable * page = cacheElems[i].page;
             assert(page);
             BufferPacket packet = page -> getPacket();
-            db -> m_datfile.IO_Write(packet.getData(), cacheElems[i].entry, packet.getSize());
+            db -> m_datfile.AIO_Write(packet.getData(), cacheElems[i].entry, packet.getSize());
         }
         cacheElems[i].reset();
     }
@@ -48,7 +48,7 @@ void    PageCache::freeWithLock()
             BufferPacket packet = page -> getPacket();
             {
                 ScopeMutex scope2(&(db -> datLock));
-                db -> m_datfile.IO_Write(packet.getData(), cacheElems[i].entry, packet.getSize());
+                db -> m_datfile.AIO_Write(packet.getData(), cacheElems[i].entry, packet.getSize());
             }
         }
         cacheElems[i].reset();
@@ -143,7 +143,7 @@ void   PageCache::resetWithDatLock(int index)
 
     {
         ScopeMutex scope(&(db -> datLock));
-        db -> m_datfile.IO_Write(packet.getData(), cacheElems[index].entry, packet.getSize());
+        db -> m_datfile.AIO_Write(packet.getData(), cacheElems[index].entry, packet.getSize());
     }
 }
 
@@ -153,7 +153,7 @@ void   PageCache::reset(int index)
     assert(page1 != NULL);
     BufferPacket packet = page1 -> getPacket();
 
-    db -> m_datfile.IO_Write(packet.getData(), cacheElems[index].entry, packet.getSize());
+    db -> m_datfile.AIO_Write(packet.getData(), cacheElems[index].entry, packet.getSize());
 }
 
 
@@ -165,7 +165,7 @@ void   PageCache::fflush()
         {
             PageTable * page = cacheElems[i].page;
             BufferPacket packet = page -> getPacket();
-            db -> m_datfile.IO_Write(packet.getData(), cacheElems[i].entry, packet.getSize());
+            db -> m_datfile.AIO_Write(packet.getData(), cacheElems[i].entry, packet.getSize());
             cacheElems[i].updated = false;
         }
     }
@@ -183,7 +183,7 @@ void   PageCache::fflushWithLock()
         {
             PageTable * page = cacheElems[i].page;
             BufferPacket packet = page -> getPacket();
-            db -> m_datfile.IO_Write(packet.getData(), cacheElems[i].entry, packet.getSize());
+            db -> m_datfile.AIO_Write(packet.getData(), cacheElems[i].entry, packet.getSize());
             cacheElems[i].updated = false;
         }
     }
