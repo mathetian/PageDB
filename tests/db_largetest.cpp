@@ -10,7 +10,7 @@ using namespace utils;
 
 #include <assert.h>
 
-#define SIZE 1000000
+#define SIZE 3000
 
 #define EXPECT_EQ(a,b) assert(a == b)
 #define EXPECT_EQ_S(a,b) assert(strcmp(a,b) == 1)
@@ -136,6 +136,7 @@ void RunTest2()
 
 int main()
 {
+    RunTest1();
     RunTest2();
     printf("Passed All Tests\n");
     return 0;

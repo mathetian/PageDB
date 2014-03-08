@@ -50,7 +50,6 @@ bool   PageTable::put(const Slice & key,const Slice & value, uint32_t hashVal)
             db -> m_datfile.IO_Read(packet.getData(), element.m_datPos, packet.getSize());
             packet.setBeg();
             packet >> slice;
-
             if(slice == key)
                 return 0;
         }
@@ -63,9 +62,7 @@ bool   PageTable::put(const Slice & key,const Slice & value, uint32_t hashVal)
 
     BufferPacket packet(key.size() + value.size());
     packet << key << value;
-
     int offset = db -> findSuitableOffset(packet.getSize());
-
     db -> m_datfile.IO_Write(packet.getData(), offset, packet.getSize());
     /**
         Modify the page index

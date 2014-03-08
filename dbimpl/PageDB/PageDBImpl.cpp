@@ -47,11 +47,9 @@ bool     PageDB::put(const Slice & key,const Slice & value)
     {
         page = new PageTable(this);
         index = pcache -> putInto(page, addr);
-
         BufferPacket packet(SPAGETABLE);
 
         m_datfile.IO_Read(packet.getData(), addr, packet.getSize());
-
         page -> setByBucket(packet);
         assert(page -> curNum < PAGESIZE + 5);
     }
@@ -151,7 +149,6 @@ bool     PageDB::put(const Slice & key,const Slice & value)
         }
     }
     writeToIdxFile();
-
     return true;
 }
 
@@ -258,6 +255,7 @@ bool     PageDB::init(const char * filename)
         m_datfile.IO_Write((char*)&block, -1, SEEBLOCK);
     }
 
+    cout<< m_idxfile.File_Len() <<" "<<m_datfile.File_Len()<<endl;
     return true;
 }
 
@@ -891,8 +889,7 @@ void     PageDB::writeToIdxFile()
     BufferPacket packet(SINT * 3 + entries.size()*SINT64);
     packet << gd << pn << fb;
     packet.write((char*)&entries[0], entries.size()*SINT64);
-
-    m_idxfile.IO_Write(packet.getData(), -1, packet.getSize());
+    m_idxfile.IO_Write(packet.getData(), 0, packet.getSize());
 }
 
 void     PageDB::readFromFile()
@@ -916,9 +913,7 @@ int      PageDB::findSuitableOffset(int size)
     PageEmptyBlock block;
     int offset, pos;
     assert(fb != -1);
-
     m_datfile.IO_Read((char*)&block, fb, SEEBLOCK);
-
     if(block.nextBlock != -1)
     {
         if(block.curNum < PAGESIZE/2)
@@ -959,7 +954,6 @@ int      PageDB::findSuitableOffset(int size)
             block.eles[block.curNum++].size = SEEBLOCK;
         }
     }
-
     if(block.checkSuitable(size, pos) == true)
     {
         PageEmptyBlock::PageEmptyEle ele = block.eles[pos];
@@ -990,14 +984,12 @@ int      PageDB::findSuitableOffset(int size)
         memset(str, 0, 2*size);
         m_datfile.IO_Write(str, -1, 2*size);
         delete str;
-
         offset  = m_datfile.File_Len();
         offset -= size;
 
         block.eles[block.curNum].pos    = offset - size;
         block.eles[block.curNum++].size = size;
     }
-
     m_datfile.IO_Write((char*)&block, fb, SEEBLOCK);
     return offset;
 }

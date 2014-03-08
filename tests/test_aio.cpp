@@ -9,8 +9,8 @@ using namespace std;
 #include <string.h>
 
 
-#define STRLEN 250
-#define STRCNT 250
+#define STRLEN 1250
+#define STRCNT 1800
 
 string getrandstr()
 {
@@ -120,14 +120,33 @@ void RunTest4()
 	cout<<"Over"<<endl;
 }
 
+#include "../include/BufferPacket.h"
+using namespace customdb;
+
+void RunTest5()
+{
+	AIOFile file;
+	file.AIO_Open("hello4.txt");
+	count = 0;
+	for(int i=0;i<STRCNT;i++)
+	{
+		cout<<"count:"<<i<<endl;
+		BufferPacket packet(STRLEN);
+		file.IO_Write(packet.getData(), i*STRLEN, STRLEN);	
+	}
+	
+	cout<<"Over"<<endl;
+}
+
 int main()
 {	
-	RunTest1();
-	printf("Test1 finished\n");
-	RunTest2();
-	printf("Test2 finished\n");
-	RunTest3();
-	printf("Test3 finished\n");
+	// RunTest1();
+	// printf("Test1 finished\n");
+	// RunTest2();
+	// printf("Test2 finished\n");
+	// RunTest3();
+	// printf("Test3 finished\n");
+	RunTest5();
 	return 0;
 }
 

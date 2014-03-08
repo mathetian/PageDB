@@ -38,16 +38,24 @@ class AIOFile;
 class BIORequest : IORequest{
 public:
     BIORequest(int size) : \
-        m_cond(&m_mutex), IORequest(size) { }
+        m_cond(&m_mutex), IORequest(size), m_wake(0) { }
 
     void PostExecute(int status)
     {
-        m_cond.signal();
+        m_wake = 1;
+        while(m_wake == 1) m_cond.signal();
     }
 
+    virtual ~BIORequest()
+    {
+        if(m_wake == 1)
+            m_cond.signal();
+    }
+    
 private:
     Mutex   m_mutex;
     CondVar m_cond;
+    int    m_wake;
     friend class AIOFile;
 };
 
@@ -68,7 +76,6 @@ public:
         if(status != m_size)
             cout<<status<<" "<<m_size<<endl;
         assert(status == m_size);
-        
         if(m_data == NULL)
         {
             if(callback)
@@ -125,7 +132,6 @@ public:
         fileLen = lseek(fd, 0, SEEK_END);
         
         assert(fileLen != -1);        
-        cout<< "fileLen: "<< fileLen<<endl;
     }
 
     void AIO_Close()
@@ -238,9 +244,10 @@ public:
         arg2.method = &BIORequest::PostExecute;
         AIO_Read2(buf, offset, size, &arg2);        
         
-        request->m_cond.wait();
+        while(request->m_wake == 0) 
+            request->m_cond.wait();
+        request->m_wake = 2;
         request->m_mutex.unlock();
-        
         delete request; request = NULL;
 
         return offset;
@@ -263,7 +270,10 @@ public:
         arg2.bm     = request;
         arg2.method = &BIORequest::PostExecute;
         AIO_Write2(buf, offset, size, &arg2);
-        request->m_cond.wait();
+
+        while(request->m_wake==0)
+            request->m_cond.wait();
+        request -> m_wake = 2;
         request->m_mutex.unlock();
 
         delete request; request = NULL;   
