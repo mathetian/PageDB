@@ -10,6 +10,9 @@ using namespace std;
 #include "Slice.h"
 #include "Log.h"
 
+#include "Atomic.h"
+using utils::Atomic;
+
 namespace customdb
 {
 
@@ -57,9 +60,15 @@ public:
     }
 
 private:
-    char * m_data;
-    int    m_size, m_cur;
-    Log  * m_log;
+    void acquire();
+    void release();
+
+private:
+    char *  m_data;
+    int     m_size, m_cur;
+    Log  *  m_log;    
+    Atomic *m_ref;
+
 };
 
 }

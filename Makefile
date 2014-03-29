@@ -59,5 +59,8 @@ test_rw:  tests/test_rw.cpp
 test_aio: tests/test_aio.cpp
 	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread $^     -o $@ ${LDLIBS} -laio
 
+test_buff: tests/test_buff.cpp
+	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread $^     -o $@ ${LDLIBS}
+
 clean: 
-	rm -f *.o *.idx *.dat demo* test_* db_* *.txt
+	rm -f *.o *.idx *.dat demo* test_* db_* *.txt *.bak

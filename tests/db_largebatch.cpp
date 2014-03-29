@@ -10,8 +10,8 @@ using namespace utils;
 
 #include <assert.h>
 
-#define SIZE      1000000
-#define BATCHSIZE 10000
+#define SIZE      100000
+#define BATCHSIZE 1000
 
 void RunTest1()
 {
@@ -80,6 +80,7 @@ void RunTest1()
             packet2 >> num;
             if(i!=num)
                 cout << i <<" "<<num <<" ) ";
+            //cout<<i<<endl;
         }
         total.StopTime("GetTime(Without Cache): ");
 

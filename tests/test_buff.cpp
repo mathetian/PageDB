@@ -1,1 +1,11 @@
-//Need to write this test.cpp as I found fatal bug in BufferPacket
+#include "BufferPacket.h"
+using customdb::BufferPacket;
+
+int main()
+{
+	{
+		BufferPacket packet(10);
+	}
+	
+	return 0;
+}

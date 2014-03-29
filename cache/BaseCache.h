@@ -11,8 +11,9 @@ using std::vector;
 
 #include "Thread.h"
 using utils::Mutex;
-using utils::Atomic;
 using utils::ScopeMutex;
+#include "Atomic.h"
+using utils::Atomic;
 
 namespace customdb
 {

@@ -1,47 +1,61 @@
 #include "BufferPacket.h"
 
 #include <assert.h>
+#include "Atomic.h"
+using namespace utils;
 
 namespace customdb
 {
 
-BufferPacket::BufferPacket(int size) : m_size(size), m_cur(0)
+void BufferPacket::acquire()
+{
+    if (m_ref) ++*m_ref;
+}
+
+void BufferPacket::release()
+{
+    if (m_ref && (m_ref->addAndGet(-1)) == 0 && m_data)
+    {
+        delete [] m_data; delete m_ref;
+        m_data = NULL;m_ref = NULL;
+    }
+}
+
+BufferPacket::BufferPacket(int size) : m_size(size), m_cur(0), m_ref(new Atomic(0))
 {
     m_data    = new char[m_size];
     memset(m_data, 0xff, m_size);
 
     m_log    = Log::GetInstance();
+
+    acquire();
 }
 
 BufferPacket::~BufferPacket()
 {
-    if(m_data)
-    {
-        delete [] m_data;
-        m_data = NULL;
-    }
-    m_size = m_cur = 0;
+    release();
 }
 
-BufferPacket::BufferPacket(const BufferPacket & packet)
+BufferPacket::BufferPacket(const BufferPacket & packet) : m_ref(packet.m_ref)
 {
-    m_data = new char[packet.m_size];
-    memcpy(m_data, packet.m_data, packet.m_size);
-
+    m_data = packet.m_data;
     m_size = packet.m_size;
     m_cur  = packet.m_cur;
+
+    acquire();
 }
 
 BufferPacket & BufferPacket::operator=(const BufferPacket & packet)
 {
-    if(m_size != 0) delete [] m_data;
+    release();
 
-    m_data = new char[packet.m_size];
-    memcpy(m_data, packet.m_data, packet.m_size);
-
+    m_data = packet.m_data;
     m_size = packet.m_size;
     m_cur  = packet.m_cur;
 
+    m_ref = packet.m_ref; 
+    acquire(); 
+    
     return *this;
 }
 

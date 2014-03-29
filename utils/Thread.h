@@ -151,69 +151,6 @@ private:
     int   m_time;
 };
 
-class Atomic
-{
-public:
-    Atomic(int r) : obj(r) { }
-
-    operator int()
-    {
-        return obj;
-    }
-
-    Atomic & operator=( int val )
-    {
-        obj = val;
-        __sync_synchronize();
-        return *this;
-    }
-
-    int operator++()
-    {
-        return __sync_add_and_fetch( &obj, 1 );
-    }
-
-    int operator++( int )
-    {
-        return __sync_fetch_and_add( &obj, 1 );
-    }
-
-    int operator+=( int val )
-    {
-        return __sync_add_and_fetch( &obj, val );
-    }
-
-    int operator--()
-    {
-        return __sync_sub_and_fetch( &obj, 1 );
-    }
-
-    int operator--( int )
-    {
-        return __sync_fetch_and_sub( &obj, 1 );
-    }
-
-    int operator-=( int val )
-    {
-        return __sync_sub_and_fetch( &obj, val );
-    }
-
-    int addAndGet( int val)
-    {
-        return __sync_add_and_fetch(&obj, val);
-    }
-
-    // Perform an atomic CAS operation
-    // returning the value before the operation
-    int exchange( int oldval, int newval )
-    {
-        return __sync_val_compare_and_swap( &obj, oldval, newval );
-    }
-
-private:
-    int obj;
-};
-
 };
 
 #endif
