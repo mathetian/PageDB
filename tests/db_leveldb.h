@@ -37,16 +37,16 @@ public:
         return Next() % n;
     }
 
-  
+
     bool OneIn(int n)
     {
         return (Next() % n) == 0;
     }
-    
+
     uint32_t Skewed(int max_log)
     {
         return Uniform(1 << Uniform(max_log + 1));
     }
 };
 
-#endif  
+#endif

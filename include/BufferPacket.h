@@ -66,7 +66,7 @@ private:
 private:
     char *  m_data;
     int     m_size, m_cur;
-    Log  *  m_log;    
+    Log  *  m_log;
     Atomic *m_ref;
 
 };

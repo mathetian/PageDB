@@ -130,7 +130,7 @@ bool     PageDB::put(const Slice & key,const Slice & value)
 
         BufferPacket packe2 = p2 -> getPacket();
         m_datfile.IO_Write(packe2.getData(), -1, packe2.getSize());
-        
+
         delete p2;
         p2 = NULL;
 
@@ -171,7 +171,7 @@ Slice    PageDB::get(const Slice & key)
         BufferPacket packet(SPAGETABLE);
 
         m_datfile.IO_Read(packet.getData(), addr, packet.getSize());
-        page -> setByBucket(packet);    
+        page -> setByBucket(packet);
     }
 
     Slice rs = page -> get(key, hashVal);
@@ -233,7 +233,7 @@ bool     PageDB::init(const char * filename)
         pn = 1;
 
         entries.push_back(0);
-        PageTable * page = new PageTable(this);       
+        PageTable * page = new PageTable(this);
         writeToIdxFile();
         BufferPacket packet = page -> getPacket();
         uint32_t pos = m_datfile.IO_Write(packet.getData(), -1, packet.getSize());
@@ -325,7 +325,7 @@ void    PageDB::runBatch(const WriteBatch * pbatch)
 
     BufferPacket phyPacket(pbatch->getTotalSize());
     m_datfile.IO_Write(phyPacket.getData(), -1, phyPacket.getSize());
-    
+
     uint32_t totalSize = 0;
     WriteBatch::Iterator iterator(pbatch);
 
@@ -422,9 +422,10 @@ void    PageDB::runBatch(const WriteBatch * pbatch)
 
             BufferPacket packe2 = p2 -> getPacket();
             m_datfile.IO_Write(packe2.getData(), -1, packe2.getSize());
-            
+
             pn += 1;
-            delete p2; p2 = NULL;
+            delete p2;
+            p2 = NULL;
         }
         else
         {
@@ -435,7 +436,7 @@ void    PageDB::runBatch(const WriteBatch * pbatch)
             pcache -> setUpdated(index);
         }
     }
-    
+
     m_datfile.IO_Write(phyPacket.getData(), curpos, phyPacket.getSize());
     writeToIdxFile();
     pcache -> free();
@@ -758,7 +759,8 @@ void    PageDB::compact()
 
     vector<char> used(entries.size(), 0);
 
-    uint32_t uds = 0; int pos1 = 0, pos2 = 0;
+    uint32_t uds = 0;
+    int pos1 = 0, pos2 = 0;
     for(int cur = 0; cur < entries.size(); cur++)
     {
         if(used.at(cur) == 0)

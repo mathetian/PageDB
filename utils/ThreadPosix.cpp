@@ -3,7 +3,8 @@ using namespace utils;
 
 #include <assert.h>
 
-namespace utils{
+namespace utils
+{
 
 #ifdef __WIN32
 #else
@@ -116,7 +117,7 @@ void ReentrantLock::unlock()
     if(m_time == 0)
     {
         m_lock.unlock();
-        m_id = -1; 
+        m_id = -1;
         m_tmplock.unlock();
         m_cond.signal();
     }
@@ -127,7 +128,7 @@ void ReentrantLock::unlock()
 bool ReentrantLock::trylock()
 {
     m_tmplock.lock();
-    if(m_id != -1) 
+    if(m_id != -1)
     {
         m_tmplock.unlock();
         return false;

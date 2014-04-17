@@ -28,7 +28,7 @@ public:
 
     inline void add(int addend)
     {
-         __sync_add_and_fetch(&val, addend);
+        __sync_add_and_fetch(&val, addend);
     }
 
     inline int addAndGet(int addend)

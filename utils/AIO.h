@@ -7,17 +7,19 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <assert.h>
-#include <errno.h> 
+#include <errno.h>
 
 #include "Thread.h"
 
 #define DefaultMode S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH
 
-namespace utils{
+namespace utils
+{
 
 typedef void (*Callback) (int);
 
-class IORequest{
+class IORequest
+{
 public:
     IORequest(int size, Callback callback = NULL) : \
         m_size(size), callback(callback) { }
@@ -30,7 +32,8 @@ protected:
 
 class AIOFile;
 
-class BIORequest : IORequest{
+class BIORequest : IORequest
+{
 public:
     BIORequest(int size) : \
         m_cond(&m_mutex), IORequest(size), m_wake(0) { }
@@ -55,10 +58,11 @@ struct ThreadArg2
     void (BIORequest::*method)(int);
 };
 
-class AIORequest : IORequest{
+class AIORequest : IORequest
+{
 public:
     AIORequest(int size, int index = -1, Callback callback = NULL) : \
-                m_index(index), IORequest(size, callback), m_data(NULL) { }
+        m_index(index), IORequest(size, callback), m_data(NULL) { }
 
 public:
     void PostExecute(int status)
@@ -69,7 +73,7 @@ public:
         {
             if(callback)
                 callback(m_index);
-        }   
+        }
         else
         {
             ThreadArg2 *parg = (ThreadArg2*)m_data;
@@ -83,15 +87,16 @@ private:
     friend class AIOFile;
 };
 
-class AIOFile{
+class AIOFile
+{
 public:
     AIOFile() : fd(-1), thr(NULL), ioctx(0), m_stop(false) { }
-   
-   ~AIOFile() 
-   { 
+
+    ~AIOFile()
+    {
         if(fd>=0)
-        AIO_Close();
-   }
+            AIO_Close();
+    }
 
 public:
     struct ThreadArg
@@ -119,14 +124,14 @@ public:
         thr = new Thread(&AIOFile::ThreadBody, &sarg);
         thr -> run();
         fileLen = lseek(fd, 0, SEEK_END);
-        
-        assert(fileLen != -1);        
+
+        assert(fileLen != -1);
     }
 
     void AIO_Close()
     {
-        ScopeMutex scope(&m_mutex);  
-        m_stop = true;      
+        ScopeMutex scope(&m_mutex);
+        m_stop = true;
         thr -> join();
         fsync(fd);
         close(fd);
@@ -137,14 +142,14 @@ public:
         if(offset == -1)
         {
             offset = File_Len();
-            fileLen += size;   
-        }  
+            fileLen += size;
+        }
         else if(offset + size > fileLen)
             fileLen = offset + size;
 
         struct iocb  iocb;
         struct iocb* iocbs = &iocb;
-        
+
         AIORequest *req = new AIORequest(size, index, callback);
         io_prep_pread(&iocb, fd, buf, size, offset);
         iocb.data = req;
@@ -158,7 +163,7 @@ public:
 
     void AIO_Write(char * buf, int offset, int size, int index = -1, Callback callback = NULL)
     {
-        if(offset == -1) 
+        if(offset == -1)
         {
             offset   = File_Len();
             fileLen += size;
@@ -184,7 +189,7 @@ private:
     {
         struct iocb  iocb;
         struct iocb* iocbs = &iocb;
-        
+
         AIORequest *req = new AIORequest(size);
         req -> m_data = data;
         io_prep_pread(&iocb, fd, buf, size, offset);
@@ -201,7 +206,7 @@ private:
     {
         struct iocb  iocb;
         struct iocb* iocbs = &iocb;
-        
+
         AIORequest *req = new AIORequest(size);
         req -> m_data = data;
         io_prep_pwrite(&iocb, fd, buf, size, offset);
@@ -220,7 +225,7 @@ public:
         if(offset == -1)
         {
             offset = File_Len();
-            fileLen += size;   
+            fileLen += size;
         }
         else if(offset + size > fileLen)
             fileLen = offset + size;
@@ -231,13 +236,14 @@ public:
         ThreadArg2 arg2;
         arg2.bm     = request;
         arg2.method = &BIORequest::PostExecute;
-        AIO_Read2(buf, offset, size, &arg2);        
-        
-        while(request->m_wake == 0) 
+        AIO_Read2(buf, offset, size, &arg2);
+
+        while(request->m_wake == 0)
             request->m_cond.wait();
         request->m_wake = 2;
         request->m_mutex.unlock();
-        delete request; request = NULL;
+        delete request;
+        request = NULL;
 
         // assert(lseek(fd, offset, SEEK_SET)  == offset);
         // assert(read(fd, buf, size) == size);
@@ -247,7 +253,7 @@ public:
 
     uint32_t IO_Write(char * buf, int offset, int size)
     {
-        if(offset == -1) 
+        if(offset == -1)
         {
             offset = File_Len();
             fileLen += size;
@@ -268,15 +274,15 @@ public:
         // request -> m_wake = 2;
         // request->m_mutex.unlock();
 
-        //  delete request; request = NULL;   
+        //  delete request; request = NULL;
 
         AIO_Write(buf, offset, size);
-        
+
         // assert(lseek(fd, offset, SEEK_SET) == offset);
         // assert(write(fd, buf, size) == size);
 
-        return offset;  
-    }   
+        return offset;
+    }
 
     uint32_t File_Len()
     {
@@ -303,23 +309,24 @@ private:
             int num_events;
             num_events = io_getevents(ioctx, 1, 100, events, &timeout);
 
-            if (num_events < 0) 
+            if (num_events < 0)
             {
-                if (-num_events != EINTR) 
+                if (-num_events != EINTR)
                 {
                     printf("io_getevents error: %s", strerror(-num_events));
                     break;
-                } else
+                }
+                else
                     continue;
             }
 
-            for (int i = 0; i < num_events; i++) 
+            for (int i = 0; i < num_events; i++)
             {
-              struct io_event event = events[i];
-              AIORequest* req = static_cast<AIORequest*>(event.data);
-              req -> PostExecute(event.res);
-              
-              delete req;
+                struct io_event event = events[i];
+                AIORequest* req = static_cast<AIORequest*>(event.data);
+                req -> PostExecute(event.res);
+
+                delete req;
             }
         }
 
@@ -331,7 +338,7 @@ private:
     int fd;
     io_context_t ioctx;
     Mutex m_mutex;
-    Thread * thr; 
+    Thread * thr;
     uint32_t fileLen;
     ThreadArg  sarg;
     bool   m_stop;

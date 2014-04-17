@@ -157,8 +157,10 @@ void RunTest4()
     Thread thr1(ffff4, NULL);
     Thread thr2(ffff4, NULL);
 
-    thr1.run(); thr2.run();
-    thr1.join(); thr2.join();
+    thr1.run();
+    thr2.run();
+    thr1.join();
+    thr2.join();
 }
 
 int main()

@@ -280,7 +280,7 @@ private:
     {
         RandomGenerator gen;
         Random rnd(31);
-        
+
         char key1[100];
 
         TimeStamp m_tms;
@@ -403,7 +403,7 @@ private:
         TimeStamp m_tms;
 
         m_tms.StartTime();
-        
+
         for(int i = 0; i < batchNum; i++)
         {
             WriteBatch batch(batchsize_);
@@ -532,6 +532,6 @@ int main(int argc, char** argv)
 {
     Benchmark benchmark;
     benchmark.Run();
- 
+
     return 0;
 }

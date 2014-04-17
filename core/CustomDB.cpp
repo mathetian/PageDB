@@ -94,17 +94,17 @@ bool  CustomDB::open(const Options & option)
         cache = new EmptyCache();
     }
     else switch(option.cacheOption.cacheType)
-    {
-    case FIFO:
-        cache = new FIFOLimitedMemoryCache();
-        break;
-    case LRU:
-        cache = new LRULimitedMemoryCache();
-        break;
-    default:
-        log -> _Fatal("CustomDB::open::cacheType error\n");
-        break;
-    }
+        {
+        case FIFO:
+            cache = new FIFOLimitedMemoryCache();
+            break;
+        case LRU:
+            cache = new LRULimitedMemoryCache();
+            break;
+        default:
+            log -> _Fatal("CustomDB::open::cacheType error\n");
+            break;
+        }
     if(cache == NULL)
         log -> _Fatal("CustomDB::open::new cache error\n");
 

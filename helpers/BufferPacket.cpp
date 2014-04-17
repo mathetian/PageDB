@@ -16,8 +16,10 @@ void BufferPacket::release()
 {
     if (m_ref && (m_ref->addAndGet(-1)) == 0 && m_data)
     {
-        delete [] m_data; delete m_ref;
-        m_data = NULL;m_ref = NULL;
+        delete [] m_data;
+        delete m_ref;
+        m_data = NULL;
+        m_ref = NULL;
     }
 }
 
@@ -53,9 +55,9 @@ BufferPacket & BufferPacket::operator=(const BufferPacket & packet)
     m_size = packet.m_size;
     m_cur  = packet.m_cur;
 
-    m_ref = packet.m_ref; 
-    acquire(); 
-    
+    m_ref = packet.m_ref;
+    acquire();
+
     return *this;
 }
 

@@ -11,12 +11,12 @@ namespace utils
 {
 
 #ifdef __WIN32
-    typedef HANDLE id_type;
-    typedef unsigned(WINAPI *Task)(void *);
+typedef HANDLE id_type;
+typedef unsigned(WINAPI *Task)(void *);
 #define THRINIT NULL
 #else
-    typedef pthread_t id_type;
-    typedef void *(*Task)(void *);
+typedef pthread_t id_type;
+typedef void *(*Task)(void *);
 #define THRINIT -1
 #endif
 
