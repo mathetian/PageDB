@@ -5,6 +5,9 @@ using namespace utils;
 #include <stdio.h>
 #include <assert.h>
 
+namespace tests
+{
+
 class A
 {
 public:
@@ -43,8 +46,8 @@ public:
 
 public:
     /**
-    	Can't be static, why?
-    	Maybe can use singleton.
+        Can't be static, why?
+        Maybe can use singleton.
     **/
     SingletonMutex &m_mutex;
 };
@@ -73,8 +76,8 @@ void *ffff3(void *data)
 }
 
 /**
-	Basic test to testify whether ThreadPosix is proper.
-	Also shows the `global` access.
+    Basic test to testify whether ThreadPosix is proper.
+    Also shows the `global` access.
 **/
 void RunTest1()
 {
@@ -89,7 +92,7 @@ void RunTest1()
 }
 
 /**
-	Mutex and ScopeMutex test
+    Mutex and ScopeMutex test
 **/
 void RunTest2()
 {
@@ -104,8 +107,8 @@ void RunTest2()
 }
 
 /**
-	Test for whether mutex will be shared in all different instance of class.
-	The answer is no for sure.
+    Test for whether mutex will be shared in all different instance of class.
+    The answer is no for sure.
 **/
 void RunTest3()
 {
@@ -162,6 +165,7 @@ void RunTest4()
     thr1.join();
     thr2.join();
 }
+};
 
 int main()
 {
