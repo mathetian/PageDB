@@ -141,7 +141,4 @@ For better and intutive demo, please read demos in directory ```$(PROJECTDIR)/te
    db -> write(&batch);
    db -> runBatchParallel(&batch);
 ```
-
-<img src="https://raw.githubusercontent.com/mathewes/blog-dot-file/master/Diagram1.png" width="300" height="400"/>
-<img src="https://raw.githubusercontent.com/mathewes/blog-dot-file/master/Diagram2.png" width="300" height="400"/>
-<img src="https://raw.githubusercontent.com/mathewes/blog-dot-file/master/Diagram3.png" width="600" height="400"/>
+![CustomDB UML Graph](https://raw.githubusercontent.com/mathewes/blog-dot-file/master/CustomDB.png)
