@@ -26,3 +26,6 @@ db_test2
 *.orig
 db_leveldb
 AIO
+tests/test_tests
+utils/TestUtils
+test_slice

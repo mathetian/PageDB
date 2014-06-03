@@ -5,40 +5,48 @@ using namespace std;
 #include "BufferPacket.h"
 using namespace customdb;
 
-#include <assert.h>
+#include "TestUtils.h"
+using namespace utils;
 
-#define EXPECT_EQ(a,b) assert(a == b)
-
-void Test1()
+class A
 {
-    BufferPacket packet(sizeof(int));
-    packet << 15545;
-    Slice slice(packet.getData(), packet.getSize());
+public:
+    int GetInt()
+    {
+        BufferPacket packet(sizeof(int));
+        packet << 15545;
+        Slice slice(packet.getData(), packet.getSize());
+        return slice.returnAsInt();
+    }
 
-    EXPECT_EQ(slice.returnAsInt(), 15545);
+    int GetSize1()
+    {
+        Slice slice;
+        return slice.size();
+    }
 
-    Slice slice2("");
-    EXPECT_EQ(slice2.size(),0);
+    int GetSize2()
+    {
+        vector<Slice> slices = vector<Slice>(10,0);
+        return slices.size();
+    }
+
+
+};
+
+TEST(A, Test1)
+{
+    ASSERT_EQ(GetInt(), 15545);
 }
 
-void Test2()
+TEST(A, Test2)
 {
-    Slice slice;
-    EXPECT_EQ(slice.size(), 0);
-}
-
-void Test3()
-{
-    vector<Slice> slices = vector<Slice>(10,0);
-    EXPECT_EQ(slices.size(), 10);
-    EXPECT_EQ(slices.at(0).size(), 0);
+    ASSERT_EQ(GetSize1(), 0);
+    ASSERT_EQ(GetSize2(), 10);
 }
 
 int main()
 {
-    Test1();
-    Test2();
-    Test3();
-    printf("All Test has Passed\n");
+    RunAllTests();
     return 0;
 }

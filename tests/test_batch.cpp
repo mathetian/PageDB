@@ -6,38 +6,51 @@ using namespace std;
 #include "BufferPacket.h"
 using namespace customdb;
 
-#include <assert.h>
+#include "TestUtils.h"
+using namespace utils;
 
-#define EXPECT_EQ(a,b) assert(a == b)
-
-void RunTest1()
+class A
 {
-    BufferPacket packet(sizeof(int)*3);
-    packet << 1;
-    packet << 2;
-    packet << 3;
-    Slice k1(packet.getData(),sizeof(int));
-    Slice k2(packet.getData() + sizeof(int), sizeof(int));
-    Slice k3(packet.getData() + sizeof(int)*2, sizeof(int));
+public:
+    WriteBatch* Test1()
+    {
+        BufferPacket packet(sizeof(int)*3);
+        packet << 1;
+        packet << 2;
+        packet << 3;
+        Slice k1(packet.getData(),sizeof(int));
+        Slice k2(packet.getData() + sizeof(int), sizeof(int));
+        Slice k3(packet.getData() + sizeof(int)*2, sizeof(int));
 
-    WriteBatch batch(3);
-    batch.put(k1, k2);
-    batch.put(k2, k3);
-    batch.put(k3, k1);
+        WriteBatch *pbatch = new WriteBatch(3);
 
-    WriteBatch::Iterator iterator(&batch);
+        pbatch -> put(k1, k1);
+        pbatch -> put(k2, k2);
+        pbatch -> put(k3, k3);
+
+        return pbatch;
+    }
+};
+
+TEST(A, Test)
+{
+    WriteBatch *pbatch = Test1();
+
+    WriteBatch::Iterator iterator(pbatch);
     typedef pair<Slice, Slice> Node;
 
     for(const Node * node = iterator.first(); node != iterator.end(); node = iterator.next())
     {
         Slice a = node -> first;
         Slice b = node -> second;
-        EXPECT_EQ(a, b);
+        ASSERT_EQ(a.returnAsInt(), b.returnAsInt());
     }
-}
 
+    delete pbatch;
+
+}
 int main()
 {
-    printf("Passed All Tests\n");
+    RunAllTests();
     return 0;
 }

@@ -6,16 +6,15 @@ using namespace std;
 #include "TimeStamp.h"
 #include "BufferPacket.h"
 using namespace customdb;
+
+#include "TestUtils.h"
 using namespace utils;
 
-#include <assert.h>
+#define SIZE 1000000
 
-#define SIZE 10000
+class A { };
 
-#define EXPECT_EQ(a,b) assert(a == b)
-#define EXPECT_EQ_S(a,b) assert(strcmp(a,b) == 1)
-
-void RunTest1()
+TEST(A, Test1)
 {
     Options option;
     option.logOption.disabled = true;
@@ -34,12 +33,11 @@ void RunTest1()
         {
             BufferPacket packet(sizeof(int));
             packet << i;
-            Slice key(packet.getData(),sizeof(int));
-            Slice value(packet.getData(),sizeof(int));
 
-            if(db -> put(key, value) == false)
+            if(db -> put(Slice(packet.getData(),sizeof(int)),
+                         Slice(packet.getData(),sizeof(int))) == false)
                 cout << "error put:" << i << endl;
-            if(i%(SIZE/100)==0) cout<<"Put:"<<i<<endl;
+            if(i%(SIZE/10)==0) cout<<"Put:"<<i<<endl;
         }
 
         ts.StopTime("PutTime: ");
@@ -69,10 +67,8 @@ void RunTest1()
 
             int num = -1;
             packet2 >> num;
-            if(i!=num)
-                cout << i <<" "<<num <<" ) ";
 
-            EXPECT_EQ(i, num);
+            ASSERT_EQ(i, num);
         }
 
         ts.StopTime("GetTime(Without Cache): ");
@@ -83,7 +79,7 @@ void RunTest1()
     delete db;
 }
 
-void RunTest2()
+TEST(A, Test2)
 {
     Options option;
     option.logOption.disabled = true;
@@ -122,22 +118,19 @@ void RunTest2()
 
             int num = -1;
             packet2 >> num;
-            if(i!=num)
-                cout << i <<" "<<num <<" ) ";
 
-            EXPECT_EQ(i, num);
+            ASSERT_EQ(i, num);
         }
 
         ts.StopTime("GetTime(Without Cache): ");
 
         db -> close();
+        db -> destoryDB("demo");
     }
 }
 
 int main()
 {
-    RunTest1();
-    RunTest2();
-    printf("Passed All Tests\n");
+    RunAllTests();
     return 0;
 }

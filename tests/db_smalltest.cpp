@@ -1,19 +1,18 @@
 #include <iostream>
 using namespace std;
 
-#include <assert.h>
-
 #include "CustomDB.h"
 #include "Option.h"
 #include "Slice.h"
-
 using namespace customdb;
 
-#define EXPECT_EQ(a,b) assert(a == b)
-#define EXPECT_EQ_S(a,b) assert(strcmp(a,b) == 1)
+#include "TestUtils.h"
+using namespace utils;
+
+class A { };
 
 /**Basic Test for put and get**/
-void RunTest1()
+TEST(A, Test1)
 {
     Options option;
     CustomDB * db = new CustomDB;
@@ -33,9 +32,9 @@ void RunTest1()
         db -> open(option);
         printf("open successful for RunTest1 in get\n");
 
-        EXPECT_EQ(db -> get("hello"), Slice("world"));
-        EXPECT_EQ(db -> get("hello1"), Slice("world1"));
-        EXPECT_EQ(db -> get("hello12"), Slice("world123"));
+        ASSERT_EQ(db -> get("hello"), Slice("world"));
+        ASSERT_EQ(db -> get("hello1"), Slice("world1"));
+        ASSERT_EQ(db -> get("hello12"), Slice("world123"));
 
         db -> close();
     }
@@ -44,7 +43,7 @@ void RunTest1()
 }
 
 /**Basic Test for compact, failed passed this Test**/
-void RunTest2()
+TEST(A, Test2)
 {
     Options option;
     CustomDB * db = new CustomDB;
@@ -53,9 +52,9 @@ void RunTest2()
         db -> open(option);
         printf("open successful for RunTest2 in get\n");
 
-        EXPECT_EQ(db -> get("hello"), Slice("world"));
-        EXPECT_EQ(db -> get("hello1"), Slice("world1"));
-        EXPECT_EQ(db -> get("hello12"), Slice("world123"));
+        ASSERT_EQ(db -> get("hello"), Slice("world"));
+        ASSERT_EQ(db -> get("hello1"), Slice("world1"));
+        ASSERT_EQ(db -> get("hello12"), Slice("world123"));
 
         db -> close();
     }
@@ -72,11 +71,13 @@ void RunTest2()
         db -> open(option);
         printf("open successful for RunTest2 in test After compact\n");
 
-        EXPECT_EQ(db -> get("hello"), Slice("world"));
-        EXPECT_EQ(db -> get("hello1"), Slice("world1"));
-        EXPECT_EQ(db -> get("hello12"), Slice("world123"));
+        ASSERT_EQ(db -> get("hello"), Slice("world"));
+        ASSERT_EQ(db -> get("hello1"), Slice("world1"));
+        ASSERT_EQ(db -> get("hello12"), Slice("world123"));
 
         db -> close();
+
+        db -> destoryDB("demo");
     }
 
     delete db;
@@ -84,9 +85,6 @@ void RunTest2()
 
 int main()
 {
-    RunTest1();
-    //  RunTest2();
-    printf("Passed All Tests\n");
-
+    RunAllTests();
     return 0;
 }

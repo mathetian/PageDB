@@ -473,7 +473,7 @@ LABLE:
         }
         else if(globalFlag == 1)
         {
-            printf("oh my.god\n");
+            printf("Need Split the Index\n")
             globalLock.writeLock();
         }
 

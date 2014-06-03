@@ -45,10 +45,10 @@ db_leveldb: tests/db_leveldb.cpp libcustomDB.a
 tests: $(tests)
 
 test_slice: tests/test_slice.cpp libcustomDB.a
-	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread tests/test_slice.cpp -o $@ ${LDLIBS}
+	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread tests/test_slice.cpp utils/TestUtils.cpp -o $@ ${LDLIBS}
 
 test_batch: tests/test_batch.cpp libcustomDB.a
-	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread tests/test_batch.cpp -o $@ ${LDLIBS}
+	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread tests/test_batch.cpp utils/TestUtils.cpp -o $@ ${LDLIBS}
 
 test_thread: tests/test_thread.cpp libcustomDB.a
 	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread tests/test_thread.cpp -o $@ ${LDLIBS}
@@ -57,7 +57,7 @@ test_rw:  tests/test_rw.cpp
 	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread tests/test_rw.cpp     -o $@ ${LDLIBS}
 
 test_aio: tests/test_aio.cpp
-	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread $^     -o $@ ${LDLIBS} -laio
+	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread $^  utils/TestUtils.cpp   -o $@ ${LDLIBS} -laio
 
 test_buff: tests/test_buff.cpp
 	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread $^     -o $@ ${LDLIBS}

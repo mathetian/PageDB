@@ -2,17 +2,17 @@
 using namespace std;
 
 /**Simple batch test**/
-
 #include "CustomDB.h"
 #include "Option.h"
 #include "Batch.h"
 using namespace customdb;
+
+#include "TestUtils.h"
 using namespace utils;
 
-#define EXPECT_EQ(a,b) assert(a == b)
-#define EXPECT_EQ_S(a,b) assert(strcmp(a,b) == 1)
+class A { };
 
-void RunTest1()
+TEST(A, Test1)
 {
     Options option;
 
@@ -35,11 +35,13 @@ void RunTest1()
         db -> open(option);
         printf("open successful\n");
 
-        EXPECT_EQ(db->get("hello"), "world");
-        EXPECT_EQ(db->get("hello1"), "world1");
-        EXPECT_EQ(db->get("hello12"), "world123");
+        ASSERT_EQ(db->get("hello"), "world");
+        ASSERT_EQ(db->get("hello1"), "world1");
+        ASSERT_EQ(db->get("hello12"), "world123");
 
         db -> close();
+
+        db -> destoryDB("demo");
     }
 
     delete db;
@@ -47,7 +49,6 @@ void RunTest1()
 
 int main()
 {
-    RunTest1();
-    printf("Passed All Tests\n");
+    RunAllTests();
     return 0;
 }

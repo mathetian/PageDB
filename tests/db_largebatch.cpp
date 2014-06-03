@@ -6,14 +6,16 @@ using namespace std;
 #include "TimeStamp.h"
 #include "BufferPacket.h"
 using namespace customdb;
+
+#include "TestUtils.h"
 using namespace utils;
 
-#include <assert.h>
+#define SIZE      1000000
+#define BATCHSIZE 10000
 
-#define SIZE      100000
-#define BATCHSIZE 1000
+class A { };
 
-void RunTest1()
+TEST(A, Test1)
 {
     Options option;
     char str[256];
@@ -78,13 +80,13 @@ void RunTest1()
 
             int num = -1;
             packet2 >> num;
-            if(i!=num)
-                cout << i <<" "<<num <<" ) ";
-            //cout<<i<<endl;
+
+            ASSERT_EQ(i, num);
         }
         total.StopTime("GetTime(Without Cache): ");
 
         db -> close();
+        db -> destoryDB("demo");
     }
 
     delete db;
@@ -92,7 +94,6 @@ void RunTest1()
 
 int main()
 {
-    RunTest1();
-    printf("Passed All Tests\n");
+    RunAllTests();
     return 0;
 }

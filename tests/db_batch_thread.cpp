@@ -5,11 +5,10 @@ using namespace std;
 #include "Option.h"
 #include "TimeStamp.h"
 #include "BufferPacket.h"
-using namespace utils;
 using namespace customdb;
 
-#include <assert.h>
-
+#include "TestUtils.h"
+using namespace utils;
 
 /**
 	Create four thread, each put 250000 items.
@@ -20,21 +19,22 @@ using namespace customdb;
 #define SUBSIZE   10000
 #define THRNUM    4
 
-#define EXPECT_EQ(a,b) assert(a == b)
-#define EXPECT_EQ_S(a,b) assert(strcmp(a,b) == 1)
+class A { };
 
 Options option;
 CustomDB * db;
 
 void* thrFunc(void * data)
 {
-    int flag = *(int*)data;
-    const int beg  = flag*BATCHSIZE;
-    int round = (BATCHSIZE + SUBSIZE - 1)/SUBSIZE;
+    int thrid = *(int*)data;
+
+    const int beg  = thrid*BATCHSIZE;
+    const int round = (BATCHSIZE + SUBSIZE - 1)/SUBSIZE;
+
     TimeStamp thrtime;
     char buf[50];
 
-    printf("thread %d begin\n", flag);
+    printf("thread %d begin\n", thrid);
 
     thrtime.StartTime();
     for(int i = 0; i < round; i++)
@@ -52,10 +52,10 @@ void* thrFunc(void * data)
             batch.put(key, value);
         }
         db -> tWrite(&batch);
-        printf("thread %d finished round %d\n", flag, i);
+        printf("thread %d finished round %d\n", thrid, i);
     }
 
-    sprintf(buf, "Thread %d has been completed, spend time :", flag);
+    sprintf(buf, "Thread %d has been completed, spend time :", thrid);
     thrtime.StopTime(buf);
 
     return NULL;
@@ -64,7 +64,7 @@ void* thrFunc(void * data)
 /**
     Test for Batch-Digest
 **/
-void RunTest1()
+TEST(A, Test1)
 {
     option.logOption.disabled = true;
     option.logOption.logLevel = LOG_FATAL;
@@ -119,7 +119,7 @@ void RunTest1()
             int num = -1;
             packet2 >> num;
 
-            EXPECT_EQ(i,num);
+            ASSERT_EQ(i,num);
         }
         total.StopTime("GetTime(Without Cache): ");
 
@@ -132,7 +132,7 @@ void RunTest1()
 /**
     Test for compact
 **/
-void RunTest2()
+TEST(A, Test2)
 {
     option.logOption.disabled = true;
     option.logOption.logLevel = LOG_FATAL;
@@ -177,12 +177,13 @@ void RunTest2()
             int num = -1;
             packet2 >> num;
 
-            EXPECT_EQ(i,num);
+            ASSERT_EQ(i,num);
         }
 
         total.StopTime("GetTime(Without Cache): ");
 
         db -> close();
+        db -> destoryDB("demo");
     }
 
     delete db;
@@ -190,8 +191,6 @@ void RunTest2()
 
 int main()
 {
-    RunTest1();
-    RunTest2();
-    printf("Passed All Test, Congratulations");
+    RunAllTests();
     return 0;
 }

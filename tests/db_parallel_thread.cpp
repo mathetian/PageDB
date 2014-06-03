@@ -6,10 +6,9 @@ using namespace std;
 #include "TimeStamp.h"
 #include "BufferPacket.h"
 using namespace customdb;
+
+#include "TestUtils.h"
 using namespace utils;
-
-#include <assert.h>
-
 
 /**
 	Create four thread, each put 250000 items.
@@ -20,23 +19,25 @@ using namespace utils;
 #define SUBSIZE   50000
 #define THRNUM    4
 
-#define EXPECT_EQ(a,b) assert(a == b)
-#define EXPECT_EQ_S(a,b) assert(strcmp(a,b) == 1)
-
 Options option;
 CustomDB * db;
 
+class A { };
+
 void* thrFunc(void * data)
 {
-    int flag = *(int*)data;
-    const int beg  = flag*BATCHSIZE;
-    int round = (BATCHSIZE + SUBSIZE - 1)/SUBSIZE;
+    int thrid = *(int*)data;
+
+    const int beg  = thrid*BATCHSIZE;
+    const int round = (BATCHSIZE + SUBSIZE - 1)/SUBSIZE;
+
     TimeStamp thrtime;
     char buf[50];
 
-    printf("thread %d begin\n", flag);
+    printf("thread %d begin\n", thrid);
 
     thrtime.StartTime();
+
     for(int i = 0; i < round; i++)
     {
         WriteBatch batch(SUBSIZE);
@@ -47,16 +48,16 @@ void* thrFunc(void * data)
 
             BufferPacket packet(sizeof(int));
             packet << k;
-            Slice key(packet.getData(),sizeof(int));
-            Slice value(packet.getData(),sizeof(int));
-            batch.put(key, value);
+
+            batch.put(Slice(packet.getData(),sizeof(int)), Slice(packet.getData(),sizeof(int)));
         }
 
         db -> runBatchParallel(&batch);
-        printf("thread %d finished round %d\n", flag, i);
+
+        printf("thread %d finished round %d\n", thrid, i);
     }
 
-    sprintf(buf, "Thread %d has been completed, spend time :", flag);
+    sprintf(buf, "Thread %d has been completed, spend time :", thrid);
     thrtime.StopTime(buf);
 
     return NULL;
@@ -65,7 +66,7 @@ void* thrFunc(void * data)
 /**
     Test for Batch-Digest
 **/
-void RunTest1()
+TEST(A, Test1)
 {
     option.logOption.disabled = true;
     option.logOption.logLevel = LOG_FATAL;
@@ -92,6 +93,7 @@ void RunTest1()
         for(int i = 0; i < THRNUM; i++) thrs[i].join();
 
         total.StopTime("Total PutTime(Thread Version): ");
+
         db -> close();
     }
 
@@ -104,7 +106,7 @@ void RunTest1()
         printf("Begin Check\n");
 
         total.StartTime();
-        for(int i=0; i < SIZE; i++)
+        for(int i = 0; i < SIZE; i++)
         {
             BufferPacket packet(sizeof(int));
             packet << i;
@@ -120,23 +122,21 @@ void RunTest1()
 
             int num = -1;
             packet2 >> num;
-            if(i != num)
-                freq++;
-            //   cout<<i<<" "<<num<<endl;
-            //  EXPECT_EQ(i,num);
+
+            if(i != num) freq++;
         }
         total.StopTime("GetTime(Without Cache): ");
 
         db -> close();
+        db -> destoryDB("demo");
     }
+
     cout<<freq<<endl;
     delete db;
 }
 
 int main()
 {
-    RunTest1();
-    printf("Passed All Test, Congratulations\n");
-
+    RunAllTests();
     return 0;
 }
