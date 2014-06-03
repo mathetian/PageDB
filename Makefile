@@ -15,6 +15,7 @@ dbtests = db_smalltest db_largetest db_smallbatch db_largebatch db_batch_thread 
 lib:compile
 	${AR} rv ${LIBMISC} *.o
 	${RANLIB} ${LIBMISC}
+	rm *.o
 
 compile:
 	${CXX} -g -O0 ${HEADER} -lpthread -c ${SOURCES} 
