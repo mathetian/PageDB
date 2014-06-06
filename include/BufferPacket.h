@@ -8,10 +8,10 @@ using namespace std;
 #include <string.h>
 
 #include "Slice.h"
-#include "Log.h"
-
 #include "Atomic.h"
-using utils::Atomic;
+using namespace utils;
+
+#include "Log.h"
 
 namespace customdb
 {

@@ -3,7 +3,7 @@
 #include <string.h>
 #include <assert.h>
 
-namespace customdb
+namespace utils
 {
 
 Slice::Slice() : m_data(NULL), m_size(0) { }
@@ -11,9 +11,7 @@ Slice::Slice() : m_data(NULL), m_size(0) { }
 Slice::Slice(size_t n) : m_size(n)
 {
     if(n == 0)
-    {
         m_data = NULL;
-    }
     else
     {
         char * data = new char[m_size];
@@ -80,13 +78,12 @@ Slice & Slice::operator=(const Slice & s1)
     return *this;
 }
 
-/**Have some problem, must check it out**/
 Slice::~Slice()
 {
-    if(m_data != NULL)
+    if(m_data != NULL) 
         delete [] m_data;
-    m_size = 0;
-    m_data = NULL;
+    
+    m_size = 0; m_data = NULL;
 }
 
 const char* Slice::tochars()  const
@@ -145,11 +142,6 @@ char Slice::operator[](size_t n) const
 {
     assert(n < size());
     return m_data[n];
-}
-
-Slice& Slice::operator+=(const Slice&s1)
-{
-    //Todo list
 }
 
 Slice::operator string()

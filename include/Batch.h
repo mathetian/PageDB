@@ -8,7 +8,7 @@ using namespace std;
 #include <stdint.h>
 
 #include "Slice.h"
-
+using namespace utils;
 
 namespace customdb
 {

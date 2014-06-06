@@ -10,7 +10,7 @@ using std::deque;
 #include "TimeStamp.h"
 #include "HashFunction.h"
 #include "Utils.h"
-#include "AIO.h"
+#include "FileModule.h"
 using namespace utils;
 
 #include <sys/stat.h>
@@ -142,8 +142,8 @@ private:
 private:
     HASH        hashFunc;
     bool        updated, eupdated;
-    AIOFile     m_idxfile;
-    AIOFile     m_datfile;
+    RandomFile  m_idxfile;
+    RandomFile  m_datfile;
     PageCache * pcache;
 
 private:

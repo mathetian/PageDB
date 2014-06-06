@@ -3,9 +3,10 @@
 #include "LRULMCache.h"
 
 #include "PageDBImpl.h"
-#include "ChainHashDBImpl.h"
 
 #include "EmptyCache.h"
+#include "FileModule.h"
+using namespace utils;
 
 #include <string.h>
 
@@ -49,11 +50,10 @@ void   CustomDB::destoryDB(const char * filename)
     string sfilename(filename, filename + strlen(filename));
     string idxName = sfilename + ".idx";
     string datName = sfilename +  ".dat";
+    
+    FileModule::Remove(idxName);
+    FileModule::Remove(datName);
 
-    idxName = "rm " + idxName;
-    datName = "rm " + datName;
-    system(idxName.c_str());
-    system(datName.c_str());
 }
 
 void CustomDB::fflush()
@@ -114,7 +114,6 @@ bool  CustomDB::open(const Options & option)
         dbimpl = new PageDB;
         break;
     case CHASH:
-        dbimpl = new ChainDB;
         break;
     default:
         log -> _Fatal("CustomDB::open::dbimpl error\n");

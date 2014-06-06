@@ -14,7 +14,7 @@ bool   BaseCache::put(const Slice & key, const Slice & value)
 
     if(softMap.find(key) == softMap.end())
     {
-        softMap[key] = value;
+        softMap[key] = Slice(value.c_str(), value.size());
         return true;
     }
 

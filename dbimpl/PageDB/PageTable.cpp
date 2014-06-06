@@ -47,7 +47,7 @@ bool   PageTable::put(const Slice & key,const Slice & value, uint32_t hashVal)
             BufferPacket packet(element.m_keySize);
             Slice        slice(element.m_keySize);
 
-            db -> m_datfile.IO_Read(packet.getData(), element.m_datPos, packet.getSize());
+            db -> m_datfile.Read(packet.getData(), element.m_datPos, packet.getSize());
             packet.setBeg();
             packet >> slice;
             if(slice == key)
@@ -63,7 +63,7 @@ bool   PageTable::put(const Slice & key,const Slice & value, uint32_t hashVal)
     BufferPacket packet(key.size() + value.size());
     packet << key << value;
     int offset = db -> findSuitableOffset(packet.getSize());
-    db -> m_datfile.IO_Write(packet.getData(), offset, packet.getSize());
+    db -> m_datfile.Write(packet.getData(), offset, packet.getSize());
     /**
         Modify the page index
     **/
@@ -87,7 +87,7 @@ Slice  PageTable::get(const Slice & key, uint32_t hashVal)
             Slice slice1(elements[index].m_datSize);
             Slice slice2(elements[index].m_keySize);
 
-            db -> m_datfile.IO_Read(packet.getData(), elements[index].m_datPos, packet.getSize());
+            db -> m_datfile.Read(packet.getData(), elements[index].m_datPos, packet.getSize());
             packet >> slice2 >> slice1;
 
             if(slice2 == key)
@@ -107,7 +107,7 @@ bool   PageTable::remove(const Slice & key, uint32_t hashVal)
             BufferPacket packet(elements[index].m_keySize);
             Slice slice(elements[index].m_keySize);
 
-            db -> m_datfile.IO_Read(packet.getData(), elements[index].m_datPos, packet.getSize());
+            db -> m_datfile.Read(packet.getData(), elements[index].m_datPos, packet.getSize());
             packet >> slice;
 
             if(slice == key) break;
@@ -143,7 +143,7 @@ void   PageTable::replaceQ(const Slice & key, const Slice & value, uint32_t hash
 
             {
                 ScopeMutex scope(&(db -> datLock));
-                db -> m_datfile.IO_Read(packet.getData(), element.m_datPos, packet.getSize());
+                db -> m_datfile.Read(packet.getData(), element.m_datPos, packet.getSize());
             }
 
             packet >> slice;

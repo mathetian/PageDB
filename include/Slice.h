@@ -5,8 +5,14 @@
 #include <string>
 using namespace std;
 
-namespace customdb
+#include "Noncopyable.h"
+
+namespace utils
 {
+
+/**
+** Slice is used to store immutable buffer.
+**/
 
 class Slice
 {
@@ -21,7 +27,7 @@ public:
     Slice(const char* s);
     Slice(const Slice &s1);
     Slice &operator=(const Slice & s1);
-
+    
 public:
     const char* tochars()  const;
     const char* c_str()    const;
@@ -31,13 +37,15 @@ public:
     void        clear();
 
 public:
-    /**Just for debug**/
+    /**
+    ** For Debug
+    ** Must not be used in production environment
+    **/
     void    printAsInt()  const;
     int     returnAsInt() const;
 
 public:
     char   operator[](size_t n) const;
-    Slice& operator+=(const Slice&s1);
     operator string();
 
 private:

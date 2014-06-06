@@ -7,6 +7,8 @@
 #include <pthread.h>
 #endif
 
+#include "Noncopyable.h"
+
 namespace utils
 {
 
@@ -20,7 +22,7 @@ typedef void *(*Task)(void *);
 #define THRINIT -1
 #endif
 
-class Thread
+class Thread : Noncopyable
 {
 public:
     Thread(Task task = NULL, void * args = NULL) : m_task(task), m_args(args), m_tid(THRINIT) { }
@@ -76,17 +78,6 @@ private:
     pthread_cond_t m_cond;
 #endif
     Mutex * m_mutex;
-};
-
-class Noncopyable
-{
-protected:
-    Noncopyable() { }
-    ~Noncopyable() { }
-
-private:
-    Noncopyable( const Noncopyable& );
-    Noncopyable& operator=( const Noncopyable& );
 };
 
 class SingletonMutex : Noncopyable

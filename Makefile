@@ -63,5 +63,11 @@ test_aio: tests/test_aio.cpp
 test_buff: tests/test_buff.cpp
 	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread $^     -o $@ ${LDLIBS}
 
+test_file: tests/test_file.cpp
+	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread $^     -o $@ ${LDLIBS}
+
+test_noncopyable: tests/test_noncopyable.cpp
+	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread $^     -o $@ ${LDLIBS}
+
 clean: 
 	rm -f *.o *.idx *.dat demo* test_* db_* *.txt *.bak

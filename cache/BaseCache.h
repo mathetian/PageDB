@@ -3,17 +3,15 @@
 
 #include <map>
 #include <vector>
-using std::map;
-using std::vector;
+using namespace std;
 
 #include "Log.h"
-#include "Slice.h"
+using namespace customdb;
 
+#include "Slice.h"
 #include "Thread.h"
-using utils::Mutex;
-using utils::ScopeMutex;
 #include "Atomic.h"
-using utils::Atomic;
+using namespace utils;
 
 namespace customdb
 {

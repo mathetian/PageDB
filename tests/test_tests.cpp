@@ -1,8 +1,6 @@
 #include "../utils/TestUtils.h"
 using namespace utils;
 
-#include "../utils/TestUtils.cpp"
-
 class A
 {
 public:
