@@ -1,27 +1,25 @@
+// Copyright (c) 2014 The CustomDB Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file. See the AUTHORS file for names of contributors.
+
 #ifndef _FILE_MODULE_H
 #define _FILE_MODULE_H
 
-#include <fcntl.h>
-#include <unistd.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <sys/types.h>
-
-#include <assert.h>
-
-#include <sys/stat.h>
+#include "CommonHeader.h"
 
 #include "Slice.h"
-using namespace customdb;
-
 #include "Noncopyable.h"
-/***
-*** We Need A File Module which satisfies 
-*** 1. create if not exist and won't truncate the file
-***/
+
+/**
+** FileModule.h is used to simplify operation for File
+**/
+
 namespace utils
 {
 
+/**
+** FileModule provides some common helper function for File operate.
+**/
 class FileModule
 {
 public:
@@ -55,15 +53,21 @@ private:
   FileModule();
 };
 
+/**
+** RandomFile is for RandomFile
+**
+** In general situation, there are many types of files. 
+** In our implementation, we only need RandomFile
+**/
 class RandomFile : Noncopyable{
 public:
   RandomFile() : openStatus_(0), fileSize_(0), fd_(-1) { }
   
-  ~RandomFile()
-  {
-      Close();
-  }
+  ~RandomFile() { Close(); }
 
+  /**
+  ** Open a file. If this file doesn't exist, creating it
+  **/
   bool Open(const string &fileName)
   {
   	openStatus_ = FileModule::Exist(fileName) == true ? 1 : 2;
@@ -74,16 +78,7 @@ public:
 
   	return true;
   }
-
-  bool Append(const Slice &slice, size_t size)
-  {
-  	lseek(fd_, 0, SEEK_SET); 
-  	assert(write(fd_, slice.c_str(), size) == size);
-  	fileSize_ = fileSize_ + size;
-
-    return true;
-  }
-
+  
   bool Read(char *str, uint64_t offset, size_t size)
   {
     assert(offset + size <= fileSize_);
@@ -93,14 +88,50 @@ public:
     return true;
   }
   
-  bool Write(const Slice &result, uint64_t offset, size_t size)
+  /**
+  ** To simply code, we support slice and char*
+  **
+  ** Append is to append content in end of the file
+  **/
+  bool Append(const Slice &slice)
+  {
+    return Append(slice.c_str(), slice.size());
+  }
+
+  bool Append(const char *str, size_t size)
+  {
+  	lseek(fd_, 0, SEEK_END); 
+  	assert(write(fd_, str, size) == size);
+  	fileSize_ = fileSize_ + size;
+
+    return true;
+  }
+
+  bool Write(const Slice &slice, uint64_t offset)
+  {
+    return Write(slice.c_str(), offset, slice.size());
+  }
+
+  bool Write(const char *result, uint64_t offset, size_t size)
   {
     assert(offset <= fileSize_);
     lseek(fd_, offset, SEEK_SET);
-    assert(write(fd_, result.c_str(), size) == size);
+    assert(write(fd_, result, size) == size);
 
     fileSize_ = offset + size > fileSize_ ? offset + size : fileSize_;
 
+    return true;
+  }
+
+  /**
+  ** Truncate file into speical length
+  **/
+  bool     Truncate(size_t size)
+  {
+    assert(size < fileSize_);
+    assert(ftruncate(fd_, size) ==0);
+
+    fileSize_ = 0;
     return true;
   }
 
@@ -118,35 +149,21 @@ public:
       fsync(fd_);
   }
 
-  uint64_t Size()
-  {
-    return fileSize_;
-  }
+  uint64_t Size()   { return fileSize_; }
 
-  int      Status()
-  {
-    return openStatus_;
-  }
-
-  bool     Truncate(size_t size)
-  {
-    assert(size < fileSize_);
-    assert(ftruncate(fd_, size) ==0);
-
-    fileSize_ = 0;
-    return true;
-  }
+  int      Status() { return openStatus_; }
 
 private:
   string fileName_;
-  int    openStatus_;
-  int    fd_;
   uint64_t fileSize_;
-
-  RandomFile(const RandomFile&);
-  void operator=(const RandomFile&);
+  int    fd_;
+  /**
+  ** 0: without open operation 
+  ** 1: Exist 2: Not exist
+  **/
+  int    openStatus_; 
+  
 };
-
 
 }
 

@@ -1,12 +1,15 @@
+// Copyright (c) 2014 The CustomDB Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file. See the AUTHORS file for names of contributors.
+
 #ifndef _TEST_UTIL_H
 #define _TEST_UTIL_H
 
-#include <sstream>
-using namespace std;
-
-#include <stdio.h>
-#include <stdlib.h>
-
+/**
+** TestUtils is the Unit Test Module
+**
+** It is taken from leveldb and supports ASSERT* and TEST(*,*)
+**/
 namespace utils
 {
 

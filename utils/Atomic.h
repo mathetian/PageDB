@@ -1,9 +1,22 @@
+// Copyright (c) 2014 The CustomDB Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file. See the AUTHORS file for names of contributors.
+
 #ifndef _ATOMOC_H
 #define _ATOMOC_H
+
+/**
+** Atomic is used to represent some atomic variable. 
+** Detail information for it can be found in 
+** gcc.gnu.org/onlinedocs/libstdc++/manual/ext_concurrency.html
+**/
 
 namespace utils
 {
 
+/**
+    Helper function
+**/
 static inline int  __exchange_and_add (volatile int *__mem, int __val)
 {
     register int __result;
@@ -17,51 +30,55 @@ static inline int  __exchange_and_add (volatile int *__mem, int __val)
 class Atomic
 {
     int val;
-
 public:
-    Atomic(int val = 0) : val(val) {}
+    Atomic(int val = 0) : val(val) { }
 
-    inline int exchange_and_add(int addend)
+    /**CAS: compare and swap**/
+    int exchange_and_add(int addend)
     {
         return __exchange_and_add(&val, addend);
     }
 
-    inline void add(int addend)
+    void add(int addend)
     {
         __sync_add_and_fetch(&val, addend);
     }
 
-    inline int addAndGet(int addend)
+    int addAndGet(int addend)
     {
         return __sync_add_and_fetch(&val, addend);
     }
 
-    inline void operator += (int addend)
+    void operator += (int addend)
     {
         add(addend);
     }
 
-    inline void operator -= (int addend)
+    void operator -= (int addend)
     {
         add(-addend);
     }
 
-    inline void operator ++ ()
+    /**Prefix add one**/
+    void operator ++ ()
     {
         add(1);
     }
 
-    inline void operator -- ()
+    /**Prefix minus one**/
+    void operator -- ()
     {
         add(-1);
     }
 
-    inline int operator ++ (int)
+    /**Posix add one**/
+    int operator ++ (int)
     {
         return exchange_and_add(1);
     }
 
-    inline int operator -- (int)
+    /**Posix minus one**/
+    int operator -- (int)
     {
         return exchange_and_add(-1);
     }
