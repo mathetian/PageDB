@@ -9,7 +9,7 @@ SOURCES = cache/*.cpp core/*.cpp helpers/*.cpp dbimpl/*/*.cpp utils/*.cpp
  
 LDLIBS  = -L. -lcustomDB -laio
 
-tests   = test_slice test_batch test_thread test_rw
+tests   = test_batch test_buff test_file test_multiplethread test_noncopyable test_reet test_rw test_slice test_timer test_utils
 dbtests = db_smalltest db_largetest db_smallbatch db_largebatch db_batch_thread db_parallel_thread
 
 lib:compile
@@ -45,29 +45,35 @@ db_leveldb: tests/db_leveldb.cpp libcustomDB.a
 
 tests: $(tests)
 
-test_slice: tests/test_slice.cpp libcustomDB.a
-	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread tests/test_slice.cpp utils/TestUtils.cpp -o $@ ${LDLIBS}
+test_slice: tests/test_slice.cpp 
+	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread $^ -o $@ ${LDLIBS}
 
-test_batch: tests/test_batch.cpp libcustomDB.a
-	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread tests/test_batch.cpp utils/TestUtils.cpp -o $@ ${LDLIBS}
+test_batch: tests/test_batch.cpp
+	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread $^ -o $@ ${LDLIBS}
 
-test_thread: tests/test_thread.cpp libcustomDB.a
-	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread tests/test_thread.cpp -o $@ ${LDLIBS}
+test_multiplethread: tests/test_multiplethread.cpp
+	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread $^ -o $@ ${LDLIBS}
 
 test_rw:  tests/test_rw.cpp
-	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread tests/test_rw.cpp     -o $@ ${LDLIBS}
-
-test_aio: tests/test_aio.cpp
-	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread $^  utils/TestUtils.cpp   -o $@ ${LDLIBS} -laio
+	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread $^ -o $@ ${LDLIBS}
 
 test_buff: tests/test_buff.cpp
-	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread $^     -o $@ ${LDLIBS}
+	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread $^ -o $@ ${LDLIBS}
 
 test_file: tests/test_file.cpp
-	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread $^     -o $@ ${LDLIBS}
+	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread $^ -o $@ ${LDLIBS}
 
 test_noncopyable: tests/test_noncopyable.cpp
-	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread $^     -o $@ ${LDLIBS}
+	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread $^ -o $@ ${LDLIBS}
+
+test_reet: tests/test_reet.cpp
+	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread $^ -o $@ ${LDLIBS}
+
+test_utils: tests/test_utils.cpp
+	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread $^ -o $@ ${LDLIBS}
+
+test_timer: tests/test_timer.cpp
+	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread $^ -o $@ ${LDLIBS}
 
 clean: 
 	rm -f *.o *.idx *.dat demo* test_* db_* *.txt *.bak

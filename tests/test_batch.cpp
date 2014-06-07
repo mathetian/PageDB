@@ -1,24 +1,28 @@
-#include <iostream>
-using namespace std;
+// Copyright (c) 2014 The CustomDB Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "Batch.h"
-#include "Slice.h"
 #include "BufferPacket.h"
 using namespace customdb;
 
+#include "Slice.h"
 #include "TestUtils.h"
 using namespace utils;
+
+#include "CommonHeader.h"
 
 class A
 {
 public:
-    WriteBatch* Test1()
+    WriteBatch* Test()
     {
         BufferPacket packet(sizeof(int)*3);
         packet << 1;
         packet << 2;
         packet << 3;
-        Slice k1(packet.getData(),sizeof(int));
+
+        Slice k1(packet.getData(), sizeof(int));
         Slice k2(packet.getData() + sizeof(int), sizeof(int));
         Slice k3(packet.getData() + sizeof(int)*2, sizeof(int));
 
@@ -34,7 +38,7 @@ public:
 
 TEST(A, Test)
 {
-    WriteBatch *pbatch = Test1();
+    WriteBatch *pbatch = Test();
 
     WriteBatch::Iterator iterator(pbatch);
     typedef pair<Slice, Slice> Node;

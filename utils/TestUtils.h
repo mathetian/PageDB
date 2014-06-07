@@ -5,6 +5,8 @@
 #ifndef _TEST_UTIL_H
 #define _TEST_UTIL_H
 
+#include "CommonHeader.h"
+
 /**
 ** TestUtils is the Unit Test Module
 **

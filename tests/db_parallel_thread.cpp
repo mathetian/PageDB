@@ -3,7 +3,7 @@ using namespace std;
 
 #include "CustomDB.h"
 #include "Option.h"
-#include "TimeStamp.h"
+#include "TickTimer.h"
 #include "BufferPacket.h"
 using namespace customdb;
 

@@ -1,18 +1,20 @@
+// Copyright (c) 2014 The CustomDB Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file. See the AUTHORS file for names of contributors.
+
 #ifndef _BUF_PAC_H
 #define _BUF_PAC_H
 
-#include <string>
-using namespace std;
-
-#include <stdint.h>
-#include <string.h>
-
 #include "Slice.h"
 #include "Atomic.h"
+#include "Noncopyable.h"
 using namespace utils;
 
 #include "Log.h"
 
+/**
+** BufferPacket is the buffer container allocated in advance
+**/
 namespace customdb
 {
 
@@ -68,7 +70,9 @@ private:
     int     m_size, m_cur;
     Log  *  m_log;
     Atomic *m_ref;
-
+    friend bool operator==(const BufferPacket &buff1, const BufferPacket &buff2);
+    friend bool operator!=(const BufferPacket &buff1, const BufferPacket &buff2);
+    friend ostream& operator<<(ostream &os, const BufferPacket &buff);
 };
 
 }

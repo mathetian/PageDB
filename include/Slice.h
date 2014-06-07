@@ -1,18 +1,18 @@
+// Copyright (c) 2014 The CustomDB Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file. See the AUTHORS file for names of contributors.
+
 #ifndef _SLICE_H
 #define _SLICE_H
 
-#include <iostream>
-#include <string>
-using namespace std;
-
-#include "Noncopyable.h"
-
-namespace utils
-{
+#include "CommonHeader.h"
 
 /**
 ** Slice is used to store immutable buffer.
 **/
+
+namespace utils
+{
 
 class Slice
 {
@@ -27,7 +27,7 @@ public:
     Slice(const char* s);
     Slice(const Slice &s1);
     Slice &operator=(const Slice & s1);
-    
+
 public:
     const char* tochars()  const;
     const char* c_str()    const;
@@ -39,7 +39,7 @@ public:
 public:
     /**
     ** For Debug
-    ** Must not be used in production environment
+    ** Can't be used in production environment
     **/
     void    printAsInt()  const;
     int     returnAsInt() const;

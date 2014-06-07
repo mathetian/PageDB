@@ -1,8 +1,10 @@
-#include "FileModule.h"
-#include "TestUtils.h"
-using namespace utils;
+// Copyright (c) 2014 The CustomDB Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "TestUtils.cpp"
+#include "TestUtils.h"
+#include "FileModule.h"
+using namespace utils;
 
 class A { };
 
@@ -17,14 +19,16 @@ TEST(A, Test1)
 
 TEST(A, Test2)
 {
-	RandomFile file;
-	file.Open("Hello.txt");
-	string str = "123213\n";
-	file.Write("123213\n", 0, str.size());
+    RandomFile file;
+    file.Open("Hello.txt");
+    string str = "123213\n";
+    file.Write("123213\n", 0, str.size());
+
+    file.Close();
 }
 
 int main()
 {
-	RunAllTests();
-	return 0;
+    RunAllTests();
+    return 0;
 }

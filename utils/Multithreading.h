@@ -2,15 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#ifndef _THREAD_H
-#define _THREAD_H
+#ifndef _MULTI_THREAD_H
+#define _MULTI_THREAD_H
 
 #include "CommonHeader.h"
 
 #include "Noncopyable.h"
 
 /**
-** Thread.h is the archive of many sub-module of concurrency.
+** Multithreading.h is the archive of many sub-module of concurrency.
 **
 ** Support: Thread/Mutex/CondVar/SingletonMutex/ScopeMutex/RWLock/ReentrantLock
 **/
@@ -24,12 +24,12 @@ typedef pthread_mutex_t mutex_type;
 class Thread : Noncopyable
 {
 public:
-    Thread(Task task, void * args = NULL) 
-        : m_task(task), m_args(args), m_tid(-1) 
-    { 
+    Thread(Task task, void * args = NULL)
+        : m_task(task), m_args(args), m_tid(-1)
+    {
 
     }
-    
+
 public:
     /**
     ** Forbid being called more than once
@@ -45,7 +45,7 @@ public:
     **/
     void     join()
     {
-       
+
         assert(m_tid != -1);
         pthread_join(m_tid, NULL);
     }
@@ -56,6 +56,11 @@ public:
     {
         assert(m_tid != -1);
         pthread_cancel(m_tid);
+    }
+
+    static id_type getIDType()
+    {
+        return pthread_self();
     }
 
 private:
@@ -91,7 +96,7 @@ public:
     bool  trylock()
     {
         return pthread_mutex_trylock(&m_mutex);
-    }   
+    }
 
 public:
     mutex_type& getMutex()
@@ -176,6 +181,11 @@ public:
         return instance;
     }
 
+    Mutex * RMutex()
+    {
+        return &m_mutex;
+    }
+
 private:
     SingletonMutex() {}
     Mutex m_mutex;
@@ -205,21 +215,20 @@ private:
 /**
 ** We implemented the RWLock with mutex and condition variable
 **
-** It can't be promoted.
+** We don't provide promote feature
 **/
 class RWLock : Noncopyable
 {
 public:
-    RWLock(Mutex * mutex): m_mutex(mutex), m_condRead(m_mutex),
-        m_condWrite(m_mutex), m_nReader(0), m_nWriter(0), m_wReader(0), m_wWriter(0)
+    RWLock(): m_condRead(&m_mutex), m_condWrite(&m_mutex),
+        m_nReader(0), m_nWriter(0), m_wReader(0), m_wWriter(0)
     {
-        m_mutex = new Mutex;
     }
 
 public:
     void readLock()
     {
-        ScopeMutex scope(m_mutex);
+        ScopeMutex scope(&m_mutex);
         if(m_nWriter || m_wWriter)
         {
             m_wReader++;
@@ -232,7 +241,7 @@ public:
 
     void readUnlock()
     {
-        ScopeMutex scope(m_mutex);
+        ScopeMutex scope(&m_mutex);
         m_nReader--;
 
         if(m_wWriter != 0)
@@ -243,7 +252,7 @@ public:
 
     void writeLock()
     {
-        ScopeMutex scope(m_mutex);
+        ScopeMutex scope(&m_mutex);
         if(m_nReader || m_nWriter)
         {
             m_wWriter++;
@@ -253,10 +262,10 @@ public:
         }
         m_nWriter++;
     }
-    
+
     void writeUnlock()
     {
-        ScopeMutex scope(m_mutex);
+        ScopeMutex scope(&m_mutex);
         m_nWriter--;
 
         if(m_wWriter != 0)
@@ -272,7 +281,7 @@ private:
     int  m_wWriter;
 
 private:
-    Mutex * m_mutex;
+    Mutex   m_mutex;
     CondVar m_condRead;
     CondVar m_condWrite;
 };
@@ -283,12 +292,12 @@ private:
 class ReentrantLock : Noncopyable
 {
 public:
-    ReentrantLock() 
-        : m_id(-1), m_cond(&m_tmplock), m_time(0) 
-    { 
+    ReentrantLock()
+        : m_id(-1), m_cond(&m_tmplock), m_time(0)
+    {
 
     }
-    
+
     void  lock()
     {
         m_tmplock.lock();

@@ -1,6 +1,9 @@
+// Copyright (c) 2014 The CustomDB Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file. See the AUTHORS file for names of contributors.
+
 #include "BufferPacket.h"
 
-#include <assert.h>
 #include "Atomic.h"
 using namespace utils;
 
@@ -294,6 +297,23 @@ BufferPacket & BufferPacket::operator >> (char * str)
     m_cur = index + 1;
 
     return *this;
+}
+
+bool operator == (const BufferPacket &buff1, const BufferPacket &buff2)
+{
+    return (buff1.m_size == buff2.m_size && buff1.m_data == buff2.m_data) ? true : false;
+}
+
+bool operator != (const BufferPacket &buff1, const BufferPacket &buff2)
+{
+    return buff1 == buff2 ? false : true;
+}
+
+ostream& operator<<(ostream &os, const BufferPacket &buff)
+{
+    os <<  "[" << &buff.m_data << " : " << buff.m_size << endl;
+
+    return os;
 }
 
 };

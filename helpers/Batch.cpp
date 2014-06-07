@@ -1,3 +1,7 @@
+// Copyright (c) 2014 The CustomDB Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file. See the AUTHORS file for names of contributors.
+
 #include "Batch.h"
 
 namespace customdb
@@ -5,7 +9,9 @@ namespace customdb
 
 WriteBatch::WriteBatch(int size) : \
     m_size(size), m_num(0), m_msize(0) \
-{ m_ssvec = vector<Node>(m_size);}
+{
+    m_ssvec = vector<Node>(m_size);
+}
 
 void WriteBatch::put(const Slice& key, const Slice& value)
 {
@@ -19,11 +25,6 @@ void WriteBatch::put(const Slice& key, const Slice& value)
     m_ssvec[m_num++].second = value;
 
     m_msize += key.size() + value.size();
-}
-
-void WriteBatch::remove(const Slice& key)
-{
-    //Todo list
 }
 
 void WriteBatch::clear()
@@ -96,7 +97,7 @@ uint32_t WriteBatchInternal::ByteSize(WriteBatch * dst)
     return dst->getTotalSize();
 }
 
-int WriteBatchInternal::Count(WriteBatch * dst)
+uint32_t WriteBatchInternal::Count(WriteBatch * dst)
 {
     return dst->getCount();
 }

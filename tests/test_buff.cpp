@@ -3,20 +3,26 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "TestUtils.h"
-#include "Noncopyable.h"
 using namespace utils;
 
-class A : Noncopyable
-{
-};
+#include "BufferPacket.h"
+using namespace customdb;
 
-TEST(A, Test1)
+class A { };
+
+TEST(A, TestSame)
 {
-    A a;
-    //A b = a;
-    //A c(a);
-    A d;
-    //d = a;
+    BufferPacket packet1(10);
+    packet1 << "hello";
+
+    BufferPacket packet2(10);
+    packet2 << "hello";
+
+    ASSERT_NE(packet1, packet2);
+
+    packet2 = packet1;
+
+    ASSERT_EQ(packet1, packet2);
 }
 
 int main()

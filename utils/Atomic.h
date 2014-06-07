@@ -6,8 +6,8 @@
 #define _ATOMOC_H
 
 /**
-** Atomic is used to represent some atomic variable. 
-** Detail information for it can be found in 
+** Atomic is used to represent some atomic variable.
+** Detail information for it can be found in
 ** gcc.gnu.org/onlinedocs/libstdc++/manual/ext_concurrency.html
 **/
 

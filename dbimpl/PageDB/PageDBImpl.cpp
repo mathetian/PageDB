@@ -8,7 +8,7 @@ namespace customdb
 #define FILEMODE2 (fstream::out | fstream::app)
 
 PageDB::PageDB(HASH hashFunc) : hashFunc(hashFunc), gd(0), pn(1), \
-    fb(-1), globalLock(&tmplock), MOD((1ull << 56) - 1)
+    fb(-1), globalLock(), MOD((1ull << 56) - 1)
 {
     pcache = new PageCache(this);
     m_tmpBatch = new WriteBatch;

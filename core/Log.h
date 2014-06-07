@@ -10,8 +10,8 @@ using std::ostream;
 #include <stdlib.h>
 #include <stdarg.h>
 
-#include "Thread.h"
-using utils::Mutex;
+#include "Multithreading.h"
+using namespace utils;
 
 namespace customdb
 {

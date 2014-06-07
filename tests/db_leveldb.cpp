@@ -16,7 +16,7 @@ using namespace std;
 #include "Batch.h"
 #include "Option.h"
 #include "CustomDB.h"
-#include "TimeStamp.h"
+#include "TickTimer.h"
 using namespace customdb;
 using namespace utils;
 

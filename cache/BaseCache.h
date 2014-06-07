@@ -9,7 +9,7 @@ using namespace std;
 using namespace customdb;
 
 #include "Slice.h"
-#include "Thread.h"
+#include "Multithreading.h"
 #include "Atomic.h"
 using namespace utils;
 

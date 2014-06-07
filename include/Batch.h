@@ -1,18 +1,22 @@
+// Copyright (c) 2014 The CustomDB Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file. See the AUTHORS file for names of contributors.
+
 #ifndef _BATCH_H
 #define _BATCH_H
-
-#include <vector>
-using namespace std;
-
-#include <assert.h>
-#include <stdint.h>
 
 #include "Slice.h"
 using namespace utils;
 
+/**
+** Batch represents the archive of slices.
+**/
 namespace customdb
 {
 
+/**
+** WriteBatch is the kernel class of batch
+**/
 class WriteBatch
 {
 private:
@@ -23,7 +27,6 @@ public:
 
 public:
     void     put(const Slice& key, const Slice& value);
-    void     remove(const Slice& key) ;
     void     clear();
     uint32_t getTotalSize() const;
     int      getCount() const;
@@ -46,17 +49,14 @@ public:
 
 private:
     vector<Node> m_ssvec;
-    int m_size;
-    int m_num;
-    uint32_t m_msize;
+    int          m_size;
+    int          m_num;
+    uint32_t     m_msize;
 };
 
-//Todo list
-class ReadBatch
-{
-public:
-};
-
+/**
+** XXXInternel represents some helper function for batch
+**/
 class WriteBatchInternal
 {
 public:
@@ -65,7 +65,7 @@ public:
 public:
     static void Append(WriteBatch * dst, const WriteBatch * src);
     static uint32_t ByteSize(WriteBatch * dst);
-    static int Count(WriteBatch * dst);
+    static uint32_t Count(WriteBatch * dst);
 };
 
 };

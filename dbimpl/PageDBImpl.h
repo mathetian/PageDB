@@ -6,10 +6,9 @@ using std::deque;
 
 #include "BufferPacket.h"
 #include "Batch.h"
-#include "Thread.h"
-#include "TimeStamp.h"
+#include "Multithreading.h"
+#include "TickTimer.h"
 #include "HashFunction.h"
-#include "Utils.h"
 #include "FileModule.h"
 using namespace utils;
 
@@ -162,7 +161,6 @@ private:
     Mutex          datLock;
     Mutex          cacheLock;
     RWLock         globalLock;
-    Mutex          tmplock;
     Mutex          cacheElemLock[CACHESIZE];
 
 private:

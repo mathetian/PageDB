@@ -1,55 +1,58 @@
-#include "Thread.h"
+// Copyright (c) 2014 The CustomDB Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file. See the AUTHORS file for names of contributors.
+
+#include "TestUtils.h"
+#include "Multithreading.h"
 using namespace utils;
 
-#include <unistd.h> // for sleep
-#include <stdio.h>
-#include <assert.h>
+class A { };
 
-Mutex mutex;
-RWLock rwlock(&mutex);
+RWLock rwlock;
 
 void * func1(void *)
 {
     rwlock.readLock();
-    printf("123\n");
+    cout << "Expect 1" << endl;
     rwlock.readUnlock();
     sleep(1);
     rwlock.writeLock();
-    printf("567\n");
+    cout << "Expect 3" << endl;
     rwlock.writeUnlock();
 }
 
 void * func2(void *)
 {
     rwlock.readLock();
-    printf("456\n");
     sleep(2);
+    cout << "Expect 2" << endl;
     rwlock.readUnlock();
 }
 
 void * func3(void *)
 {
     rwlock.writeLock();
-    printf("123\n");
+    cout << "Expect 1" << endl;
     sleep(5);
     rwlock.writeUnlock();
     sleep(1);
     rwlock.writeLock();
-    printf("567\n");
+    cout << "Expect 3" << endl;
     rwlock.writeUnlock();
 }
 
 void * func4(void *)
 {
-    sleep(1);
     rwlock.readLock();
-    printf("456\n");
+    cout << "Expect 2" << endl;
     sleep(3);
     rwlock.readUnlock();
 }
 
-/**Test for read-reentrant and write after read-lock**/
-void RunTest1()
+/**
+** Read Then Write
+**/
+TEST(A, RRW)
 {
     Thread thr1(func1, NULL);
     Thread thr2(func2, NULL);
@@ -60,8 +63,10 @@ void RunTest1()
     thr2.join();
 }
 
-/**Test for read after write(of course, can't read util writeunlock**/
-void RunTest2()
+/**
+** Write then Read
+**/
+TEST(A, WWR)
 {
     Thread thr1(func3, NULL);
     Thread thr2(func4, NULL);
@@ -74,8 +79,6 @@ void RunTest2()
 
 int main()
 {
-    RunTest1();
-    RunTest2();
-    printf("Passed All Tests\n");
+    RunAllTests();
     return 0;
 }

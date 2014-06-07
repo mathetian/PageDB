@@ -1,7 +1,8 @@
-#include "Slice.h"
+// Copyright (c) 2014 The CustomDB Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include <string.h>
-#include <assert.h>
+#include "Slice.h"
 
 namespace utils
 {
@@ -80,10 +81,11 @@ Slice & Slice::operator=(const Slice & s1)
 
 Slice::~Slice()
 {
-    if(m_data != NULL) 
+    if(m_data != NULL)
         delete [] m_data;
-    
-    m_size = 0; m_data = NULL;
+
+    m_size = 0;
+    m_data = NULL;
 }
 
 const char* Slice::tochars()  const
@@ -162,12 +164,12 @@ bool operator==(const Slice & s1, const Slice & s2)
     return false;
 }
 
-bool operator!=(const Slice & s1, const Slice & s2)
+bool operator != (const Slice & s1, const Slice & s2)
 {
     return !(s1 == s2);
 }
 
-bool operator< (const Slice & s1, const Slice & s2)
+bool operator < (const Slice & s1, const Slice & s2)
 {
     unsigned int i = 0;
     while(i < s1.size() && i < s2.size() && s1[i] == s2[i])
@@ -179,7 +181,7 @@ bool operator< (const Slice & s1, const Slice & s2)
     else return false;
 }
 
-bool operator> (const Slice & s1, const Slice & s2)
+bool operator > (const Slice & s1, const Slice & s2)
 {
     return s2 < s1;
 }

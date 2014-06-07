@@ -3,20 +3,33 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "TestUtils.h"
-#include "Noncopyable.h"
 using namespace utils;
 
-class A : Noncopyable
+/**
+** This file is used to test two features of TestUtils
+**/
+class A
 {
+public:
+    int func1()
+    {
+        return 1;
+    }
+
+    int func2()
+    {
+        return 2;
+    }
 };
 
-TEST(A, Test1)
+TEST(A, abc1)
 {
-    A a;
-    //A b = a;
-    //A c(a);
-    A d;
-    //d = a;
+    ASSERT_TRUE(func1() == 1);
+}
+
+TEST(A, abc2)
+{
+    ASSERT_TRUE(func2() == 2);
 }
 
 int main()

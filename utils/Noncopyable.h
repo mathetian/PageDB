@@ -16,10 +16,10 @@ namespace utils
 class Noncopyable
 {
 public:
-	Noncopyable() { }
+    Noncopyable() { }
 private:
-	Noncopyable& operator=(const Noncopyable&);
-	Noncopyable(const Noncopyable&);
+    Noncopyable& operator=(const Noncopyable&);
+    Noncopyable(const Noncopyable&);
 };
 
 };

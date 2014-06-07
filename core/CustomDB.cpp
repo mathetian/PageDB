@@ -50,7 +50,7 @@ void   CustomDB::destoryDB(const char * filename)
     string sfilename(filename, filename + strlen(filename));
     string idxName = sfilename + ".idx";
     string datName = sfilename +  ".dat";
-    
+
     FileModule::Remove(idxName);
     FileModule::Remove(datName);
 
