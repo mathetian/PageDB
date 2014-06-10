@@ -23,15 +23,27 @@ private:
     typedef pair<Slice, Slice> Node;
 
 public:
+    /**
+    ** To avoid useless duplicate of Node, we pre-allocated a buffer
+    **/
     WriteBatch(int size = 1000);
 
 public:
     void     put(const Slice& key, const Slice& value);
     void     clear();
-    uint32_t getTotalSize() const;
+    /**
+    ** Get size of batch
+    **/
+    uint32_t getTotalsize() const;
+    /**
+    ** Get count of items
+    **/
     int      getCount() const;
 
 public:
+    /**
+    ** Inner Class, Iterator: Can be used as STL's iterator
+    **/
     class Iterator
     {
     public:

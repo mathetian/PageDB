@@ -33,14 +33,6 @@ Slice::Slice(const string& s)
     *this = Slice(s.data(), s.size());
 }
 
-Slice::Slice(const char* s) : m_size(strlen(s))
-{
-    char * data = new char[m_size];
-    memcpy(data, s, m_size);
-
-    m_data = data;
-}
-
 Slice::Slice(const Slice & s1) : m_size(s1.m_size), m_data(NULL)
 {
     if(m_size != 0)
@@ -88,24 +80,17 @@ Slice::~Slice()
     m_data = NULL;
 }
 
-const char* Slice::tochars()  const
-{
-    return m_data;
-}
-
 const char* Slice::c_str() const
 {
     return m_data;
 }
 
-string Slice::toString() const
+/**
+** Notice
+**/
+string Slice::to_str() const
 {
     return string(m_data, m_size);
-}
-
-void   Slice::printAsInt() const
-{
-    cout << returnAsInt() << endl;
 }
 
 int  Slice::returnAsInt() const
@@ -129,35 +114,24 @@ size_t Slice::size() const
     return m_size;
 }
 
-bool  Slice::empty() const
-{
-    return m_size == 0;
-}
-
-void Slice::clear()
-{
-    m_data = "";
-    m_size = 0;
-}
-
 char Slice::operator[](size_t n) const
 {
     assert(n < size());
     return m_data[n];
 }
 
-Slice::operator string()
+class Slice::at(size_t n) const
 {
-    return string(m_data, m_size);
+    return operator[](n);
 }
 
-bool operator==(const Slice & s1, const Slice & s2)
+bool operator == (const Slice & s1, const Slice & s2)
 {
     if(s1.size() != s2.size()) return false;
 
     unsigned i = 0;
 
-    while(i < s1.size() && s1[i] == s2[i]) i++;
+    while(i < s1.size() && s1.at(i) == s2.at(i)) i++;
 
     if(i == s1.size()) return true;
 
@@ -186,17 +160,19 @@ bool operator > (const Slice & s1, const Slice & s2)
     return s2 < s1;
 }
 
-ostream & operator << (ostream & os, const Slice & sl)
+ostream & operator << (ostream & os, const Slice & slice)
 {
-    os << sl.toString();
+    os << "Slice[" << slice.size() << "," << slice.to_str() << "]";
+
     return os;
 }
 
-istream & operator >> (istream & is, Slice&sl)
+istream & operator >> (istream & is, Slice&slice)
 {
     string str;
     is >> str;
-    sl = Slice(str);
+    slice = Slice(str);
+
     return is;
 }
 

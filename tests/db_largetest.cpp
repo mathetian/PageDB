@@ -34,8 +34,8 @@ TEST(A, Test1)
             BufferPacket packet(sizeof(int));
             packet << i;
 
-            if(db -> put(Slice(packet.getData(),sizeof(int)),
-                         Slice(packet.getData(),sizeof(int))) == false)
+            if(db -> put(Slice(packet.c_str(),sizeof(int)),
+                         Slice(packet.c_str(),sizeof(int))) == false)
                 cout << "error put:" << i << endl;
             if(i%(SIZE/10)==0) cout<<"Put:"<<i<<endl;
         }
@@ -56,14 +56,14 @@ TEST(A, Test1)
             BufferPacket packet(sizeof(int));
             packet << i;
 
-            Slice key(packet.getData(), sizeof(int));
+            Slice key(packet.c_str(), sizeof(int));
 
             Slice value = db -> get(key);
 
             BufferPacket packet2(sizeof(int));
 
             packet2 << value;
-            packet2.setBeg();
+            packet2.reset();
 
             int num = -1;
             packet2 >> num;
@@ -107,14 +107,14 @@ TEST(A, Test2)
             BufferPacket packet(sizeof(int));
             packet << i;
 
-            Slice key(packet.getData(), sizeof(int));
+            Slice key(packet.c_str(), sizeof(int));
 
             Slice value = db -> get(key);
 
             BufferPacket packet2(sizeof(int));
 
             packet2 << value;
-            packet2.setBeg();
+            packet2.reset();
 
             int num = -1;
             packet2 >> num;

@@ -1,16 +1,34 @@
+// Copyright (c) 2014 The CustomDB Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file. See the AUTHORS file for names of contributors.
+
 #ifndef _CUSTOM_DB_H
 #define _CUSTOM_DB_H
 
 #include "Log.h"
-#include "Batch.h"
 #include "Slice.h"
+using namespace utils;
+
+#include "Batch.h"
 #include "Option.h"
 #include "BaseCache.h"
 #include "DBInternal.h"
 
-#include <string>
-using namespace std;
-
+/**
+** The first layer of DB.
+**
+** Basic operations:
+** `open/close/put/get/remove`
+**
+** Improved operations:
+** `put(batch)`
+** `write(batch)`
+** `runBatchParallel(batch)`
+**
+** Other operations:
+** `sync/dump/compact/destoryDB/checkStatus`
+**
+**/
 namespace customdb
 {
 
@@ -24,29 +42,42 @@ public:
     virtual ~CustomDB();
 
 public:
-    void   close();
-    void   dump();
-    void   cleanCACHE();
-    void   destoryDB(const char * filename);
-    void   fflush();
-
-public:
+    /**
+    ** level 1, basic operations
+    **/
     bool   open(const Options & option);
+    void   close();
     bool   put(const Slice & key,const Slice & value);
     Slice  get(const Slice & key);
     bool   remove(const Slice & key);
-    bool   getError();
+
+public:
+    /**
+    ** level 2, improved operations
+    **/
+    void   put(const WriteBatch * pbatch);
     void   write(const WriteBatch * pbatch);
-    void   tWrite(WriteBatch * pbatch);
-    void   compact();
     void   runBatchParallel(const WriteBatch * pbatch);
 
+public:
+    /**
+    ** level 3, other operations
+    **/
+    void   sync();
+    void   dump();
+    void   compact();
+    void   destoryDB(const char * filename);
+    int    checkStatus();
+
 private:
-    Options   	option;
-    DBInternal *dbimpl;
-    BaseCache * cache;
-    Log       * log;
-    int         errorStatus;
+    Options   	m_option;
+    DBInternal *m_dbimpl;
+    BaseCache  *m_cache;
+    Log        *m_log;
+    /**
+    ** Only record the lastest status
+    **/
+    int         m_lastStatus;
 };
 
 };

@@ -171,11 +171,11 @@ public:
                 if (key == "model name")
                 {
                     ++num_cpus_;
-                    cpu_type = val.toString();
+                    cpu_type = val.to_str();
                 }
                 else if (key == "cache size")
                 {
-                    cache_size = val.toString();
+                    cache_size = val.to_str();
                 }
             }
             fclose(cpuinfo);
@@ -237,7 +237,7 @@ public:
             {
                 if (name != Slice())    // No error message for empty name
                 {
-                    fprintf(stderr, "unknown benchmark '%s'\n", name.toString().c_str());
+                    fprintf(stderr, "unknown benchmark '%s'\n", name.to_str().c_str());
                 }
                 continue;
             }

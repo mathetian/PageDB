@@ -1,18 +1,20 @@
+// Copyright (c) 2014 The CustomDB Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file. See the AUTHORS file for names of contributors.
+
 #ifndef _BASECACHE_H
 #define _BASECACHE_H
 
-#include <map>
-#include <vector>
-using namespace std;
-
 #include "Log.h"
-using namespace customdb;
-
 #include "Slice.h"
-#include "Multithreading.h"
 #include "Atomic.h"
+#include "Multithreading.h"
 using namespace utils;
 
+/**
+** BaseCache is the base class of Cache module
+** It is thread-safe
+**/
 namespace customdb
 {
 
@@ -22,10 +24,13 @@ public:
     BaseCache();
 
 public:
+    /**
+    ** Base cache support put/get/remove/clear
+    ** All operation are operated on softMap
+    **/
     virtual bool    put(const Slice & key, const Slice & value);
     virtual Slice  	get(const Slice & key);
     virtual bool    remove(const Slice & key);
-    vector<Slice>   keys();
     virtual void    clear();
 
 protected:

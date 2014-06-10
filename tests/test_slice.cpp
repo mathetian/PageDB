@@ -16,7 +16,7 @@ public:
     {
         BufferPacket packet(sizeof(int));
         packet << 15545;
-        Slice slice(packet.getData(), packet.getSize());
+        Slice slice(packet.c_str(), packet.size());
         return slice.returnAsInt();
     }
 

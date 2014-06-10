@@ -2,10 +2,10 @@ CXX     = g++
 AR	    = ar
 LIBMISC	= libcustomDB.a
 RANLIB  = ranlib
-HEADER  = -I./include -I./helpers -I./cache -I./dbimpl -I./utils -I. -I./core
+HEADER  = -I./include -I./cache -I./utils -I. -I./core
 CXXFLAGS = -g -O0
 
-SOURCES = cache/*.cpp core/*.cpp helpers/*.cpp dbimpl/*/*.cpp utils/*.cpp
+SOURCES = cache/*.cpp core/*.cpp utils/*.cpp
  
 LDLIBS  = -L. -lcustomDB -laio
 

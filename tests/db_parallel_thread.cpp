@@ -49,7 +49,7 @@ void* thrFunc(void * data)
             BufferPacket packet(sizeof(int));
             packet << k;
 
-            batch.put(Slice(packet.getData(),sizeof(int)), Slice(packet.getData(),sizeof(int)));
+            batch.put(Slice(packet.c_str(),sizeof(int)), Slice(packet.c_str(),sizeof(int)));
         }
 
         db -> runBatchParallel(&batch);
@@ -111,14 +111,14 @@ TEST(A, Test1)
             BufferPacket packet(sizeof(int));
             packet << i;
 
-            Slice key(packet.getData(), sizeof(int));
+            Slice key(packet.c_str(), sizeof(int));
 
             Slice value = db -> get(key);
 
             BufferPacket packet2(sizeof(int));
 
             packet2 << value;
-            packet2.setBeg();
+            packet2.reset();
 
             int num = -1;
             packet2 >> num;

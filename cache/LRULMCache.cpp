@@ -1,3 +1,7 @@
+// Copyright (c) 2014 The CustomDB Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file. See the AUTHORS file for names of contributors.
+
 #include "LRULMCache.h"
 
 namespace customdb
@@ -12,9 +16,21 @@ bool  LRULimitedMemoryCache::put(const Slice & key, const Slice & value)
 
     if(LimitedMemoryCache::put(key,value) == true)
     {
-        sQue.push_front(key);
+        m_list.push_back(key);
         return true;
     }
+    else
+    {
+        if(value.size() < cacheLimit)
+        {
+            /**
+            ** Reorder the key
+            **/
+            reorder(key);
+            return true;
+        }
+    }
+
     return false;
 }
 
@@ -24,14 +40,14 @@ Slice LRULimitedMemoryCache::get(const Slice & key)
 
     Slice value = LimitedMemoryCache::get(key);
 
-    list <Slice>::iterator itDq = sQue.begin();
+    list <Slice>::iterator itDq = m_list.begin();
 
-    while(itDq != sQue.end() && *itDq != key) itDq++;
+    while(itDq != m_list.end() && *itDq != key) itDq++;
 
-    if(itDq != sQue.end())
+    if(itDq != m_list.end())
     {
-        sQue.erase(itDq);
-        sQue.push_front(key);
+        m_list.erase(itDq);
+        m_list.push_back(key);
     }
     else log -> _Warn("LRULimitedMemoryCache get not exist?\n");
 
@@ -45,13 +61,13 @@ bool   LRULimitedMemoryCache::remove(const Slice & key)
     bool flag = LimitedMemoryCache::remove(key);
     if(flag == false) return false;
 
-    list <Slice>::iterator itDq = sQue.begin();
-    while(itDq != sQue.end() && *itDq != key) itDq++;
+    list <Slice>::iterator iter = m_list.begin();
+    while(iter != m_list.end() && *iter != key) iter++;
 
-    if(itDq == sQue.end())
+    if(iter == m_list.end())
         log -> _Warn("Not exist in LRULimitedMemoryCache remove?\n");
     else
-        sQue.erase(itDq);
+        m_list.erase(iter);
 
     return true;
 }
@@ -61,17 +77,30 @@ void   LRULimitedMemoryCache::clear()
     ScopeMutex scope(&m_mutex);
 
     LimitedMemoryCache::clear();
-    clearZero(sQue);
+
+    list<Slice> tmp;
+    swap(tmp, m_list);
 }
 
-Slice LRULimitedMemoryCache::removeNext()
+Slice LRULimitedMemoryCache::getNextKey()
 {
     ScopeMutex scope(&m_mutex);
 
-    Slice rs = sQue.front();
-    sQue.pop_front();
+    Slice rs = m_list.front();
+    m_list.pop_front();
+
     return rs;
 }
 
+void LRULimitedMemoryCache::reorder(const Slice & key)
+{
+    list<Slice>::iterator iter = m_list.begin();
+
+    while(iter != m_list.end() && *iter != key) iter++;
+
+    assert(iter != m_list.end());
+    m_list.erase(iter);
+    m_list.push_back(key);
+}
 
 };

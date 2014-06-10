@@ -154,7 +154,7 @@ public:
             fsync(fd_);
     }
 
-    uint64_t Size()
+    uint64_t size()
     {
         return fileSize_;
     }

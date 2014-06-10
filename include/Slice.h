@@ -5,10 +5,12 @@
 #ifndef _SLICE_H
 #define _SLICE_H
 
-#include "CommonHeader.h"
+#include "../utils/CommonHeader.h"
 
 /**
 ** Slice is used to store immutable buffer.
+**
+** Slice behave as string, but it doesn't end with `\0`.
 **/
 
 namespace utils
@@ -21,32 +23,45 @@ public:
     ~Slice();
 
 public:
+    /**
+    ** initiated slice with length n
+    **/
     Slice(size_t n);
+
+    /**
+    ** string copy, length n
+    **/
     Slice(const char* d, size_t n);
+
+    /**
+    ** string copy
+    **/
     Slice(const string& s);
-    Slice(const char* s);
+
+    /**
+    ** copy & operator construct
+    **/
     Slice(const Slice &s1);
     Slice &operator=(const Slice & s1);
 
 public:
-    const char* tochars()  const;
     const char* c_str()    const;
-    string      toString() const;
     size_t      size()     const;
-    bool        empty()    const;
-    void        clear();
 
 public:
     /**
-    ** For Debug
-    ** Can't be used in production environment
+    ** mostly, we shouldn't use `to_str()` because slice won't end with `\0`
+    ** Only use it when you are sure that it is a string
     **/
-    void    printAsInt()  const;
+    string      to_str()   const;
+    /**
+    ** Same as `to_str()`. Very limited situation.
+    **/
     int     returnAsInt() const;
 
 public:
     char   operator[](size_t n) const;
-    operator string();
+    char   at(size_t n) const;
 
 private:
     const char * m_data;
@@ -58,7 +73,7 @@ extern bool operator!=(const Slice & s1, const Slice & s2);
 extern bool operator< (const Slice & s1, const Slice & s2);
 extern bool operator> (const Slice & s1, const Slice & s2);
 extern ostream & operator << (ostream & os, const Slice & sl);
-extern istream & operator >> (istream & is, Slice&sl);
+extern istream & operator >> (istream & is, Slice & sl);
 
 };
 

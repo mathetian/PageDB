@@ -22,9 +22,9 @@ public:
         packet << 2;
         packet << 3;
 
-        Slice k1(packet.getData(), sizeof(int));
-        Slice k2(packet.getData() + sizeof(int), sizeof(int));
-        Slice k3(packet.getData() + sizeof(int)*2, sizeof(int));
+        Slice k1(packet.c_str(), sizeof(int));
+        Slice k2(packet.c_str() + sizeof(int), sizeof(int));
+        Slice k3(packet.c_str() + sizeof(int)*2, sizeof(int));
 
         WriteBatch *pbatch = new WriteBatch(3);
 
