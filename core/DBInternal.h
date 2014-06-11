@@ -7,6 +7,7 @@
 
 #include "Log.h"
 #include "Slice.h"
+#include "Noncopyable.h"
 using namespace utils;
 
 #include "Batch.h"
@@ -26,10 +27,10 @@ namespace customdb
 
 typedef uint32_t (*HashFunc)(const Slice & key);
 
-class DBInternal
+class DBInternal : public Noncopyable
 {
 public:
-    DBInternal() : log(log::GetInstance())
+    DBInternal() : m_log(log::GetInstance())
     {
     }
 
@@ -37,7 +38,7 @@ public:
     /**
     ** Layer 1
     **/
-    virtual bool   open(const char * filename) = 0;
+    virtual bool   open(const string &filename) = 0;
     virtual bool   close();
     virtual bool   put(const Slice & key,const Slice & value) = 0;
     virtual Slice  get(const Slice & key) = 0;
@@ -45,19 +46,18 @@ public:
     /**
     ** Layer 2
     **/
+    virtual void   put(const WriteBatch * pbatch) = 0;
+    virtual void   write(WriteBatch* pbatch) = 0;
+    virtual void   runBatchParallel(const WriteBatch * pbatch) = 0;
     /**
     ** Layer 3
     **/
+    virtual void   sync() = 0;
     virtual void   dump() = 0;
-    virtual void   removeDB(const char * filename) = 0;
-    virtual void   fflush() = 0;
-    virtual void   runBatch(const WriteBatch * pbatch) = 0;
-    virtual void   write(WriteBatch* pbatch) = 0;
     virtual void   compact() = 0;
-    virtual void   runBatchParallel(const WriteBatch * pbatch) = 0;
 
 protected:
-    Log  *  log;
+    Log  *  m_log;
 };
 
 };

@@ -1,79 +1,147 @@
+// Copyright (c) 2014 The CustomDB Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file. See the AUTHORS file for names of contributors.
+
 #include "PageDBImpl.h"
 
 namespace customdb
 {
 
-#define FILEMODE1 (fstream::in | fstream::out)
-
-#define FILEMODE2 (fstream::out | fstream::app)
-
-PageDB::PageDB(HASH hashFunc) : hashFunc(hashFunc), gd(0), pn(1), \
-    fb(-1), globalLock(), MOD((1ull << 56) - 1)
+PageDB::PageDB(HashFunc hashFunc) : m_HashFunc(hashFunc),  gd(0), pn(1), fb(-1)
 {
     pcache = new PageCache(this);
-    m_tmpBatch = new WriteBatch;
 }
 
 PageDB::~PageDB()
 {
-    fflush();
+    close();
+}
 
-    writeToIdxFile();
+/**
+** Layer 1
+**/
+bool     PageDB::open(const string &filename)
+{
+    m_prefix = filename;
+
+    string idxName = filename + ".idx";
+    string datName = filename + ".dat";
+
+    m_idxfile.Open(idxName);
+    m_datfile.Open(datName);
+
+    /**
+    ** DB File Exist? Judge it before pre-processing
+    **/
+    if(FileModule::Size(idxName) == 0)
+    {
+        assert(FileModule::Size(datName) == 0);
+
+        m_gd = 0; m_pn = 1; m_fb = -1;
+        entries.push_back(0);
+        writeToIdxFile();
+
+        PageTable * page = new PageTable(this);
+        BufferPacket packet = page -> getPacket();
+        
+        m_datfile.Append(packet.c_str(), SPAGETABLE);
+        
+        m_cache -> putInto(page, 0);
+    }
+    else
+    {
+        /**
+        ** Exist old DB, read index information from file
+        **/
+        readFromFile();
+    } 
+
+    /**
+    ** If no empty block, allocate one from the end of file
+    **/
+    if(m_fb == -1)
+    {
+        m_fb = m_datfile.Size();
+
+        PageEmptyBlock block;
+
+        block.eles[0].pos  = fb + SEEBLOCK;
+        block.eles[0].size = SEEBLOCK;
+        block.curNum       = 1;
+
+        m_datfile.Append((char*)&block, SEEBLOCK);
+        m_datfile.Append((char*)&block, SEEBLOCK);
+    }
+
+    m_log -> _Trace("DB Open Successfully");
+
+    return true;
+}
+
+/**
+** Close DB: Write buffer into files and delete cache buffer
+**/
+bool     PageDB::close()
+{
+    sync();
 
     m_datfile.Close();
     m_idxfile.Close();
 
-    if(pcache)
-        delete pcache;
+    if(m_cache) delete m_cache;
+    m_cache = NULL;
 
-    if(m_tmpBatch)
-        delete m_tmpBatch;
+    return true;
 }
 
 bool     PageDB::put(const Slice & key,const Slice & value)
 {
-    uint32_t hashVal = hashFunc(key);
-    uint32_t cur          = hashVal & ((1 << gd) -1);
+    uint32_t hashVal = m_HashFunc(key);
+    uint32_t cur     = hashVal & ((1 << gd) -1);
 
     uint32_t index   = 0;
-    uint64_t addr    =  entries.at(cur) & MOD;
-    uint64_t digNum  = (entries.at(cur) & (~MOD));
+    uint64_t addr    =  m_entries.at(cur) & MOD;
+    uint64_t digNum  = (m_entries.at(cur) & (~MOD));
     uint64_t pageNum = (digNum >> 56);
 
-    PageTable * page = pcache -> find(addr, index);
+    PageTable * page = m_cache -> find(addr, index);
     bool entriesUpdate = false;
 
     if(page == NULL)
     {
         page = new PageTable(this);
-        index = pcache -> putInto(page, addr);
+        index = m_cache -> putInto(page, addr);
+        
         BufferPacket packet(SPAGETABLE);
+        
+        m_datfile.Read(packet.str(), addr, SPAGETABLE);
+        m_datfile.setCurSize(SPAGETABLE);
 
-        m_datfile.Read(packet.str(), addr, packet.size());
         page -> setByBucket(packet);
+        
         assert(page -> curNum < PAGESIZE + 5);
     }
 
     if(page -> full() && page -> d == gd)
     {
-        log -> _Trace("ExtendibleHash :: put :: full, so double-entries\n");
-        printf("double tables\n");
+        m_log -> _Trace("ExtendibleHash :: put :: full, so double-entries\n");
 
         gd += 1;
 
-        uint32_t oldSize = entries.size();
+        uint32_t oldSize = m_entries.size();
+        
         for(uint32_t i = 0; i < oldSize; i++)
         {
-            uint64_t addr1    = entries.at(i) &   MOD;
-            uint64_t pageNum2 = entries.at(i) & (~MOD);
-            pageNum2 >>= 56;
-            pageNum2++;
-            pageNum2 <<= 56;
-            entries[i] = addr1 | pageNum2;
+            uint64_t addr    = m_entries.at(i) &   MOD;
+            uint64_t pageNum = m_entries.at(i) & (~MOD);
+            pageNum >>= 56;
+            pageNum++;
+            pageNum <<= 56;
+            m_entries[i] = addr | pageNum;
         }
 
         for(uint32_t i = 0; i < oldSize; i++)
-            entries.push_back(entries.at(i));
+            m_entries.push_back(m_entries.at(i));
 
         pageNum++;
     }
@@ -140,7 +208,7 @@ bool     PageDB::put(const Slice & key,const Slice & value)
     {
         if((page -> put(key, value, hashVal)) == 1)
         {
-            pcache -> setUpdated(index);
+            m_cache -> setUpdated(index);
         }
         else
         {
@@ -148,7 +216,9 @@ bool     PageDB::put(const Slice & key,const Slice & value)
             return false;
         }
     }
+
     writeToIdxFile();
+
     return true;
 }
 
@@ -216,110 +286,10 @@ bool     PageDB::remove(const Slice & key)
     return rb;
 }
 
-bool     PageDB::init(const char * filename)
-{
-    struct stat buf;
-
-    string sfilename(filename, filename + strlen(filename));
-    idxName = sfilename + ".idx";
-    datName = sfilename +  ".dat";
-
-    reOpenDB();
-
-    if((stat(idxName.c_str(), &buf) == -1) || buf.st_size == 0)
-    {
-        assert(m_idxfile.size() == 0 && m_datfile.size() == 0);
-        gd = 0;
-        pn = 1;
-
-        entries.push_back(0);
-        PageTable * page = new PageTable(this);
-        writeToIdxFile();
-        BufferPacket packet = page -> getPacket();
-        uint32_t pos = m_datfile.Write(packet.c_str(), -1, packet.size());
-        pcache -> putInto(page, pos);
-    }
-    else readFromFile();
-
-    if(fb == -1)
-    {
-        fb = m_datfile.size();
-
-        PageEmptyBlock block;
-
-        block.eles[0].pos  = fb + SEEBLOCK;
-        block.eles[0].size = SEEBLOCK;
-        block.curNum       = 1;
-
-        m_datfile.Append((char*)&block, SEEBLOCK);
-        m_datfile.Append((char*)&block, SEEBLOCK);
-    }
-
-    cout<< m_idxfile.size() <<" "<<m_datfile.size()<<endl;
-    return true;
-}
-
-void     PageDB::dump()
-{
-    pcache -> fflush();
-
-    PageTable * page = new PageTable(this);
-    cout << gd << " " << pn << " " << entries.size() << endl;
-    for(int cur = 0, index = 0; cur < entries.size(); cur++)
-    {
-        int j;
-        for(j = 0; j < cur; j++)
-        {
-            if(entries.at(j) ==  entries.at(cur)) break;
-        }
-
-        if(j != cur) continue;
-
-        uint64_t addr    = entries.at(cur) & MOD;
-
-        BufferPacket packet(SPAGETABLE);
-
-        m_datfile.Read(packet.str(), addr, packet.size());
-        page -> setByBucket(packet);
-
-        cout << "Page(size:"<<page -> curNum <<") " << index++ <<" "<<cur <<" "<<page -> d<<":";
-
-        for(j = 0; j < page -> curNum; j++)
-        {
-            BufferPacket packet(2*SINT);
-            m_datfile.Read(packet.str(), page -> elements[j].m_datPos, packet.size());
-            int a, b;
-            uint32_t hashVal = page -> elements[j].m_hashVal;
-            packet >> a >> b;
-            cout << a <<" " << b << " "<<hashVal<<" ";
-        }
-
-        cout << endl;
-    }
-
-    delete page;
-    page = NULL;
-}
-
-void     PageDB::removeDB(const char * filename)
-{
-    string sfilename(filename, filename + strlen(filename));
-    string idxName = sfilename + ".idx";
-    string datName = sfilename +  ".dat";
-
-    idxName = "rm " + idxName;
-    datName = "rm " + datName;
-    system(idxName.c_str());
-    system(datName.c_str());
-}
-
-
-void    PageDB::fflush()
-{
-    pcache -> free();
-}
-
-void    PageDB::runBatch(const WriteBatch * pbatch)
+/**
+** Layer 2
+**/
+void     PageDB::put(const WriteBatch * pbatch)
 {
     uint32_t curpos = m_datfile.size();
 
@@ -442,6 +412,61 @@ void    PageDB::runBatch(const WriteBatch * pbatch)
     pcache -> free();
 }
 
+void     PageDB::write(WriteBatch* pbatch)
+{
+    if(pbatch == NULL) return;
+
+    Writer w(&m_mutex);
+    w.batch = pbatch;
+    w.sync = false;
+    w.done = false;
+
+    ScopeMutex l(&m_mutex);
+    m_writers.push_back(&w);
+    while (!w.done && &w != m_writers.front())
+    {
+        w.cv.wait();
+    }
+    if (w.done)
+    {
+        return;
+    }
+
+    Writer* last_writer = &w;
+    WriteBatch* updates = BuildBatchGroup(&last_writer);
+
+    {
+        m_mutex.unlock();
+        /**
+           When it is directed to here,
+           only one thread can access it at same time.
+        **/
+        runBatch(updates);
+        m_mutex.lock();
+    }
+
+    if (updates == m_tmpBatch) m_tmpBatch->clear();
+
+    while (true)
+    {
+        Writer* ready = m_writers.front();
+        m_writers.pop_front();
+
+        if (ready != &w)
+        {
+            ready->done = true;
+            ready->cv.signal();
+        }
+
+        if (ready == last_writer) break;
+    }
+
+    if (!m_writers.empty())
+    {
+        m_writers.front()->cv.signal();
+    }
+}
+
 void    PageDB::runBatchParallel(const WriteBatch * pbatch)
 {
     BufferPacket phyPacket(pbatch->getTotalsize());
@@ -466,7 +491,7 @@ void    PageDB::runBatchParallel(const WriteBatch * pbatch)
         uint32_t hashVal = hashFunc(key);
         /**Sooorry, I need use jump to**/
         int globalFlag = 0;
-LABLE:
+    LABLE:
         if(globalFlag == 0)
         {
             globalLock.readLock();
@@ -696,6 +721,56 @@ LABLE:
     }
 }
 
+/**
+** Layer 3
+**/
+void    PageDB::sync()
+{
+    pcache -> free();
+}
+
+void     PageDB::dump()
+{
+    pcache -> fflush();
+
+    PageTable * page = new PageTable(this);
+    cout << gd << " " << pn << " " << entries.size() << endl;
+    for(int cur = 0, index = 0; cur < entries.size(); cur++)
+    {
+        int j;
+        for(j = 0; j < cur; j++)
+        {
+            if(entries.at(j) ==  entries.at(cur)) break;
+        }
+
+        if(j != cur) continue;
+
+        uint64_t addr    = entries.at(cur) & MOD;
+
+        BufferPacket packet(SPAGETABLE);
+
+        m_datfile.Read(packet.str(), addr, packet.size());
+        page -> setByBucket(packet);
+
+        cout << "Page(size:"<<page -> curNum <<") " << index++ <<" "<<cur <<" "<<page -> d<<":";
+
+        for(j = 0; j < page -> curNum; j++)
+        {
+            BufferPacket packet(2*SINT);
+            m_datfile.Read(packet.str(), page -> elements[j].m_datPos, packet.size());
+            int a, b;
+            uint32_t hashVal = page -> elements[j].m_hashVal;
+            packet >> a >> b;
+            cout << a <<" " << b << " "<<hashVal<<" ";
+        }
+
+        cout << endl;
+    }
+
+    delete page;
+    page = NULL;
+}
+
 void    PageDB::compact()
 {
     fflush();
@@ -833,6 +908,9 @@ void    PageDB::compact()
     tmpfile2.Truncate(0);
 }
 
+/**
+** Internal functions
+**/    
 void    PageDB::recycle(int offset, int size)
 {
     ScopeMutex scope(&(datLock));
@@ -1071,67 +1149,6 @@ WriteBatch * PageDB::BuildBatchGroup(Writer ** last_writer)
     }
 
     return result;
-}
-
-void     PageDB::write(WriteBatch* pbatch)
-{
-    if(pbatch == NULL) return;
-
-    Writer w(&m_mutex);
-    w.batch = pbatch;
-    w.sync = false;
-    w.done = false;
-
-    ScopeMutex l(&m_mutex);
-    m_writers.push_back(&w);
-    while (!w.done && &w != m_writers.front())
-    {
-        w.cv.wait();
-    }
-    if (w.done)
-    {
-        return;
-    }
-
-    Writer* last_writer = &w;
-    WriteBatch* updates = BuildBatchGroup(&last_writer);
-
-    {
-        m_mutex.unlock();
-        /**
-           When it is directed to here,
-           only one thread can access it at same time.
-        **/
-        runBatch(updates);
-        m_mutex.lock();
-    }
-
-    if (updates == m_tmpBatch) m_tmpBatch->clear();
-
-    while (true)
-    {
-        Writer* ready = m_writers.front();
-        m_writers.pop_front();
-
-        if (ready != &w)
-        {
-            ready->done = true;
-            ready->cv.signal();
-        }
-
-        if (ready == last_writer) break;
-    }
-
-    if (!m_writers.empty())
-    {
-        m_writers.front()->cv.signal();
-    }
-}
-
-void PageDB::reOpenDB()
-{
-    m_idxfile.Open(idxName);
-    m_datfile.Open(datName);
 }
 
 };

@@ -1,29 +1,41 @@
+// Copyright (c) 2014 The CustomDB Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file. See the AUTHORS file for names of contributors.
+
 #ifndef _EHASH_IMPL_H
 #define _EHASH_IMPL_H
 
-#include <queue>
-using std::deque;
-
-#include "BufferPacket.h"
-#include "Batch.h"
-#include "Multithreading.h"
 #include "TickTimer.h"
-#include "HashFunction.h"
 #include "FileModule.h"
+#include "HashFunction.h"
+#include "Multithreading.h"
 using namespace utils;
 
-#include <sys/stat.h>
-
 #include "DBInternal.h"
+#include "BufferPacket.h"
 
-
-namespace customdb
-{
+/**
+** Macro for size
+**/
 
 #define SPAGETABLE  (2*SINT+(PAGESIZE+5)*sizeof(PageElement))
 #define SPELEMENT   sizeof(PageElement)
 #define SEEBLOCK    sizeof(PageEmptyBlock)
-
+#define MOD         ((1ull << 56) - 1)
+/**
+** PageDBImpl inherits from DBInternal and include many classes
+**/
+namespace customdb
+{
+/**
+** There are several sub-classes in PageDB
+**
+** PageEmptyBlock is responsibly for EmptyBlock
+** PageElement store the address of key/value
+** PageTable is the archive of PageElement
+** PageDB is constructed by PageTable
+** PageCache stores the Page visited recently.
+**/
 class PageEmptyBlock;
 class PageElement;
 class PageTable;
@@ -39,30 +51,31 @@ public:
     bool           checkSuitable(int size, int & pos);
     PageEmptyBlock split();
 
-public:
+private:
     typedef struct PageEmptyEle_t
     {
         PageEmptyEle_t(): pos(-1), size(-1) { }
         int  pos, size;
     } PageEmptyEle;
 
-public:
-    int            curNum;
-    int            nextBlock;
-    PageEmptyEle eles[PAGESIZE];
+private:
+    int            m_curNum;
+    int            m_nextBlock;
+    PageEmptyEle   m_eles[PAGESIZE];
 };
-
-extern ostream & operator << (ostream & os, PageElement & e);
 
 class PageElement
 {
 public:
     PageElement();
-    void  clear();/**?**/
+
+public:
+    void  clear();
 
 private:
     uint32_t   m_hashVal, m_datPos;
     uint8_t    m_keySize, m_datSize;
+
     friend ostream & operator << (ostream & os, PageElement & e);
 
 private:
@@ -107,69 +120,107 @@ private:
     friend class PageDB;
 };
 
-class PageDB : public DBInternal
+class PageDB : public DBInternal, public Noncopyable
 {
 private:
     typedef pair<Slice, Slice> Node;
 
 public:
-    PageDB(HASH hashFunc = MurmurHash3);
+    PageDB(HashFunc hashFunc = MurmurHash3);
     virtual ~PageDB();
 
 public:
+    /**
+    ** Layer 1
+    **/
+    bool     open(const string &filename);
+    bool     close();
     bool     put(const Slice & key,const Slice & value);
     Slice    get(const Slice & key);
     bool     remove(const Slice & key);
-    bool     init(const char * filename);
-    void     dump();
-    void     removeDB(const char *filename);
-    void     fflush();
-    void     runBatch(const WriteBatch * pbatch);
-    void     runBatchParallel(const WriteBatch * pbatch);
-    void     compact();
+    /**
+    ** Layer 2
+    **/
+    void     put(const WriteBatch * pbatch);
     void     write(WriteBatch* pbatch);
+    void     runBatchParallel(const WriteBatch * pbatch);
+    /**
+    ** Layer 3
+    **/
+    void     sync();
+    void     dump();
+    void     compact();
 
 private:
+    /**
+    ** Internal functions
+    **/
     void     recycle(int offset, int size);
+    /**
+    ** Update Index information into idxfile
+    **/
     void     writeToIdxFile();
     void     readFromFile();
     int      findSuitableOffset(int size);
     void     printThisPage(PageTable * page);
     void     fullAddLocalD(int cur, uint64_t num, uint64_t pos1, uint64_t pos2, uint64_t od);
-    void     reOpenDB();
-
-private:
-    HASH        hashFunc;
-    bool        updated, eupdated;
-    RandomFile  m_idxfile;
-    RandomFile  m_datfile;
-    PageCache * pcache;
 
 private:
     struct Writer;
     WriteBatch* BuildBatchGroup(Writer ** last_writer);
 
-private:
     deque<Writer*> m_writers;
     WriteBatch *   m_tmpBatch;
-    Mutex          m_mutex;
-
-    string         idxName;
-    string         datName;
-    const  uint64_t MOD;
-private:
-    Mutex          datLock;
-    Mutex          cacheLock;
-    RWLock         globalLock;
-    Mutex          cacheElemLock[CACHESIZE];
+    Mutex       m_writelock;
 
 private:
-    volatile int  gd, pn, fb;
-    vector <uint64_t>  entries;
+    HashFunc    m_HashFunc;
+    /**
+    ** In PageDB, there are four kinds of files
+    **
+    ** m_idxfile.idx: index file (first layer)
+    ** m_datfile.dat: data file (include datafile)
+    ** tmpfiles.idx .dat: used during compacting
+    ** logfiles.log: log files
+    **/
+    RandomFile  m_idxfile;
+    RandomFile  m_datfile;
+    /**
+    ** Each time, it will check whether page exist in m_cache
+    ** Then schedule different policy
+    **/
+    PageCache   *m_cache
+
+    /**
+    ** We need three locks to sync operations in `PageDB`
+    ** m_datLock, operation on datfile
+    ** m_cacheLock, operation on cache
+    ** m_globalLock, Read-Write lock
+    **/
+    Mutex       m_datLock;
+    Mutex       m_cacheLock;
+    RWLock      m_globalLock;
+    /**
+    ** lock for cache element in cache
+    **/
+    Mutex       m_cacheElemLock[CACHESIZE];
 
 private:
-    friend class PageCache;
-    friend class PageTable;
+    /**
+    ** global counter
+    ** gd: global distance
+    ** pn: maxinum number of pages
+    ** fb: first empty block
+    **/
+    volatile int  m_gd, m_pn, m_fb;
+    /**
+    ** The index of first layer
+    **/
+    vector <uint64_t>  m_entries;
+    /**
+    ** DB_filename_prefix
+    **/
+    string m_prefix;
 };
 
 struct CacheElem_t
