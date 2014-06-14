@@ -795,7 +795,7 @@ bool     PageDB::writeBatch(const WriteBatch * pbatch)
     return true;
 }
 
-void PageDB::readAndSetPage(Page *page, uint64_t addr)
+void PageDB::readAndSetPage(PageTable *page, uint64_t addr)
 {
     BufferPacket packet(SPAGETABLE);
     m_datfile.Read(packet.str(), addr, SPAGETABLE);

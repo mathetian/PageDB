@@ -14,7 +14,7 @@ namespace utils
 #define TM_FORMAT_FULL      "%04d.%02d.%02d - %02d:%02d:%02d"
 
 Log   *  Log::m_pTheLogs = NULL;
-LOG_TYPE Log::m_logLevel;
+Log::LOG_TYPE Log::m_logLevel;
 string   Log::m_prefix;
 FILE  *  Log::m_pfile;
 Mutex    Log::m_mutex;
@@ -23,21 +23,21 @@ bool     Log::m_disabled;
 /**
 ** Print type as readable string
 **/
-const char * getStrFromType(const LOG_TYPE & value)
+const char * getStrFromType(const Log::LOG_TYPE & value)
 {
 #define MAPENTRY(p) {p, #p}
     const struct MapEntry
     {
-        LOG_TYPE value;
+        Log::LOG_TYPE value;
         const char* str;
     } entries[] =
     {
-        MAPENTRY(LOG_DEBUG),
-        MAPENTRY(LOG_TRACE),
-        MAPENTRY(LOG_WARN),
-        MAPENTRY(LOG_ERROR),
-        MAPENTRY(LOG_FATAL),
-        {LOG_DEBUG, 0}//doesn't matter what is used instead of ErrorA here...
+        MAPENTRY(Log::LOG_DEBUG),
+        MAPENTRY(Log::LOG_TRACE),
+        MAPENTRY(Log::LOG_WARN),
+        MAPENTRY(Log::LOG_ERROR),
+        MAPENTRY(Log::LOG_FATAL),
+        {Log::LOG_DEBUG, 0}//doesn't matter what is used instead of ErrorA here...
     };
 #undef MAPENTRY
     const char* s = 0;

@@ -148,14 +148,14 @@ private:
     friend class PageDB;
 };
 
-class PageDB : public DBInternal, public Noncopyable
+class PageDB : public DBInternal
 {
 private:
     typedef pair<Slice, Slice> Node;
 
 public:
     PageDB(HashFunc hashFunc = MurmurHash3);
-    virtual ~PageDB();
+    ~PageDB();
 
 public:
     /**
@@ -194,7 +194,7 @@ private:
     void     readFromIdxFile();
     int      findSuitableOffset(int size);
     void     fullAddLocalD(int cur, uint64_t num, uint64_t pos1, uint64_t pos2, uint64_t od);
-    void     readAndSetPage(Page*page, uint64_t addr);
+    void     readAndSetPage(PageTable *page, uint64_t addr);
 
 private:
     struct Writer;
@@ -220,7 +220,7 @@ private:
     ** Each time, it will check whether page exist in m_cache
     ** Then schedule different policy
     **/
-    PageCache   *m_cache
+    PageCache   *m_cache;
 
     /**
     ** We need three locks to sync operations in `PageDB`

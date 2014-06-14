@@ -23,6 +23,7 @@
 #include <set>
 #include <map>
 #include <list>
+#include <deque>
 #include <vector>
 #include <fstream>
 #include <sstream>

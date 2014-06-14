@@ -39,6 +39,10 @@ public:
     Slice(const string& s);
 
     /**
+    ** 
+    **/
+    Slice(const char*d);
+    /**
     ** copy & operator construct
     **/
     Slice(const Slice &s1);

@@ -30,7 +30,7 @@ typedef uint32_t (*HashFunc)(const Slice & key);
 class DBInternal : public Noncopyable
 {
 public:
-    DBInternal() : m_log(log::GetInstance())
+    DBInternal() : m_log(Log::GetInstance())
     {
     }
 

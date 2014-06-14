@@ -70,7 +70,7 @@ bool  CustomDB::open(const Options & option)
     if(m_dbimpl == NULL)
         m_log -> _Fatal("CustomDB::open::new dbimpl error\n");
 
-    if(m_dbimpl -> init(option.fileOption.fileName) == false)
+    if(m_dbimpl -> open(option.fileOption.fileName) == false)
         m_log -> _Fatal("CustomDB::open::init dbimpl error\n");
 
     m_log -> _Trace("CustomDB::open initialization successfully\n");

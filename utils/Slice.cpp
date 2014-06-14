@@ -33,6 +33,11 @@ Slice::Slice(const string& s)
     *this = Slice(s.data(), s.size());
 }
 
+Slice::Slice(const char *d)
+{
+    *this = Slice(d, strlen(d));
+}
+
 Slice::Slice(const Slice & s1) : m_size(s1.m_size), m_data(NULL)
 {
     if(m_size != 0)
@@ -120,7 +125,7 @@ char Slice::operator[](size_t n) const
     return m_data[n];
 }
 
-class Slice::at(size_t n) const
+char Slice::at(size_t n) const
 {
     return operator[](n);
 }
