@@ -141,37 +141,40 @@ public:
     /**
     ** Layer 2
     **/
-    void     put(const WriteBatch * pbatch);
-    void     write(WriteBatch* pbatch);
-    void     runBatchParallel(const WriteBatch * pbatch);
+    bool     put(const WriteBatch * pbatch);
     /**
     ** Layer 3
     **/
     void     sync();
-    void     dump();
+    void     dump(const ostream&os);
     void     compact();
 
 private:
     /**
     ** Internal functions
     **/
+    bool    write(const WriteBatch * pbatch);
+    bool    writeBatch(const WriteBatch * pbatch);
+    /**
+    ** Release buffer for EmptyBlock
+    **/
     void     recycle(int offset, int size);
     /**
     ** Update Index information into idxfile
     **/
     void     writeToIdxFile();
-    void     readFromFile();
+    void     readFromIdxFile();
     int      findSuitableOffset(int size);
-    void     printThisPage(PageTable * page);
     void     fullAddLocalD(int cur, uint64_t num, uint64_t pos1, uint64_t pos2, uint64_t od);
+    void     readAndSetPage(Page*page, uint64_t addr);
 
 private:
     struct Writer;
-    WriteBatch* BuildBatchGroup(Writer ** last_writer);
+    WriteBatch* buildBatchGroup(Writer ** last_writer);
 
     deque<Writer*> m_writers;
     WriteBatch *   m_tmpBatch;
-    Mutex       m_writelock;
+    Mutex          m_writerlock;
 
 private:
     HashFunc    m_HashFunc;

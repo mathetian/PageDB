@@ -46,16 +46,14 @@ public:
     /**
     ** Layer 2
     **/
-    virtual void   put(const WriteBatch * pbatch) = 0;
-    virtual void   write(WriteBatch* pbatch) = 0;
-    virtual void   runBatchParallel(const WriteBatch * pbatch) = 0;
+    virtual bool   put(const WriteBatch * pbatch) = 0;
     /**
     ** Layer 3
     **/
     virtual void   sync() = 0;
-    virtual void   dump() = 0;
+    virtual void   dump(const ostream&os) = 0;
     virtual void   compact() = 0;
-
+    
 protected:
     Log  *  m_log;
 };

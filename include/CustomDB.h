@@ -55,16 +55,14 @@ public:
     /**
     ** level 2, improved operations
     **/
-    void   put(const WriteBatch * pbatch);
-    void   write(const WriteBatch * pbatch);
-    void   runBatchParallel(const WriteBatch * pbatch);
-
+    bool   put(const WriteBatch * pbatch);
+    
 public:
     /**
     ** level 3, other operations
     **/
     void   sync();
-    void   dump();
+    void   dump(const ostream&os = cout);
     void   compact();
     void   destoryDB(const char * filename);
     int    checkStatus();

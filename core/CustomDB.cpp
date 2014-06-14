@@ -169,19 +169,9 @@ bool CustomDB::remove(const Slice & key)
 ** level 2, Improved operations
 **/
 
-void CustomDB::put(const WriteBatch * pbatch)
+bool CustomDB::put(const WriteBatch * pbatch)
 {
-    m_dbimpl -> put(pbatch);
-}
-
-void  CustomDB::write(WriteBatch * pbatch)
-{
-    m_dbimpl -> write(pbatch);
-}
-
-void  CustomDB::runBatchParallel(const WriteBatch * pbatch)
-{
-    m_dbimpl -> runBatchParallel(pbatch);
+    return m_dbimpl -> put(pbatch);
 }
 
 /**
@@ -193,9 +183,9 @@ void CustomDB::sync()
     m_dbimpl -> sync();
 }
 
-void   CustomDB::dump()
+void   CustomDB::dump(const ostream&os)
 {
-    m_dbimpl -> dump();
+    m_dbimpl -> dump(os);
 }
 
 void  CustomDB::compact()

@@ -13,22 +13,16 @@
 namespace utils
 {
 
-/**
-** The level of Log is divided into five parts. DEBUG/TRACE/WARN/ERROR/FATAL
-** In generl, we should set LOG_TRACE as the default level of Logging.
-**/
-
-enum LOG_TYPE { LOG_DEBUG = 1, LOG_TRACE = 2, LOG_WARN  = 3, LOG_ERROR = 4, LOG_FATAL = 5};
-
-/**
-** Print the LOG_TYPE as readable string
-**/
-extern ostream& operator<<(ostream& out, const LOG_TYPE value);
-
-
 class Log : Noncopyable
 {
 public:
+    /**
+    ** The level of Log is divided into five parts. DEBUG/TRACE/WARN/ERROR/FATAL
+    ** In generl, we should set LOG_TRACE as the default level of Logging.
+    **/
+
+    enum LOG_TYPE { LOG_DEBUG, LOG_TRACE, LOG_WARN, LOG_ERROR, LOG_FATAL};
+
     /**
     ** Log belongs to Singleton.
     **/
@@ -74,6 +68,11 @@ private:
     static Mutex     m_mutex;
     static bool      m_disabled;
 };
+
+/**
+** Print the LOG_TYPE as readable string
+**/
+extern ostream& operator<<(ostream& out, const Log::LOG_TYPE value);
 
 };
 #endif
