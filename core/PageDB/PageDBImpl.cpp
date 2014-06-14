@@ -46,7 +46,7 @@ bool     PageDB::open(const string &filename)
         
         m_datfile.Append(packet.c_str(), SPAGETABLE);
         
-        m_cache -> putInto(page, 0);
+        m_cache -> put(page, 0);
     }
     else
     {
@@ -114,7 +114,7 @@ Slice    PageDB::get(const Slice & key)
     if(page == NULL)
     {
         page = new PageTable(this);
-        m_cache -> putInto(page, addr);
+        m_cache -> put(page, addr);
 
         readAndSetPage(page, addr);
     }
@@ -136,7 +136,7 @@ bool     PageDB::remove(const Slice & key)
     if(page == NULL)
     {
         page = new PageTable(this);
-        index = m_cache -> putInto(page, addr);
+        index = m_cache -> put(page, addr);
 
         readAndSetPage(page, addr);
     }
@@ -148,7 +148,7 @@ bool     PageDB::remove(const Slice & key)
         BufferPacket npacket = page -> getPacket();
         m_datfile.Read(npacket.str(), addr, npacket.size());
         
-        pcache -> setUpdated(index);
+        pcache -> updated(index);
     }
     else
         log -> _Warn("ExtendibleHash :: remove failed(maybe not exist?)");
@@ -475,7 +475,7 @@ int      PageDB::findSuitableOffset(int size)
             block.eles[block.curNum++].size = SEEBLOCK;
         }
     }
-    if(block.checkSuitable(size, pos) == true)
+    if(block.find(size, pos) == true)
     {
         PageEmptyBlock::PageEmptyEle ele = block.eles[pos];
 
@@ -691,7 +691,7 @@ bool     PageDB::writeBatch(const WriteBatch * pbatch)
         if(page == NULL)
         {
             page  = new PageTable(this);
-            index = m_cache -> putInto(page, addr);
+            index = m_cache -> put(page, addr);
 
             BufferPacket packet(SPAGETABLE);
 
@@ -727,7 +727,7 @@ bool     PageDB::writeBatch(const WriteBatch * pbatch)
             phyPacket << key << value;
             totalSize += key.size() + value.size();
 
-            pcache -> setUpdated(index);
+            pcache -> updated(index);
 
             PageTable * p2 = new PageTable(this);
 
@@ -781,7 +781,7 @@ bool     PageDB::writeBatch(const WriteBatch * pbatch)
             
             totalSize = totalSize + key.size() + value.size();
 
-            m_cache -> setUpdated(index);
+            m_cache -> updated(index);
         }
     }
 

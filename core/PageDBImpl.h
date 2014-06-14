@@ -7,6 +7,7 @@
 
 #include "TickTimer.h"
 #include "FileModule.h"
+#include "Noncopyable.h"
 #include "HashFunction.h"
 #include "Multithreading.h"
 using namespace utils;
@@ -42,81 +43,108 @@ class PageTable;
 class PageDB;
 class PageCache;
 
-class PageEmptyBlock
+/**
+** PageEmptyBlock is the archive of EmptyElement
+** EmptyElement represent the position of element
+**/
+class PageEmptyBlock : public Noncopyable
 {
 public:
     PageEmptyBlock();
 
 public:
-    bool           checkSuitable(int size, int & pos);
+    /**
+    ** Find suitable index
+    ** Return true, if exist suitable element
+    ** Return false, if not exist
+    **/
+    bool           find(int size, int & pos);
+    /**
+    ** Split the EmptyBlock into two blocks
+    **/
     PageEmptyBlock split();
 
 private:
-    typedef struct PageEmptyEle_t
+    class PageEmptyEle
     {
-        PageEmptyEle_t(): pos(-1), size(-1) { }
-        int  pos, size;
-    } PageEmptyEle;
-
+        PageEmptyEle(): m_pos(-1), m_size(-1) { }
+        int  m_pos, m_size;
+    };
 private:
     int            m_curNum;
     int            m_nextBlock;
     PageEmptyEle   m_eles[PAGESIZE];
 };
 
+/**
+** PageElement is the element of PageTable
+** Each element(or instance) records four values
+** Size of PageElement is 10 bytes
+**/
 class PageElement
 {
 public:
     PageElement();
 
-public:
-    void  clear();
-
 private:
+    /**
+    ** Four values in it, some problems
+    ** File size less than 2**32?
+    ** m_*size less than 2**8 = 256 bytes?
+    **/
     uint32_t   m_hashVal, m_datPos;
     uint8_t    m_keySize, m_datSize;
-
-    friend ostream & operator << (ostream & os, PageElement & e);
 
 private:
     friend class PageTable;
     friend class PageDB;
+    friend ostream & operator << (ostream & os, PageElement & e);
 };
 
-class PageTable
+/**
+** PageTable means the page index of PageDB
+** Size of PageTable is approx equal to 100*10 bytes
+**/
+class PageTable : public Noncopyable
 {
 public:
     PageTable(PageDB * db);
 
 public:
+    /**
+    ** Need to be further optimizated
+    ** Buffer -> PageContent
+    **/
     BufferPacket getPacket();
     void         setByBucket(BufferPacket & packet);
 
 private:
+    /**
+    ** Whether full
+    **/
     bool   full();
-    bool   put(const Slice & key,const Slice & value, uint32_t hashVal);
+    /**
+    ** put into page
+    **/
+    bool   put(const Slice & key, const Slice & value, uint32_t hashVal, uint64_t offset);
+    /**
+    ** get from page
+    **/
     Slice  get(const Slice & key, uint32_t hashVal);
+    /**
+    ** remove from page
+    **/
     bool   remove(const Slice & key, uint32_t hashVal);
-    void   replaceQ(const Slice & key, const Slice & value, uint32_t hashVal, int offset);
-
+    /**
+    ** find the index of approxate key
+    **/
+    bool   find(const Slice & key, uint32_t hashVal, int &index);
 private:
-    void        addElement(const PageElement & element);
-    PageElement getElement(int index);
-    PageElement getElement2(int index);
-    int         getCurNum() const;
-    int         getD() const;
-    void        setCurNum(int num);
-    void        setD(int d);
+    int m_d, m_curNum;
+    PageElement m_elements[PAGESIZE + 5];
 
-private:
-    PageDB * db;
+    PageDB * m_db;
 
-private:
-    int d, curNum;
-    PageElement elements[PAGESIZE + 5];
-    Log * m_log;
-
-private:
     friend class PageDB;
 };
 
@@ -226,50 +254,68 @@ private:
     string m_prefix;
 };
 
-struct CacheElem_t
-{
-    PageTable * page;
-    uint32_t entry;
-    bool   updated;
-    CacheElem_t() : page(NULL)
-    {
-        reset();
-    }
-    void reset()
-    {
-        if(page != NULL) delete page;
-        page = NULL;
-        entry = -1;
-        updated = false;
-    }
-};
-
-typedef struct CacheElem_t CacheElem;
-
-class PageCache
+/**
+** PageCache is the archive of CacheElement
+** Each CacheElement contains the pointer to the  
+** Page, the address and updated status. 
+**/
+class PageCache : public Noncopyable
 {
 public:
     PageCache(PageDB * db);
     ~PageCache();
 
 private:
+    /**
+    ** Free all cache_elements
+    ** If updated is setted to true
+    ** update it to file
+    **/
     void        free();
-    void        freeWithLock();
+    /**
+    ** Find a Page In Cache
+    **/
     PageTable * find(uint32_t addr, uint32_t & index);
-    int         putInto(PageTable * page, int addr);
-    void        setUpdated(int index);
-    int         findLockable(PageTable * page, uint32_t addr);
-    void        fflush();
-    void        fflushWithLock();
+    /**
+    ** Put a Page into Cache
+    **/
+    int         put(PageTable * page, int addr);
+    /**
+    ** Set updated flag for the index-th element
+    **/
+    void        updated(int index);
+    /**
+    ** Sync, behave as free
+    **/
+    void        sync();
 
 private:
-    void        resetWithDatLock(int index);
     void        reset(int index);
 
 private:
-    PageDB *  db;
-    CacheElem cacheElems[CACHESIZE];
-    int cur;
+    class CacheElem
+    {
+        PageTable *m_page;
+        uint32_t   m_addr;
+        bool       m_updated;
+        
+        CacheElem() : m_page(NULL)
+        {   reset();    }
+        
+        void reset()
+        {
+            if(m_page != NULL) delete m_page;
+            m_page    = NULL;
+            m_addr   = -1;
+            m_updated = false;
+        }
+    };
+
+
+private:
+    PageDB *  m_db;
+    CacheElem m_eles[CACHESIZE];
+    int       m_cur;
     friend class PageDB;
 };
 
