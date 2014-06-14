@@ -53,7 +53,8 @@ bool   PageTable::full()
 **/
 bool   PageTable::put(const Slice & key, const Slice & value, uint32_t hashVal, uint64_t offset)
 {
-    int index = -1; bool flag;
+    int index = -1;
+    bool flag;
     flag = find(key, value, hashVal, index);
 
     if(flag == true)
@@ -110,7 +111,8 @@ Slice  PageTable::get(const Slice & key, uint32_t hashVal)
 **/
 bool   PageTable::remove(const Slice & key, uint32_t hashVal)
 {
-    int index; PageElement element;
+    int index;
+    PageElement element;
     for(index = 0; index < m_curNum; index++)
     {
         element = m_elements[index];
@@ -143,7 +145,7 @@ bool   PageTable::remove(const Slice & key, uint32_t hashVal)
 
 /**
 ** Judge whether key is duplicate in the elements
-** Return true, if exist the same key. Set the approxiate index 
+** Return true, if exist the same key. Set the approxiate index
 ** Return false, if not exist the same key
 **/
 bool   PageTable::find(const Slice & key, uint32_t hashVal, int &index)

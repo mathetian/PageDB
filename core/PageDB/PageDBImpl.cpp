@@ -37,15 +37,17 @@ bool     PageDB::open(const string &filename)
     {
         assert(FileModule::Size(datName) == 0);
 
-        m_gd = 0; m_pn = 1; m_fb = -1;
+        m_gd = 0;
+        m_pn = 1;
+        m_fb = -1;
         entries.push_back(0);
         writeToIdxFile();
 
         PageTable * page = new PageTable(this);
         BufferPacket packet = page -> getPacket();
-        
+
         m_datfile.Append(packet.c_str(), SPAGETABLE);
-        
+
         m_cache -> put(page, 0);
     }
     else
@@ -54,7 +56,7 @@ bool     PageDB::open(const string &filename)
         ** Exist old DB, read index information from file
         **/
         readFromIdxFile();
-    } 
+    }
 
     /**
     ** If no empty block, allocate one from the end of file
@@ -147,7 +149,7 @@ bool     PageDB::remove(const Slice & key)
     {
         BufferPacket npacket = page -> getPacket();
         m_datfile.Read(npacket.str(), addr, npacket.size());
-        
+
         pcache -> updated(index);
     }
     else
@@ -187,7 +189,7 @@ void    PageDB::dump(const ostream&os)
     sync();
 
     PageTable * page = new PageTable(this);
-    
+
     os << gd << " " << pn << " " << m_entries.size() << endl;
 
     for(int cur = 0, index = 0; cur < m_entries.size(); cur++)
@@ -230,7 +232,7 @@ void    PageDB::compact()
     PageTable * page = new PageTable(this);
 
     RandomFile tmpfile1, tmpfile2;
-    
+
     tmpfile1.Open("tmppage.bak");
     tmpfile2.Open("tmpcon.bak");
     tmpfile1.Truncate(0);
@@ -261,10 +263,10 @@ void    PageDB::compact()
 
             BufferPacket packet1(element.m_keySize + element.m_datSize);
             m_datfile.Read(packet1.str(), element.m_datPos, packet1.size());
-            
+
             Slice a(element.m_keySize), b(element.m_datSize);
             packet1 >> a >> b;
-            
+
             pbatch -> put(a,b);
         }
 
@@ -272,12 +274,12 @@ void    PageDB::compact()
 
         BufferPacket packet1(WriteBatchInternal::ByteSize(pbatch));
         WriteBatch::Iterator iter(pbatch);
-        
+
         for(const Node * node = iter.first(); node != iter.end(); node = iter.next())
         {
             packet1 << (node -> first) << (node -> second);
         }
-        
+
         uint32_t size = packet1.size();
 
         tmpfile2.Append((char*)&(size), sizeof(uint32_t));
@@ -358,7 +360,7 @@ void    PageDB::compact()
 
     delete page;
     page = NULL;
-    
+
     delete pbatch;
     pbatch = NULL;
 
@@ -368,7 +370,7 @@ void    PageDB::compact()
 
 /**
 ** Internal functions
-**/    
+**/
 void    PageDB::recycle(int offset, int size)
 {
     ScopeMutex scope(&(m_datLock));
@@ -402,10 +404,10 @@ void    PageDB::recycle(int offset, int size)
 void     PageDB::writeToIdxFile()
 {
     BufferPacket packet(SINT * 3 + entries.size()*SINT64);
-    
+
     packet << m_gd << m_pn << m_fb;
     packet.write((char*)&entries[0], entries.size()*SINT64);
-    
+
     m_idxfile.Write(packet.c_str(), 0, packet.size());
 }
 
@@ -416,7 +418,7 @@ void     PageDB::readFromIdxFile()
 
     int gd1, pn1, fb1;
     packet >> gd1 >> pn1 >> fb1;
-    
+
     m_gd = gd1;
     m_pn = pn1;
     m_fb = fb1;
@@ -431,10 +433,10 @@ int      PageDB::findSuitableOffset(int size)
     assert(fb != -1);
 
     int offset, pos;
-    
+
     PageEmptyBlock block;
     m_datfile.Read((char*)&block, fb, SEEBLOCK);
-    
+
     if(block.nextBlock != -1)
     {
         if(block.curNum < PAGESIZE/2)
@@ -518,7 +520,7 @@ int      PageDB::findSuitableOffset(int size)
 void     PageDB::fullAddLocalD(int cur, uint64_t num, uint64_t pos1, uint64_t pos2, uint64_t od)
 {
     assert(entries.size() % num == 0);
-    
+
     uint64_t each = ((uint64_t)entries.size()) / num;
 
     int ocur = cur;
@@ -608,15 +610,15 @@ bool     PageDB::write(WriteBatch* pbatch)
     if(pbatch == NULL) return;
 
     Writer w(&m_writerlock);
-    
+
     w.batch = pbatch;
     w.sync = false;
     w.done = false;
 
     ScopeMutex l(&m_writerlock);
-    
+
     m_writers.push_back(&w);
-    
+
     while (!w.done && &w != m_writers.front())
     {
         w.cv.wait();
@@ -696,7 +698,7 @@ bool     PageDB::writeBatch(const WriteBatch * pbatch)
             BufferPacket packet(SPAGETABLE);
 
             m_datfile.Read(packet.str(), addr, SPAGETABLE);
-            
+
             page -> setByBucket(packet);
         }
 
@@ -776,9 +778,9 @@ bool     PageDB::writeBatch(const WriteBatch * pbatch)
         else
         {
             page -> replaceQ(key, value, hashVal, totalSize + curpos);
-            
+
             phyPacket << key << value;
-            
+
             totalSize = totalSize + key.size() + value.size();
 
             m_cache -> updated(index);
@@ -786,7 +788,7 @@ bool     PageDB::writeBatch(const WriteBatch * pbatch)
     }
 
     m_datfile.Write(phyPacket.c_str(), curpos, phyPacket.size());
-    
+
     writeToIdxFile();
     pcache -> free();
 

@@ -256,8 +256,8 @@ private:
 
 /**
 ** PageCache is the archive of CacheElement
-** Each CacheElement contains the pointer to the  
-** Page, the address and updated status. 
+** Each CacheElement contains the pointer to the
+** Page, the address and updated status.
 **/
 class PageCache : public Noncopyable
 {
@@ -298,10 +298,12 @@ private:
         PageTable *m_page;
         uint32_t   m_addr;
         bool       m_updated;
-        
+
         CacheElem() : m_page(NULL)
-        {   reset();    }
-        
+        {
+            reset();
+        }
+
         void reset()
         {
             if(m_page != NULL) delete m_page;

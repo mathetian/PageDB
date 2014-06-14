@@ -56,7 +56,7 @@ public:
     ** level 2, improved operations
     **/
     bool   put(const WriteBatch * pbatch);
-    
+
 public:
     /**
     ** level 3, other operations

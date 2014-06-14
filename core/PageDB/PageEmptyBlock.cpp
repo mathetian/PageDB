@@ -7,8 +7,8 @@
 namespace customdb
 {
 
-PageEmptyBlock::PageEmptyBlock() : m_curNum(0), m_nextBlock(-1) 
-{ 
+PageEmptyBlock::PageEmptyBlock() : m_curNum(0), m_nextBlock(-1)
+{
 
 }
 
@@ -30,7 +30,7 @@ bool PageEmptyBlock::find(int size, int & pos)
 /**
 ** Split the EmptyBlock into two blocks
 ** Split it according the property of odd or even
-**/  
+**/
 PageEmptyBlock PageEmptyBlock::split()
 {
     PageEmptyBlock newblock;

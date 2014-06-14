@@ -53,7 +53,7 @@ public:
     virtual void   sync() = 0;
     virtual void   dump(const ostream&os) = 0;
     virtual void   compact() = 0;
-    
+
 protected:
     Log  *  m_log;
 };
