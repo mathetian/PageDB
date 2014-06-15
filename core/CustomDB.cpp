@@ -169,7 +169,7 @@ bool CustomDB::remove(const Slice & key)
 ** level 2, Improved operations
 **/
 
-bool CustomDB::put(const WriteBatch * pbatch)
+bool CustomDB::put(WriteBatch * pbatch)
 {
     return m_dbimpl -> put(pbatch);
 }
@@ -183,7 +183,7 @@ void CustomDB::sync()
     m_dbimpl -> sync();
 }
 
-void   CustomDB::dump(const ostream&os)
+void   CustomDB::dump(ostream&os)
 {
     m_dbimpl -> dump(os);
 }

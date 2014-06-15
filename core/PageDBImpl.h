@@ -47,7 +47,7 @@ class PageCache;
 ** PageEmptyBlock is the archive of EmptyElement
 ** EmptyElement represent the position of element
 **/
-class PageEmptyBlock : public Noncopyable
+class PageEmptyBlock
 {
 public:
     PageEmptyBlock();
@@ -67,6 +67,7 @@ public:
 private:
     class PageEmptyEle
     {
+    public:
         PageEmptyEle(): m_pos(-1), m_size(-1) { }
         int  m_pos, m_size;
     };
@@ -74,6 +75,7 @@ private:
     int            m_curNum;
     int            m_nextBlock;
     PageEmptyEle   m_eles[PAGESIZE];
+    friend class   PageDB;
 };
 
 /**
@@ -169,20 +171,20 @@ public:
     /**
     ** Layer 2
     **/
-    bool     put(const WriteBatch * pbatch);
+    bool     put(WriteBatch * pbatch);
     /**
     ** Layer 3
     **/
     void     sync();
-    void     dump(const ostream&os);
+    void     dump(ostream&os);
     void     compact();
 
 private:
     /**
     ** Internal functions
     **/
-    bool    write(const WriteBatch * pbatch);
-    bool    writeBatch(const WriteBatch * pbatch);
+    bool    write(WriteBatch * pbatch);
+    bool    writeBatch(WriteBatch * pbatch);
     /**
     ** Release buffer for EmptyBlock
     **/
@@ -252,6 +254,12 @@ private:
     ** DB_filename_prefix
     **/
     string m_prefix;
+    /**
+    ** Friend class
+    **/
+    friend class PageCache;
+    friend class PageEmptyBlock;
+    friend class PageTable;
 };
 
 /**
@@ -295,6 +303,7 @@ private:
 private:
     class CacheElem
     {
+    public:
         PageTable *m_page;
         uint32_t   m_addr;
         bool       m_updated;

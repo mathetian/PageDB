@@ -55,7 +55,7 @@ bool   PageTable::put(const Slice & key, const Slice & value, uint32_t hashVal, 
 {
     int index = -1;
     bool flag;
-    flag = find(key, value, hashVal, index);
+    flag = find(key, hashVal, index);
 
     if(flag == true)
         m_db -> recycle(m_elements[index].m_datPos, m_elements[index].m_keySize + m_elements[index].m_datSize);
@@ -69,10 +69,10 @@ bool   PageTable::put(const Slice & key, const Slice & value, uint32_t hashVal, 
     }
     else
     {
-        m_elements[curNum].m_hashVal   = hashVal;
-        m_elements[curNum].m_datPos    = offset;
-        m_elements[curNum].m_keySize   = key.size();
-        m_elements[curNum++].m_datSize = value.size();
+        m_elements[m_curNum].m_hashVal   = hashVal;
+        m_elements[m_curNum].m_datPos    = offset;
+        m_elements[m_curNum].m_keySize   = key.size();
+        m_elements[m_curNum++].m_datSize = value.size();
     }
 
     return !flag;
@@ -133,7 +133,7 @@ bool   PageTable::remove(const Slice & key, uint32_t hashVal)
     /**
       Attach the space to the emptryBlock
     **/
-    db -> recycle(element.m_datPos, element.m_keySize + element.m_datSize);
+    m_db -> recycle(element.m_datPos, element.m_keySize + element.m_datSize);
 
     for(; index < m_curNum - 1; index++)
         m_elements[index] = m_elements[index + 1];

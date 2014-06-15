@@ -55,7 +55,14 @@ TEST(A, Test2)
 **/
 TEST(A, Test3)
 {
-    ASSERT_EQ(Slice("Hello"), "Hello");
+    ASSERT_NE(Slice("Hello"), "Hello1");
+}
+
+TEST(A, Test4)
+{
+    Slice slice;
+   // slice = Slice("hello");
+    Slice slice2("hello");
 }
 
 int main()

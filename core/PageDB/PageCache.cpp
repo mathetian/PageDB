@@ -30,8 +30,8 @@ PageTable * PageCache::find(uint32_t addr, uint32_t & index)
         if(m_eles[i].m_addr == addr)
         {
             index = i;
-            cur = (i+1)%CACHESIZE;
-            return m_eles[i].page;
+            m_cur = (i+1)%CACHESIZE;
+            return m_eles[i].m_page;
         }
     }
     return NULL;
@@ -40,8 +40,8 @@ PageTable * PageCache::find(uint32_t addr, uint32_t & index)
 
 int PageCache::put(PageTable * page, int addr)
 {
-    int i = (cur+1)%CACHESIZE;
-    for(; i != cur; i = (i+1)%CACHESIZE)
+    int i = (m_cur+1)%CACHESIZE;
+    for(; i != m_cur; i = (i+1)%CACHESIZE)
     {
         if(m_eles[i].m_updated == false)
         {
@@ -55,7 +55,7 @@ int PageCache::put(PageTable * page, int addr)
 
     int oldcur = i;
 
-    if(i == cur)
+    if(i == m_cur)
     {
         if(m_eles[i].m_updated == true)
             reset(i);
@@ -66,7 +66,7 @@ int PageCache::put(PageTable * page, int addr)
         m_eles[i].m_addr = addr;
     }
 
-    cur = (i+1)%CACHESIZE;
+    m_cur = (i+1)%CACHESIZE;
 
     return oldcur;
 }
@@ -82,7 +82,7 @@ void   PageCache::reset(int index)
     assert(page != NULL);
     BufferPacket packet = page -> getPacket();
 
-    db -> m_datfile.Write(packet.c_str(), m_eles[index].m_addr, packet.size());
+    m_db -> m_datfile.Write(packet.c_str(), m_eles[index].m_addr, packet.size());
 }
 
 
@@ -94,7 +94,7 @@ void   PageCache::sync()
         {
             PageTable * page = m_eles[i].m_page;
             BufferPacket packet = page -> getPacket();
-            db -> m_datfile.Write(packet.c_str(), m_eles[i].m_addr, packet.size());
+            m_db -> m_datfile.Write(packet.c_str(), m_eles[i].m_addr, packet.size());
             m_eles[i].m_updated = false;
         }
     }

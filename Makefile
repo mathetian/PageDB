@@ -5,9 +5,9 @@ RANLIB  = ranlib
 HEADER  = -I./include -I./cache -I./utils -I. -I./core
 CXXFLAGS = -g -O0
 
-SOURCES = cache/*.cpp core/*.cpp utils/*.cpp
+SOURCES = cache/*.cpp core/*.cpp utils/*.cpp core/PageDB/*.cpp
  
-LDLIBS  = -L. -lcustomDB -laio
+LDLIBS  = -L. -lcustomDB
 
 tests   = test_batch test_buff test_file test_multiplethread test_noncopyable test_reet test_rw test_slice test_timer test_utils
 dbtests = db_smalltest db_largetest db_smallbatch db_largebatch db_batch_thread db_parallel_thread

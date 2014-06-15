@@ -24,18 +24,32 @@ Slice::Slice(size_t n) : m_size(n)
 Slice::Slice(const char* d, size_t n) : m_size(n)
 {
     char * data =  new char[m_size];
+    memset(data, 0, m_size);
     memcpy(data, d, m_size);
+
     m_data = data;
 }
 
 Slice::Slice(const string& s)
-{
-    *this = Slice(s.data(), s.size());
+{    
+    m_size = s.size();
+    
+    char * data =  new char[m_size];
+    memset(data, 0, m_size);
+    memcpy(data, s.data(), m_size);
+
+    m_data = data;
 }
 
 Slice::Slice(const char *d)
 {
-    *this = Slice(d, strlen(d));
+    m_size = strlen(d);
+    
+    char * data =  new char[m_size];
+    memset(data, 0, m_size);
+    memcpy(data, d, m_size);
+
+    m_data = data;
 }
 
 Slice::Slice(const Slice & s1) : m_size(s1.m_size), m_data(NULL)
@@ -51,8 +65,7 @@ Slice::Slice(const Slice & s1) : m_size(s1.m_size), m_data(NULL)
 
 Slice & Slice::operator=(const Slice & s1)
 {
-    if(m_data != NULL \
-            && s1.m_data != m_data)
+    if(m_data != NULL && s1.m_data != m_data)
     {
         delete [] m_data;
         m_data = NULL;

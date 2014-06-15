@@ -46,12 +46,12 @@ public:
     /**
     ** Layer 2
     **/
-    virtual bool   put(const WriteBatch * pbatch) = 0;
+    virtual bool   put(WriteBatch * pbatch) = 0;
     /**
     ** Layer 3
     **/
     virtual void   sync() = 0;
-    virtual void   dump(const ostream&os) = 0;
+    virtual void   dump(ostream&os) = 0;
     virtual void   compact() = 0;
 
 protected:
