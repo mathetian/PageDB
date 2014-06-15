@@ -130,9 +130,9 @@ public:
     /**
     ** Truncate file into speical length
     **/
-    bool     Truncate(size_t size)
+    bool  Truncate(size_t size)
     {
-        assert(size < fileSize_);
+        assert(size <= fileSize_);
         assert(ftruncate(fd_, size) ==0);
 
         fileSize_ = 0;

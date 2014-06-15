@@ -91,8 +91,8 @@ Slice  PageTable::get(const Slice & key, uint32_t hashVal)
         {
             BufferPacket packet(m_elements[index].m_datSize + m_elements[index].m_keySize);
 
-            Slice internal_key(m_elements[index].m_datSize);
-            Slice internal_value(m_elements[index].m_keySize);
+            Slice internal_key(m_elements[index].m_keySize);
+            Slice internal_value(m_elements[index].m_datSize);
 
             m_db -> m_datfile.Read(packet.str(), m_elements[index].m_datPos, packet.size());
             packet >> internal_key >> internal_value;

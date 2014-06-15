@@ -61,7 +61,7 @@ TEST(A, Test3)
 TEST(A, Test4)
 {
     Slice slice;
-   // slice = Slice("hello");
+    slice = Slice("hello");
     Slice slice2("hello");
 }
 

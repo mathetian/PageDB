@@ -180,7 +180,7 @@ bool operator > (const Slice & s1, const Slice & s2)
 
 ostream & operator << (ostream & os, const Slice & slice)
 {
-    os << "Slice[" << slice.size() << "," << slice.to_str() << "]";
+    os << "Slice(" << slice.to_str() << ")";
 
     return os;
 }

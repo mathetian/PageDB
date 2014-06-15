@@ -215,7 +215,7 @@ void BufferPacket::read(char * str, int len)
     }
 }
 
-BufferPacket & BufferPacket::operator<<(const BufferPacket & packet)
+BufferPacket & BufferPacket::operator << (const BufferPacket & packet)
 {
     if(m_cur + packet.size() > m_size)
     {

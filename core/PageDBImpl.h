@@ -197,7 +197,11 @@ private:
     int      findSuitableOffset(int size);
     void     fullAddLocalD(int cur, uint64_t num, uint64_t pos1, uint64_t pos2, uint64_t od);
     void     readAndSetPage(PageTable *page, uint64_t addr);
-
+    /**
+    ** Assert 2**n
+    **/
+    bool     is2Exp(uint64_t val);
+    
 private:
     struct Writer;
     WriteBatch* buildBatchGroup(Writer ** last_writer);

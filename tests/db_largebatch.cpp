@@ -21,7 +21,7 @@ TEST(A, Test1)
     char str[256];
     CustomDB * db = new CustomDB;
 
-    TimeStamp total, part;
+    Timer total, part;
 
     {
         db -> open(option);

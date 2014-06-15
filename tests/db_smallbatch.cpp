@@ -1,14 +1,18 @@
-#include <iostream>
-using namespace std;
-
-/**Simple batch test**/
-#include "CustomDB.h"
-#include "Option.h"
-#include "Batch.h"
-using namespace customdb;
+// Copyright (c) 2014 The CustomDB Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "TestUtils.h"
 using namespace utils;
+
+#include "Batch.h"
+#include "Option.h"
+#include "CustomDB.h"
+using namespace customdb;
+
+/**
+** db_smallbatch: put(2)/get
+**/
 
 class A { };
 
@@ -27,7 +31,7 @@ TEST(A, Test1)
         batch.put("hello1","world1");
         batch.put("hello12","world123");
 
-        db ->write(&batch);
+        db -> put(&batch);
         db -> close();
     }
 

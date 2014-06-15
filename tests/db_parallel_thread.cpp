@@ -1,18 +1,25 @@
-#include <iostream>
-using namespace std;
-
-#include "CustomDB.h"
-#include "Option.h"
-#include "TickTimer.h"
-#include "BufferPacket.h"
-using namespace customdb;
+// Copyright (c) 2014 The CustomDB Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "TestUtils.h"
 using namespace utils;
 
+#include "Option.h"
+#include "CustomDB.h"
+#include "TickTimer.h"
+#include "BufferPacket.h"
+using namespace customdb;
+
 /**
-	Create four thread, each put 250000 items.
-	For each thread, each time, it compute 5000 items.
+** db_parallel_thread: parallel put. Basic Test for internal sync
+**/
+
+/**
+** Put 1 Million items into db
+** key size and value size are both 4 bytes
+** Estimate Size 10MB
+** Four Threads, each put 250,000 items
 **/
 #define SIZE      1000000
 #define BATCHSIZE 250000
@@ -31,12 +38,12 @@ void* thrFunc(void * data)
     const int beg  = thrid*BATCHSIZE;
     const int round = (BATCHSIZE + SUBSIZE - 1)/SUBSIZE;
 
-    TimeStamp thrtime;
+    Timer thrtime;
     char buf[50];
 
     printf("thread %d begin\n", thrid);
 
-    thrtime.StartTime();
+    thrtime.Start();
 
     for(int i = 0; i < round; i++)
     {
@@ -52,13 +59,14 @@ void* thrFunc(void * data)
             batch.put(Slice(packet.c_str(),sizeof(int)), Slice(packet.c_str(),sizeof(int)));
         }
 
-        db -> runBatchParallel(&batch);
+        db -> put(&batch);
 
         printf("thread %d finished round %d\n", thrid, i);
     }
 
     sprintf(buf, "Thread %d has been completed, spend time :", thrid);
-    thrtime.StopTime(buf);
+    thrtime.Stop();
+    thrtime.PrintElapsedTime(buf);
 
     return NULL;
 }
@@ -69,30 +77,31 @@ void* thrFunc(void * data)
 TEST(A, Test1)
 {
     option.logOption.disabled = true;
-    option.logOption.logLevel = LOG_FATAL;
+    option.logOption.logLevel = Log::LOG_FATAL;
 
     db = new CustomDB;
-    TimeStamp total;
+    Timer total;
 
     {
         db -> open(option);
         printf("open successful\n");
 
-        int ids[THRNUM];
-        Thread thrs[THRNUM];
+        int    thrIDS[THRNUM];
+        Thread **thrEDS = new Thread[THRNUM];
 
-        total.StartTime();
+        total.Start();
 
         for(int i = 0; i < THRNUM; i++)
         {
-            ids[i]  = i;
-            thrs[i] = Thread(thrFunc, &ids[i]);
-            thrs[i].run();
+            thrIDS[i]  = i;
+            thrEDS[i]  = new Thread(thrFunc, &thrIDS[i]);
+            thrEDS[i] -> run();
         }
 
-        for(int i = 0; i < THRNUM; i++) thrs[i].join();
+        for(int i = 0; i < THRNUM; i++) thrEDS[i] -> join();
 
-        total.StopTime("Total PutTime(Thread Version): ");
+        total.Stop();
+        total.PrintElapsedTime("Total PutTime(Thread Version): ");
 
         db -> close();
     }
@@ -105,7 +114,8 @@ TEST(A, Test1)
 
         printf("Begin Check\n");
 
-        total.StartTime();
+        total.Start();
+        
         for(int i = 0; i < SIZE; i++)
         {
             BufferPacket packet(sizeof(int));
@@ -125,8 +135,10 @@ TEST(A, Test1)
 
             if(i != num) freq++;
         }
-        total.StopTime("GetTime(Without Cache): ");
-
+        
+        total.Stop();
+        total.PrintElapsedTime("GetTime(Without Cache): ");
+        
         db -> close();
         db -> destoryDB("demo");
     }

@@ -190,8 +190,9 @@ void    PageDB::dump(ostream&os)
 
     PageTable * page = new PageTable(this);
 
-    os << m_gd << " " << m_pn << " " << m_entries.size() << endl;
-
+    os << "--------------------Basic Info--------------------" << endl;
+    os << "global D" << m_gd << ", number of pages:" << m_pn << ", number of entries" << m_entries.size() << endl;
+    os << "--------------------Page  Info--------------------" << endl;
     for(int cur = 0, index = 0; cur < m_entries.size(); cur++)
     {
         int j;
@@ -210,17 +211,20 @@ void    PageDB::dump(ostream&os)
 
         for(j = 0; j < page -> m_curNum; j++)
         {
-            BufferPacket packet(2*SINT);
-            m_datfile.Read(packet.str(), page -> m_elements[j].m_datPos, packet.size());
-            int a, b;
+            PageElement element = page -> m_elements[j];
+
+            BufferPacket packet(element.m_keySize + element.m_datSize);
+            m_datfile.Read(packet.str(), element.m_datPos, packet.size());
+            Slice key(element.m_keySize), value(element.m_datSize);
+            packet >> key >> value;
             uint32_t hashVal = page -> m_elements[j].m_hashVal;
-            packet >> a >> b;
-            os << a << " " << b << " " << hashVal << " ";
+            os << "[" << key << " " << value << " " << hashVal << "] ";
         }
 
         os << endl;
     }
-
+    os << "--------------------End  Page--------------------" << endl;
+    
     delete page;
     page = NULL;
 }
@@ -311,8 +315,7 @@ void    PageDB::compact()
                 }
             }
 
-            if(ids.size() != 1)
-                assert(ids.size() % 2 == 0);
+            if(ids.size() != 1) assert(is2Exp(ids.size()) == true);
 
             for(int j=0; j<ids.size(); j++)
             {
@@ -348,8 +351,8 @@ void    PageDB::compact()
             }
 
             packet = page->getPacket();
-            m_datfile.Write(packet.c_str(), -1, packet.size());
-            m_datfile.Write(packet1.c_str(), -1, packet1.size());
+            m_datfile.Append(packet.c_str(), packet.size());
+            m_datfile.Append(packet1.c_str(), packet1.size());
 
             uds += packet.size() + packet1.size();
         }
@@ -366,6 +369,10 @@ void    PageDB::compact()
 
     tmpfile1.Truncate(0);
     tmpfile2.Truncate(0);
+    tmpfile1.Close();
+    tmpfile2.Close();
+    FileModule::Remove("tmppage.bak");
+    FileModule::Remove("tmpcon.bak");
 }
 
 /**
@@ -798,6 +805,11 @@ void PageDB::readAndSetPage(PageTable *page, uint64_t addr)
     BufferPacket packet(SPAGETABLE);
     m_datfile.Read(packet.str(), addr, SPAGETABLE);
     page -> setByBucket(packet);
+}
+
+bool PageDB::is2Exp(uint64_t val)
+{
+    return ((val != 0) && (val & (val - 1)) == 0);
 }
 
 };
