@@ -26,7 +26,7 @@ void Timer::Stop()
 void Timer::Print(const char * str)
 {
     SubtractTime(&difference, &curtime, &starttime);
-    m_os<<str<<": "<<difference.tv_sec<<"s "<<difference.tv_usec<<"us"<<endl;
+    m_os<< str << " " << difference.tv_sec << "s " << difference.tv_usec << "us" <<endl;
 }
 
 struct timeval Timer::GetDiffTime()
@@ -98,5 +98,5 @@ void TimeAccumulator::StopTimer()
 
 void TimeAccumulator::Print(const char *str)
 {
-    m_os<<str<<": "<<m_totalTime.tv_sec<<"s "<<m_totalTime.tv_usec<<"us"<<endl;
+    m_os<<str<< " " << m_totalTime.tv_sec << "s " << m_totalTime.tv_usec << "us" <<endl;
 }

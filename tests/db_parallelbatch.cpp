@@ -17,7 +17,7 @@ using namespace utils;
 #define THRNUM    4
 
 /**
-** db_parallel_thread: parallel put. Basic Test for internal sync
+** db_parallelbatch: parallel put. Basic Test for internal sync
 **/
 
 /**

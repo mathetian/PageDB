@@ -10,7 +10,7 @@ SOURCES = cache/*.cpp core/*.cpp utils/*.cpp core/PageDB/*.cpp
 LDLIBS  = -L. -lcustomDB
 
 tests   = test_batch test_buff test_file test_multiplethread test_noncopyable test_reet test_rw test_slice test_timer test_utils
-dbtests = db_smalltest db_largetest db_smallbatch db_largebatch db_batch_thread db_parallel_thread
+dbtests = db_smalltest db_largetest db_smallbatch db_largebatch db_parallelbatch db_benchmark
 
 lib:compile
 	${AR} rv ${LIBMISC} *.o
@@ -22,26 +22,23 @@ compile:
 
 dbtests: $(dbtests)
 	
-db_smalltest: tests/db_smalltest.cpp libcustomDB.a
+db_smalltest: tests/db_smalltest.cpp
 	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread tests/db_smalltest.cpp -o $@ ${LDLIBS}
 
-db_largetest: tests/db_largetest.cpp libcustomDB.a
+db_largetest: tests/db_largetest.cpp
 	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread tests/db_largetest.cpp -o $@ ${LDLIBS}
 
-db_smallbatch: tests/db_smallbatch.cpp libcustomDB.a
+db_smallbatch: tests/db_smallbatch.cpp
 	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread tests/db_smallbatch.cpp -o $@ ${LDLIBS}
 
-db_largebatch: tests/db_largebatch.cpp libcustomDB.a
+db_largebatch: tests/db_largebatch.cpp
 	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread tests/db_largebatch.cpp -o $@ ${LDLIBS}
 
-db_batch_thread: tests/db_batch_thread.cpp libcustomDB.a
-	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread tests/db_batch_thread.cpp -o $@ ${LDLIBS}
-
-db_parallel_thread: tests/db_parallel_thread.cpp libcustomDB.a
+db_parallelbatch: tests/db_parallelbatch.cpp
 	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread tests/db_parallel_thread.cpp -o $@ ${LDLIBS}
 
-db_leveldb: tests/db_leveldb.cpp libcustomDB.a
-	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread tests/db_leveldb.cpp -o $@ ${LDLIBS}
+db_benchmark: tests/db_benchmark.cpp
+	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread tests/db_benchmark.cpp -o $@ ${LDLIBS}
 
 tests: $(tests)
 
