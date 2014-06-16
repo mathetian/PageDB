@@ -1,23 +1,31 @@
-#include <iostream>
-using namespace std;
+// Copyright (c) 2014 The CustomDB Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "CustomDB.h"
 #include "Option.h"
-#include "TickTimer.h"
+#include "CustomDB.h"
 #include "BufferPacket.h"
 using namespace customdb;
 
+#include "TickTimer.h"
 #include "TestUtils.h"
 using namespace utils;
 
-/**
-	Create four thread, each put 250000 items.
-	For each thread, each time, it compute 5000 items.
-**/
-#define SIZE 1000000
+#define SIZE      1000000
 #define BATCHSIZE 250000
-#define SUBSIZE   10000
+#define ROUNDSIZE 50000
 #define THRNUM    4
+
+/**
+** db_parallel_thread: parallel put. Basic Test for internal sync
+**/
+
+/**
+** Put 1 Million items into db
+** key size and value size are both 4 bytes
+** Estimate Size 10MB
+** Four Threads, each put 250,000 items
+**/
 
 class A { };
 
@@ -26,24 +34,25 @@ CustomDB * db;
 
 void* thrFunc(void * data)
 {
-    int thrid = *(int*)data;
+    int thrID = *(int*)data;
 
-    const int beg  = thrid*BATCHSIZE;
-    const int round = (BATCHSIZE + SUBSIZE - 1)/SUBSIZE;
+    const int beg  = thrID*BATCHSIZE;
+    const int round = (BATCHSIZE + ROUNDSIZE - 1)/ROUNDSIZE;
 
-    TimeStamp thrtime;
+    Timer total;
     char buf[50];
 
-    printf("thread %d begin\n", thrid);
+    printf("thread %d begin\n", thrID);
 
-    thrtime.StartTime();
+    total.Start();
+    
     for(int i = 0; i < round; i++)
     {
-        WriteBatch batch(SUBSIZE);
+        WriteBatch batch(ROUNDSIZE);
 
-        for(int j = 0; j < SUBSIZE; j++)
+        for(int j = 0; j < ROUNDSIZE; j++)
         {
-            int k = beg + i*SUBSIZE + j;
+            int k = beg + i*ROUNDSIZE + j;
 
             BufferPacket packet(sizeof(int));
             packet << k;
@@ -51,46 +60,49 @@ void* thrFunc(void * data)
             Slice value(packet.c_str(),sizeof(int));
             batch.put(key, value);
         }
-        db -> tWrite(&batch);
-        printf("thread %d finished round %d\n", thrid, i);
+
+        db -> put(&batch);
+
+        printf("thread %d finished round %d\n", thrID, i);
     }
 
-    sprintf(buf, "Thread %d has been completed, spend time :", thrid);
-    thrtime.StopTime(buf);
+    sprintf(buf, "Thread %d has been completed, spend time :", thrID);
+    
+    total.Stop();
+    total.Print(buf);
 
     return NULL;
 }
 
-/**
-    Test for Batch-Digest
-**/
 TEST(A, Test1)
 {
     option.logOption.disabled = true;
-    option.logOption.logLevel = LOG_FATAL;
+    option.logOption.logLevel = Log::LOG_FATAL;
 
     db = new CustomDB;
-    TimeStamp total;
+    
+    Timer total;
 
     {
         db -> open(option);
         printf("open successful\n");
 
-        int ids[THRNUM];
-        Thread thrs[THRNUM];
+        int      thrIDS[THRNUM];
+        Thread **thrEDS = new Thread*[THRNUM];
 
-        total.StartTime();
+        total.Start();
 
         for(int i = 0; i < THRNUM; i++)
         {
-            ids[i]  = i;
-            thrs[i] = Thread(thrFunc, &ids[i]);
-            thrs[i].run();
+            thrIDS[i]  = i;
+            thrEDS[i] = new Thread(thrFunc, &thrIDS[i]);
+            thrEDS[i] -> run();
         }
 
-        for(int i = 0; i < THRNUM; i++) thrs[i].join();
+        for(int i = 0; i < THRNUM; i++) thrEDS[i] -> join();
 
-        total.StopTime("Total PutTime(Thread Version): ");
+        total.Stop();
+        total.Print("Total PutTime(Thread Version): ");
 
         db -> close();
     }
@@ -101,8 +113,9 @@ TEST(A, Test1)
 
         printf("Begin Check\n");
 
-        total.StartTime();
-        for(int i=0; i < SIZE; i++)
+        total.Start();
+        
+        for(int i=0; i < BATCHSIZE*THRNUM; i++)
         {
             BufferPacket packet(sizeof(int));
             packet << i;
@@ -119,9 +132,11 @@ TEST(A, Test1)
             int num = -1;
             packet2 >> num;
 
-            ASSERT_EQ(i,num);
+            ASSERT_EQ(i, num);
         }
-        total.StopTime("GetTime(Without Cache): ");
+        
+        total.Stop();
+        total.Print("GetTime(Without Cache): ");
 
         db -> close();
     }
@@ -129,26 +144,25 @@ TEST(A, Test1)
     delete db;
 }
 
-/**
-    Test for compact
-**/
 TEST(A, Test2)
 {
     option.logOption.disabled = true;
-    option.logOption.logLevel = LOG_FATAL;
+    option.logOption.logLevel = Log::LOG_FATAL;
 
     db = new CustomDB;
-    TimeStamp total;
+    Timer total;
 
     {
         db -> open(option);
         printf("open successful, Test After compact\n");
 
-        total.StartTime();
+        total.Start();
 
+       // db -> dump(cout);
         db -> compact();
 
-        total.StopTime("Compact time: ");
+        total.Stop();
+        total.Print("Compact time: ");
 
         db -> close();
     }
@@ -159,8 +173,9 @@ TEST(A, Test2)
 
         printf("Begin Check\n");
 
-        total.StartTime();
-        for(int i=0; i < SIZE; i++)
+        total.Start();
+
+        for(int i=0; i < BATCHSIZE*THRNUM; i++)
         {
             BufferPacket packet(sizeof(int));
             packet << i;
@@ -180,8 +195,9 @@ TEST(A, Test2)
             ASSERT_EQ(i,num);
         }
 
-        total.StopTime("GetTime(Without Cache): ");
-
+        total.Stop();
+        total.Print("GetTime(Without Cache): ");
+        
         db -> close();
         db -> destoryDB("demo");
     }

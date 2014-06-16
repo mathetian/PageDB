@@ -1,12 +1,13 @@
-#include <iostream>
-using namespace std;
+// Copyright (c) 2014 The CustomDB Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "CustomDB.h"
 #include "Option.h"
-#include "TickTimer.h"
+#include "CustomDB.h"
 #include "BufferPacket.h"
 using namespace customdb;
 
+#include "TickTimer.h"
 #include "TestUtils.h"
 using namespace utils;
 
@@ -18,16 +19,16 @@ TEST(A, Test1)
 {
     Options option;
     option.logOption.disabled = true;
-    option.logOption.logLevel = LOG_FATAL;
+    option.logOption.logLevel = Log::LOG_FATAL;
 
     CustomDB * db = new CustomDB;
-    TimeStamp ts;
+    Timer ts;
 
     {
         db -> open(option);
         printf("open successful for put\n");
 
-        ts.StartTime();
+        ts.Start();
 
         for(int i=1; i<=SIZE; i++)
         {
@@ -40,16 +41,17 @@ TEST(A, Test1)
             if(i%(SIZE/10)==0) cout<<"Put:"<<i<<endl;
         }
 
-        ts.StopTime("PutTime: ");
+        ts.Stop();
+        ts.Print("PutTime: ");
 
         db -> close();
     }
 
     {
         db -> open(option);
-        printf("open successful for put\n");
+        printf("open successful for get\n");
 
-        ts.StartTime();
+        ts.Start();
 
         for(int i=1; i<=SIZE; i++)
         {
@@ -71,7 +73,8 @@ TEST(A, Test1)
             ASSERT_EQ(i, num);
         }
 
-        ts.StopTime("GetTime(Without Cache): ");
+        ts.Stop();
+        ts.Print("GetTime(Without Cache): ");
 
         db -> close();
     }
@@ -83,10 +86,10 @@ TEST(A, Test2)
 {
     Options option;
     option.logOption.disabled = true;
-    option.logOption.logLevel = LOG_FATAL;
+    option.logOption.logLevel = Log::LOG_FATAL;
 
     CustomDB * db = new CustomDB;
-    TimeStamp ts;
+    Timer ts;
 
     {
         db -> open(option);
@@ -100,7 +103,7 @@ TEST(A, Test2)
         db -> open(option);
         printf("open successful for Get Test after Compact\n");
 
-        ts.StartTime();
+        ts.Start();
 
         for(int i=1; i<=SIZE; i++)
         {
@@ -122,7 +125,8 @@ TEST(A, Test2)
             ASSERT_EQ(i, num);
         }
 
-        ts.StopTime("GetTime(Without Cache): ");
+        ts.Stop();
+        ts.Print("GetTime(Without Cache): ");
 
         db -> close();
         db -> destoryDB("demo");

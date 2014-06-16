@@ -23,7 +23,7 @@ void Timer::Stop()
 #endif
 }
 
-void Timer::PrintElapsedTime(const char * str)
+void Timer::Print(const char * str)
 {
     SubtractTime(&difference, &curtime, &starttime);
     m_os<<str<<": "<<difference.tv_sec<<"s "<<difference.tv_usec<<"us"<<endl;
@@ -96,7 +96,7 @@ void TimeAccumulator::StopTimer()
     }
 }
 
-void TimeAccumulator::PrintElapsedTime(const char *str)
+void TimeAccumulator::Print(const char *str)
 {
     m_os<<str<<": "<<m_totalTime.tv_sec<<"s "<<m_totalTime.tv_usec<<"us"<<endl;
 }

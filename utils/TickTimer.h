@@ -23,11 +23,11 @@ public:
 public:
     /**
     ** Timer starts with StartTime and ends with StopTime
-    ** Anyone can call PrintElapsedTime(const char*) to print the elapsed time.
+    ** Anyone can call Print(const char*) to print the elapsed time.
     **/
     void Start();
     void Stop();
-    void PrintElapsedTime(const char * str);
+    void Print(const char * str);
     /**
     ** Return Elapsed Time
     **/
@@ -59,7 +59,7 @@ public:
     ** the timer will stop and calucate the total time
     **/
     void StopTimer();
-    void PrintElapsedTime(const char * str = NULL);
+    void Print(const char * str = NULL);
 
 private:
     Timer  m_ts;

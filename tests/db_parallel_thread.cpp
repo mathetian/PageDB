@@ -66,7 +66,7 @@ void* thrFunc(void * data)
 
     sprintf(buf, "Thread %d has been completed, spend time :", thrid);
     thrtime.Stop();
-    thrtime.PrintElapsedTime(buf);
+    thrtime.Print(buf);
 
     return NULL;
 }
@@ -87,7 +87,7 @@ TEST(A, Test1)
         printf("open successful\n");
 
         int    thrIDS[THRNUM];
-        Thread **thrEDS = new Thread[THRNUM];
+        Thread **thrEDS = new Thread*[THRNUM];
 
         total.Start();
 
@@ -101,7 +101,7 @@ TEST(A, Test1)
         for(int i = 0; i < THRNUM; i++) thrEDS[i] -> join();
 
         total.Stop();
-        total.PrintElapsedTime("Total PutTime(Thread Version): ");
+        total.Print("Total PutTime(Thread Version): ");
 
         db -> close();
     }
@@ -137,7 +137,7 @@ TEST(A, Test1)
         }
         
         total.Stop();
-        total.PrintElapsedTime("GetTime(Without Cache): ");
+        total.Print("GetTime(Without Cache): ");
         
         db -> close();
         db -> destoryDB("demo");

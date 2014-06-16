@@ -21,12 +21,12 @@ TEST(A, Timer)
     timer.Start();
     sleep(1);
     timer.Stop();
-    timer.PrintElapsedTime("Timer Test1");
+    timer.Print("Timer Test1");
 
     timer.Start();
     sleep(1);
     timer.Stop();
-    timer.PrintElapsedTime("Timer Test2");
+    timer.Print("Timer Test2");
 }
 
 /**
@@ -38,12 +38,12 @@ TEST(A, TimeAccumulator)
     accumlator.StartTimer();
     sleep(1);
     accumlator.StopTimer();
-    accumlator.PrintElapsedTime("TimeAccumulator Test1");
+    accumlator.Print("TimeAccumulator Test1");
 
     accumlator.StartTimer();
     sleep(1);
     accumlator.StopTimer();
-    accumlator.PrintElapsedTime("TimeAccumulator Test2");
+    accumlator.Print("TimeAccumulator Test2");
 }
 
 int main()

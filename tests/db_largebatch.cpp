@@ -1,12 +1,13 @@
-#include <iostream>
-using namespace std;
+// Copyright (c) 2014 The CustomDB Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "CustomDB.h"
 #include "Option.h"
-#include "TickTimer.h"
+#include "CustomDB.h"
 #include "BufferPacket.h"
 using namespace customdb;
 
+#include "TickTimer.h"
 #include "TestUtils.h"
 using namespace utils;
 
@@ -29,10 +30,10 @@ TEST(A, Test1)
 
         int round = (SIZE + BATCHSIZE - 1)/BATCHSIZE;
 
-        total.StartTime();
+        total.Start();
         for(int i = 0; i < round; i++)
         {
-            part.StartTime();
+            part.Start();
 
             WriteBatch batch(BATCHSIZE);
 
@@ -48,13 +49,19 @@ TEST(A, Test1)
                 batch.put(key, value);
             }
 
-            db -> write(&batch);
+            db -> put(&batch);
+            
             batch.clear();
             sprintf(str, "In round %d, PutTime: ", i);
-            part.StopTime(str);
+            
+            part.Stop();
+            part.Print(str);
         }
+        
         sprintf(str, "Total PutTime: ");
-        total.StopTime(str);
+        
+        total.Stop();
+        total.Print(str);
 
         db -> close();
     }
@@ -63,7 +70,8 @@ TEST(A, Test1)
         db -> open(option);
         printf("open successful\n");
 
-        total.StartTime();
+        total.Start();
+        
         for(int i=SIZE-1; i>=0; i--)
         {
             BufferPacket packet(sizeof(int));
@@ -83,7 +91,9 @@ TEST(A, Test1)
 
             ASSERT_EQ(i, num);
         }
-        total.StopTime("GetTime(Without Cache): ");
+        
+        total.Stop();
+        total.Print("GetTime(Without Cache): ");
 
         db -> close();
         db -> destoryDB("demo");

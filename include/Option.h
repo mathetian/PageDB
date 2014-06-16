@@ -1,10 +1,8 @@
 #ifndef _OPTION_H
 #define _OPTION_H
 
-#include <string>
-using namespace std;
-
 #include "Log.h"
+using namespace utils;
 
 namespace customdb
 {

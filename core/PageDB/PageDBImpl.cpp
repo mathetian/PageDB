@@ -10,6 +10,7 @@ namespace customdb
 PageDB::PageDB(HashFunc hashFunc) : m_HashFunc(hashFunc),  m_gd(0), m_pn(1), m_fb(-1)
 {
    m_cache = new PageCache(this);
+   m_tmpBatch = new WriteBatch;
 }
 
 PageDB::~PageDB()
@@ -93,6 +94,9 @@ bool     PageDB::close()
     if(m_cache) delete m_cache;
     m_cache = NULL;
 
+     if(m_tmpBatch)
+        delete m_tmpBatch;
+    
     return true;
 }
 
@@ -218,7 +222,7 @@ void    PageDB::dump(ostream&os)
             Slice key(element.m_keySize), value(element.m_datSize);
             packet >> key >> value;
             uint32_t hashVal = page -> m_elements[j].m_hashVal;
-            os << "[" << key << " " << value << " " << hashVal << "] ";
+        //    os << "[" << key << " " << value << " " << hashVal << "] ";
         }
 
         os << endl;
@@ -314,7 +318,19 @@ void    PageDB::compact()
                     ids.push_back(j);
                 }
             }
+            // if(ids.size() == 3)
+            // {
+            //     printf("cur: %d\n", cur);
+            //     for(int j = cur + 1; j < m_entries.size(); j++)
+            //     {
+            //         if(m_entries.at(cur) == m_entries.at(j))
+            //         {
+            //             printf("j: %d\n", j);
+            //         }
+            //     }
+            // }
 
+            // printf("ids Size, %d, %lld\n", ids.size(), (long long)m_entries.at(cur));
             if(ids.size() != 1) assert(is2Exp(ids.size()) == true);
 
             for(int j=0; j<ids.size(); j++)
@@ -619,8 +635,8 @@ bool     PageDB::write(WriteBatch* pbatch)
     Writer w(&m_writerlock);
 
     w.batch = pbatch;
-    w.sync = false;
-    w.done = false;
+    w.sync  = false;
+    w.done  = false;
 
     ScopeMutex l(&m_writerlock);
 
@@ -642,7 +658,7 @@ bool     PageDB::write(WriteBatch* pbatch)
     {
         m_writerlock.unlock();
         /**
-           only one thread can access it at the same time.
+        ** only one thread can access it at the same time.
         **/
         writeBatch(updates);
         m_writerlock.lock();
