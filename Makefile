@@ -23,22 +23,22 @@ compile:
 dbtests: $(dbtests)
 	
 db_smalltest: tests/db_smalltest.cpp
-	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread tests/db_smalltest.cpp -o $@ ${LDLIBS}
+	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread $^ -o $@ ${LDLIBS}
 
 db_largetest: tests/db_largetest.cpp
-	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread tests/db_largetest.cpp -o $@ ${LDLIBS}
+	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread $^ -o $@ ${LDLIBS}
 
 db_smallbatch: tests/db_smallbatch.cpp
-	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread tests/db_smallbatch.cpp -o $@ ${LDLIBS}
+	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread $^ -o $@ ${LDLIBS}
 
 db_largebatch: tests/db_largebatch.cpp
-	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread tests/db_largebatch.cpp -o $@ ${LDLIBS}
+	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread $^ -o $@ ${LDLIBS}
 
 db_parallelbatch: tests/db_parallelbatch.cpp
-	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread tests/db_parallel_thread.cpp -o $@ ${LDLIBS}
+	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread $^ -o $@ ${LDLIBS}
 
 db_benchmark: tests/db_benchmark.cpp
-	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread tests/db_benchmark.cpp -o $@ ${LDLIBS}
+	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread $^ -o $@ ${LDLIBS}
 
 tests: $(tests)
 

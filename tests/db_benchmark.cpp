@@ -17,10 +17,11 @@ using namespace utils;
 #include "db_benchmark.h"
 using namespace benchmarks;
 
-//static const char* FLAGS_benchmarks = "fillrandom, fillbatch, fillparallelbatch, readrandom";
-static const char* FLAGS_benchmarks = "fillbatch";
+static const char* FLAGS_benchmarks = "fillsync, fillbatch, fillparallelbatch, readrandom";
+//static const char* FLAGS_benchmarks = "fillbatch";
+//static const char* FLAGS_benchmarks = "";
 
-static int FLAGS_num = 10000000;
+static int FLAGS_num = 1000000;
 
 static int FLAGS_key_size = 16;
 
@@ -107,10 +108,10 @@ void Benchmark::Run()
 
         bool fresh_db = false;
 
-        if (name == Slice("fillrandom"))
+        if (name == Slice("fillsync"))
         {
             fresh_db = true;
-            method = &Benchmark::FillRandom;
+            method = &Benchmark::FillSync;
         }
         else if (name == Slice("readrandom"))
         {
@@ -240,7 +241,7 @@ void Benchmark::RunBenchmark(Slice name, void (Benchmark::*method)())
     (this->*method)();
 }
 
-void Benchmark::FillRandom()
+void Benchmark::FillSync()
 {
     RandomGenerator gen;
     Random rnd(30);

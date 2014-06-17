@@ -113,7 +113,7 @@ private:
 
 private:
     void RunBenchmark(Slice name, void (Benchmark::*method)());
-    void FillRandom();
+    void FillSync();
     void FillBatch();
 
 private:
