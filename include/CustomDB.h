@@ -9,9 +9,11 @@
 #include "Slice.h"
 using namespace utils;
 
+#include "Cache.h"
+using namespace cache;
+
 #include "Batch.h"
 #include "Option.h"
-#include "BaseCache.h"
 #include "DBInternal.h"
 
 /**

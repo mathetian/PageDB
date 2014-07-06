@@ -5,7 +5,7 @@ RANLIB  = ranlib
 HEADER  = -I./include -I./cache -I./utils -I. -I./core
 CXXFLAGS = -g -O0
 
-SOURCES = cache/*.cpp core/*.cpp utils/*.cpp core/PageDB/*.cpp
+SOURCES = core/*.cpp utils/*.cpp core/PageDB/*.cpp
  
 LDLIBS  = -L. -lcustomDB
 

@@ -10,9 +10,10 @@ using namespace utils;
 /**
 ** Cache Header
 **/
-#include "FIFOLMCache.h"
-#include "LRULMCache.h"
+#include "FIFOCache.h"
+#include "LRUCache.h"
 #include "EmptyCache.h"
+using namespace cache;
 
 #include "PageDBImpl.h"
 
@@ -43,10 +44,13 @@ bool  CustomDB::open(const Options & option)
         switch(option.cacheOption.cacheType)
         {
         case FIFO:
-            m_cache = new FIFOLimitedMemoryCache();
+            m_cache = new FIFOCache(option.cacheOption.slotNum);
             break;
         case LRU:
-            m_cache = new LRULimitedMemoryCache();
+            m_cache = new LRUCache(option.cacheOption.slotNum);
+            break;
+        case EMPTY:
+            m_cache = new EmptyCache();
             break;
         default:
             m_log -> _Fatal("CustomDB::open::cacheType error\n");

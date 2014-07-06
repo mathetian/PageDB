@@ -22,17 +22,20 @@ struct FileOption_t
 };
 
 /******************************/
-#define FIFO 0
-#define  LRU 1
+#define  LRU  0
+#define FIFO  1
+#define EMPTY 2
+#define SLOTNUM 1000
 
 struct CacheOption_t
 {
     int  cacheType;
-    int  cacheLimitInMB;
     bool disabled;
+    int  slotNum;
+
     CacheOption_t()
     {
-        cacheLimitInMB = 4;
+        slotNum        = SLOTNUM;
         cacheType      = FIFO;
         disabled       = false;
     }
