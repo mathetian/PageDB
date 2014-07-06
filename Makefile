@@ -42,6 +42,9 @@ db_benchmark: tests/db_benchmark.cpp
 
 tests: $(tests)
 
+test_cache: tests/test_slice.cpp 
+	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread $^ -o $@ ${LDLIBS}
+	
 test_slice: tests/test_slice.cpp 
 	$(CXX) ${CXXFLAGS} ${HEADER} -lpthread -pthread $^ -o $@ ${LDLIBS}
 
