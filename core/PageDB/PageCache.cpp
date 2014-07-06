@@ -25,10 +25,8 @@ void    PageCache::free()
 
 PageTable * PageCache::find(uint32_t addr, uint32_t & index)
 {
-    for(int i = 0; i < CACHESIZE; i++)
-    {
-        if(m_eles[i].m_addr == addr)
-        {
+    for(int i = 0; i < CACHESIZE; i++) {
+        if(m_eles[i].m_addr == addr) {
             index = i;
             m_cur = (i+1)%CACHESIZE;
             return m_eles[i].m_page;
@@ -41,10 +39,8 @@ PageTable * PageCache::find(uint32_t addr, uint32_t & index)
 int PageCache::put(PageTable * page, int addr)
 {
     int i = (m_cur+1)%CACHESIZE;
-    for(; i != m_cur; i = (i+1)%CACHESIZE)
-    {
-        if(m_eles[i].m_updated == false)
-        {
+    for(; i != m_cur; i = (i+1)%CACHESIZE) {
+        if(m_eles[i].m_updated == false) {
             m_eles[i].reset();
 
             m_eles[i].m_page  = page;
@@ -55,8 +51,7 @@ int PageCache::put(PageTable * page, int addr)
 
     int oldcur = i;
 
-    if(i == m_cur)
-    {
+    if(i == m_cur) {
         if(m_eles[i].m_updated == true)
             reset(i);
 
@@ -88,10 +83,8 @@ void   PageCache::reset(int index)
 
 void   PageCache::sync()
 {
-    for(int i = 0; i < CACHESIZE; i++)
-    {
-        if(m_eles[i].m_updated == true)
-        {
+    for(int i = 0; i < CACHESIZE; i++) {
+        if(m_eles[i].m_updated == true) {
             PageTable * page = m_eles[i].m_page;
             BufferPacket packet = page -> getPacket();
             m_db -> m_datfile.Write(packet.c_str(), m_eles[i].m_addr, packet.size());

@@ -13,27 +13,22 @@ namespace cache
 class EmptyCache : public Cache
 {
 public:
-    EmptyCache() : Cache(1)
-    {
+    EmptyCache() : Cache(1) {
     }
 
-    virtual ~EmptyCache()
-    {
+    virtual ~EmptyCache() {
     }
 
 public:
-    virtual bool    put(const Slice & key, const Slice & value)
-    {
+    virtual bool    put(const Slice & key, const Slice & value) {
         return true;
     }
 
-    virtual Slice  	get(const Slice & key)
-    {
+    virtual Slice  	get(const Slice & key) {
         return "";
     }
 
-    virtual bool    remove(const Slice & key)
-    {
+    virtual bool    remove(const Slice & key) {
         return true;
     }
 };

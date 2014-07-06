@@ -11,13 +11,11 @@ using namespace utils;
 class A
 {
 public:
-    int func1()
-    {
+    int func1() {
         return 1;
     }
 
-    int func2()
-    {
+    int func2() {
         return 2;
     }
 };

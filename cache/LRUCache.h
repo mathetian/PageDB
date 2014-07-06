@@ -13,39 +13,31 @@ namespace cache
 class LRUCache : public Cache
 {
 public:
-    LRUCache(int slotnum) : Cache(slotnum)
-    {
+    LRUCache(int slotnum) : Cache(slotnum) {
     }
 
-    virtual ~LRUCache()
-    {
+    virtual ~LRUCache() {
     }
 
 public:
-    virtual bool    put(const Slice &key, const Slice &value)
-    {
-        if(dict_.find(key) == dict_.end())
-        {
+    virtual bool    put(const Slice &key, const Slice &value) {
+        if(dict_.find(key) == dict_.end()) {
             /// Insert
 
-            if(dict_.size() == slotnum_)
-            {
+            if(dict_.size() == slotnum_) {
                 /// Remove the oldest one
                 del(ender_ -> prev_);
             }
 
             insert(new Entry(key, value));
-        }
-        else
-        {
+        } else {
             /// Replace
             del(dict_[key]);
             insert(new Entry(key, value));
         }
     }
 
-    virtual Slice  	get(const Slice &key)
-    {
+    virtual Slice  	get(const Slice &key) {
         if(dict_.find(key) == dict_.end())
             return "";
 
@@ -55,8 +47,7 @@ public:
         insert(new Entry(key, value));
     }
 
-    virtual bool    remove(const Slice &key)
-    {
+    virtual bool    remove(const Slice &key) {
         if(dict_.find(key) == dict_.end())
             return false;
 

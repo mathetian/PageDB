@@ -38,14 +38,12 @@ static const char* FLAGS_log =  NULL;
 static Slice TrimSpace(Slice s)
 {
     int start = 0;
-    while (start < s.size() && isspace(s[start]))
-    {
+    while (start < s.size() && isspace(s[start])) {
         start++;
     }
 
     int limit = s.size();
-    while (limit > start && isspace(s[limit-1]))
-    {
+    while (limit > start && isspace(s[limit-1])) {
         limit--;
     }
 
@@ -68,8 +66,7 @@ Benchmark::Benchmark() : db_(NULL), num_(FLAGS_num), key_size_(FLAGS_key_size),
     option_.logOption.disabled   = true;
     option_.cacheOption.disabled = true;
 
-    if (!FLAGS_use_existing_db)
-    {
+    if (!FLAGS_use_existing_db) {
         DestroyDB();
     }
 }
@@ -87,19 +84,15 @@ void Benchmark::Run()
 
     const char* benchmarks = FLAGS_benchmarks;
 
-    while (benchmarks != NULL)
-    {
+    while (benchmarks != NULL) {
         const char* sep = strchr(benchmarks, ',');
 
         Slice name;
 
-        if (sep == NULL)
-        {
+        if (sep == NULL) {
             name = TrimSpace(benchmarks);
             benchmarks = NULL;
-        }
-        else
-        {
+        } else {
             name = TrimSpace(Slice(benchmarks, sep - benchmarks));
             benchmarks = sep + 1;
         }
@@ -108,43 +101,31 @@ void Benchmark::Run()
 
         bool fresh_db = false;
 
-        if (name == Slice("fillsync"))
-        {
+        if (name == Slice("fillsync")) {
             fresh_db = true;
             method = &Benchmark::FillSync;
-        }
-        else if (name == Slice("readrandom"))
-        {
+        } else if (name == Slice("readrandom")) {
             method = &Benchmark::ReadRandom;
-        }
-        else if (name == Slice("fillbatch"))
-        {
+        } else if (name == Slice("fillbatch")) {
             fresh_db = true;
             method = &Benchmark::FillBatch;
-        }
-        else if(name == Slice("fillparallelbatch"))
-        {
+        } else if(name == Slice("fillparallelbatch")) {
             fresh_db = true;
             method = &Benchmark::FillParallelBatch;
-        }
-        else
-        {
-            if (name != Slice())    // No error message for empty name
-            {
+        } else {
+            if (name != Slice()) {  // No error message for empty name
                 fprintf(stderr, "unknown benchmark '%s'\n", name.to_str().c_str());
             }
             continue;
         }
 
-        if (fresh_db)
-        {
+        if (fresh_db) {
             DestroyDB();
         }
 
         Open();
 
-        if (method != NULL)
-        {
+        if (method != NULL) {
             cout<<name<<endl;
             RunBenchmark(name, method);
         }
@@ -189,28 +170,22 @@ void Benchmark::PrintEnvironment()
     fprintf(stderr, "Date:       %s", ctime(&now));  // ctime() adds newline
 
     FILE* cpuinfo = fopen("/proc/cpuinfo", "r");
-    if (cpuinfo != NULL)
-    {
+    if (cpuinfo != NULL) {
         char line[1000];
         num_cpus_ = 0;
         std::string cpu_type;
         std::string cache_size;
-        while (fgets(line, sizeof(line), cpuinfo) != NULL)
-        {
+        while (fgets(line, sizeof(line), cpuinfo) != NULL) {
             const char* sep = strchr(line, ':');
-            if (sep == NULL)
-            {
+            if (sep == NULL) {
                 continue;
             }
             Slice key = TrimSpace(Slice(line, sep - 1 - line));
             Slice val = TrimSpace(Slice(sep + 1));
-            if (key == "model name")
-            {
+            if (key == "model name") {
                 ++num_cpus_;
                 cpu_type = val.to_str();
-            }
-            else if (key == "cache size")
-            {
+            } else if (key == "cache size") {
                 cache_size = val.to_str();
             }
         }
@@ -224,8 +199,7 @@ void Benchmark::Open()
 {
     bool flag = db_ -> open(option_);
 
-    if (!flag)
-    {
+    if (!flag) {
         fprintf(stderr, "open error\n");
         exit(1);
     }
@@ -255,8 +229,7 @@ void Benchmark::FillSync()
     memset(format, 0, 10);
     snprintf(format, sizeof(format), "%%0%dd\n", key_size_);
 
-    for(int i = 0; i < num_; i++)
-    {
+    for(int i = 0; i < num_; i++) {
         if(i%10000 == 0)
             printf("WriteRandom %d\n", i);
 
@@ -286,14 +259,12 @@ void Benchmark::FillBatch()
     Timer total, part;
     total.Start();
 
-    for(int i = 0; i < batchNum; i++)
-    {
+    for(int i = 0; i < batchNum; i++) {
         part.Start();
 
         WriteBatch batch(batchsize_);
 
-        for(int j = 0; j < batchsize_; j++)
-        {
+        for(int j = 0; j < batchsize_; j++) {
             int k = rnd.Next() & ((1<<28)-1);
             snprintf(key, sizeof(key), format, k);
 
@@ -312,8 +283,7 @@ void Benchmark::FillBatch()
     total.Print("WriteBatch Total Time: ");
 }
 
-struct Benchmark::ThreadArg
-{
+struct Benchmark::ThreadArg {
     Benchmark* bm;
     int        thrid;
     void* (Benchmark::*method)(void*);
@@ -347,12 +317,10 @@ void* Benchmark::ThreadBatchBody(void *arg)
 
     total.Start();
 
-    for(int i = 0; i < batchNum; i++)
-    {
+    for(int i = 0; i < batchNum; i++) {
         WriteBatch batch(batchsize_);
 
-        for(int j = 0; j < batchsize_; j++)
-        {
+        for(int j = 0; j < batchsize_; j++) {
             int k = rnd.Next() & ((1<<25)-1);
             snprintf(key, sizeof(key), format, k);
 
@@ -374,8 +342,7 @@ void Benchmark::FillParallelBatch()
     vector<Thread*> thrs;
     ThreadArg *args = new ThreadArg[num_cpus_];
 
-    for(uint64_t i = 0; i < num_cpus_; i++)
-    {
+    for(uint64_t i = 0; i < num_cpus_; i++) {
         args[i].method = &Benchmark::ThreadBatchBody;
         args[i].bm     = this;
         args[i].thrid  = i;
@@ -383,16 +350,14 @@ void Benchmark::FillParallelBatch()
         thrs[thrs.size()-1] -> run();
     }
 
-    for(uint64_t i = 0; i < num_cpus_; i++)
-    {
+    for(uint64_t i = 0; i < num_cpus_; i++) {
         thrs[i] -> join();
     }
 
     delete [] args;
     args = NULL;
 
-    for(uint64_t i = 0; i < num_cpus_; i++)
-    {
+    for(uint64_t i = 0; i < num_cpus_; i++) {
         delete thrs[i];
         thrs[i] = NULL;
     }
@@ -412,8 +377,7 @@ void Benchmark::ReadRandom()
     Timer timer;
     timer.Start();
 
-    for (int i = 0; i < reads_; i++)
-    {
+    for (int i = 0; i < reads_; i++) {
         if(i%10000==0)
             printf("ReadRandom %d\n", i);
 

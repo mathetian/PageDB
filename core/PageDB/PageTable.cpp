@@ -60,15 +60,12 @@ bool   PageTable::put(const Slice & key, const Slice & value, uint32_t hashVal, 
     if(flag == true)
         m_db -> recycle(m_elements[index].m_datPos, m_elements[index].m_keySize + m_elements[index].m_datSize);
 
-    if(flag == true)
-    {
+    if(flag == true) {
         m_elements[index].m_hashVal   = hashVal;
         m_elements[index].m_datPos    = offset;
         m_elements[index].m_keySize   = key.size();
         m_elements[index].m_datSize = value.size();
-    }
-    else
-    {
+    } else {
         m_elements[m_curNum].m_hashVal   = hashVal;
         m_elements[m_curNum].m_datPos    = offset;
         m_elements[m_curNum].m_keySize   = key.size();
@@ -85,10 +82,8 @@ bool   PageTable::put(const Slice & key, const Slice & value, uint32_t hashVal, 
 **/
 Slice  PageTable::get(const Slice & key, uint32_t hashVal)
 {
-    for(int index = 0; index < m_curNum; index++)
-    {
-        if(m_elements[index].m_hashVal == hashVal && m_elements[index].m_keySize == key.size())
-        {
+    for(int index = 0; index < m_curNum; index++) {
+        if(m_elements[index].m_hashVal == hashVal && m_elements[index].m_keySize == key.size()) {
             BufferPacket packet(m_elements[index].m_datSize + m_elements[index].m_keySize);
 
             Slice internal_key(m_elements[index].m_keySize);
@@ -113,11 +108,9 @@ bool   PageTable::remove(const Slice & key, uint32_t hashVal)
 {
     int index;
     PageElement element;
-    for(index = 0; index < m_curNum; index++)
-    {
+    for(index = 0; index < m_curNum; index++) {
         element = m_elements[index];
-        if(element.m_hashVal == hashVal && element.m_keySize == key.size())
-        {
+        if(element.m_hashVal == hashVal && element.m_keySize == key.size()) {
             BufferPacket packet(element.m_keySize);
             Slice internal_key(element.m_keySize);
 
@@ -150,11 +143,9 @@ bool   PageTable::remove(const Slice & key, uint32_t hashVal)
 **/
 bool   PageTable::find(const Slice & key, uint32_t hashVal, int &index)
 {
-    for(index = 0; index < m_curNum; index++)
-    {
+    for(index = 0; index < m_curNum; index++) {
         PageElement element = m_elements[index];
-        if(element.m_hashVal == hashVal && element.m_keySize == key.size())
-        {
+        if(element.m_hashVal == hashVal && element.m_keySize == key.size()) {
 
             BufferPacket packet(element.m_keySize);
             Slice        internal_key(element.m_keySize);

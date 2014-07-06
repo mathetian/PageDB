@@ -12,22 +12,19 @@ using namespace utils;
 class A
 {
 public:
-    int GetInt()
-    {
+    int GetInt() {
         BufferPacket packet(sizeof(int));
         packet << 15545;
         Slice slice(packet.c_str(), packet.size());
         return slice.returnAsInt();
     }
 
-    int GetSize1()
-    {
+    int GetSize1() {
         Slice slice;
         return slice.size();
     }
 
-    int GetSize2()
-    {
+    int GetSize2() {
         vector<Slice> slices = vector<Slice>(10,0);
         return slices.size();
     }

@@ -14,8 +14,7 @@ void BufferPacket::acquire()
 
 void BufferPacket::release()
 {
-    if (m_ref && (m_ref->addAndGet(-1)) == 0 && m_data)
-    {
+    if (m_ref && (m_ref->addAndGet(-1)) == 0 && m_data) {
         delete [] m_data;
         delete m_ref;
         m_data = NULL;
@@ -63,13 +62,10 @@ BufferPacket & BufferPacket::operator=(const BufferPacket & packet)
 
 BufferPacket & BufferPacket::operator << (int ivalue)
 {
-    if(m_cur + sizeof(int) > m_size)
-    {
+    if(m_cur + sizeof(int) > m_size) {
         m_log -> _Error("BufferPacket error << int\n");
         assert(0);
-    }
-    else
-    {
+    } else {
         *(int*)(m_data + m_cur) = ivalue;
         m_cur += sizeof(int);
     }
@@ -79,13 +75,10 @@ BufferPacket & BufferPacket::operator << (int ivalue)
 
 BufferPacket & BufferPacket::operator << (const uint32_t ivalue)
 {
-    if(m_cur + sizeof(uint32_t) > m_size)
-    {
+    if(m_cur + sizeof(uint32_t) > m_size) {
         m_log -> _Error("BufferPacket error << int\n");
         assert(0);
-    }
-    else
-    {
+    } else {
         *(uint32_t*)(m_data + m_cur) = ivalue;
         m_cur += sizeof(uint32_t);
     }
@@ -95,13 +88,10 @@ BufferPacket & BufferPacket::operator << (const uint32_t ivalue)
 
 BufferPacket & BufferPacket::operator << (size_t st)
 {
-    if(m_cur + sizeof(size_t) > m_size)
-    {
+    if(m_cur + sizeof(size_t) > m_size) {
         m_log -> _Error("BufferPacket error << size_t\n");
         assert(0);
-    }
-    else
-    {
+    } else {
         *(size_t*)(m_data + m_cur) = st;
         m_cur += sizeof(size_t);
     }
@@ -110,13 +100,10 @@ BufferPacket & BufferPacket::operator << (size_t st)
 
 BufferPacket & BufferPacket::operator << (const string & str)
 {
-    if(m_cur + str.size() > m_size)
-    {
+    if(m_cur + str.size() > m_size) {
         m_log -> _Error("BufferPacket error << string\n");
         assert(0);
-    }
-    else
-    {
+    } else {
         memcpy(m_data + m_cur, str.c_str(), str.size());
         m_cur += str.size();
     }
@@ -126,13 +113,10 @@ BufferPacket & BufferPacket::operator << (const string & str)
 
 BufferPacket & BufferPacket::operator >> (int & ivalue)
 {
-    if(m_cur + sizeof(ivalue) > m_size)
-    {
+    if(m_cur + sizeof(ivalue) > m_size) {
         m_log -> _Error("BufferPacket >> int overflow\n");
         assert(9);
-    }
-    else
-    {
+    } else {
         ivalue = *(int*)(m_data + m_cur);
         m_cur += sizeof(ivalue);
     }
@@ -141,13 +125,10 @@ BufferPacket & BufferPacket::operator >> (int & ivalue)
 
 BufferPacket & BufferPacket::operator >> (uint32_t & ivalue)
 {
-    if(m_cur + sizeof(ivalue) > m_size)
-    {
+    if(m_cur + sizeof(ivalue) > m_size) {
         m_log -> _Error("BufferPacket >> int overflow\n");
         assert(0);
-    }
-    else
-    {
+    } else {
         ivalue = *(uint32_t*)(m_data + m_cur);
         m_cur += sizeof(uint32_t);
     }
@@ -156,13 +137,10 @@ BufferPacket & BufferPacket::operator >> (uint32_t & ivalue)
 
 BufferPacket & BufferPacket::operator >> (size_t & st)
 {
-    if(m_cur + sizeof(st) > m_size)
-    {
+    if(m_cur + sizeof(st) > m_size) {
         m_log -> _Error("BufferPacket >> size_t overflow\n");
         assert(0);
-    }
-    else
-    {
+    } else {
         st = *(size_t*)(st + m_cur);
         m_cur += sizeof(st);
     }
@@ -171,13 +149,10 @@ BufferPacket & BufferPacket::operator >> (size_t & st)
 
 BufferPacket & BufferPacket::operator >> (string & str)
 {
-    if(m_cur + str.size() > m_size)
-    {
+    if(m_cur + str.size() > m_size) {
         m_log -> _Error("BufferPacket >> string overflow\n");
         assert(0);
-    }
-    else
-    {
+    } else {
         int index = 0;
         for(; index < str.size(); index++)
             str[index] = m_data[m_cur + index];
@@ -188,13 +163,10 @@ BufferPacket & BufferPacket::operator >> (string & str)
 
 void BufferPacket::write(const char * str, int len)
 {
-    if(m_cur + len > m_size)
-    {
+    if(m_cur + len > m_size) {
         m_log -> _Error("BufferPacket error write\n");
         assert(0);
-    }
-    else
-    {
+    } else {
         memcpy(m_data + m_cur, str, len);
         m_cur += len;
     }
@@ -203,13 +175,10 @@ void BufferPacket::write(const char * str, int len)
 
 void BufferPacket::read(char * str, int len)
 {
-    if(m_cur + len > m_size)
-    {
+    if(m_cur + len > m_size) {
         m_log -> _Error("BufferPacket >> char* overflow\n");
         assert(0);
-    }
-    else
-    {
+    } else {
         memcpy(str,m_data + m_cur,len);
         m_cur += len;
     }
@@ -217,13 +186,10 @@ void BufferPacket::read(char * str, int len)
 
 BufferPacket & BufferPacket::operator << (const BufferPacket & packet)
 {
-    if(m_cur + packet.size() > m_size)
-    {
+    if(m_cur + packet.size() > m_size) {
         m_log -> _Error("BufferPacket write packet overflow\n");
         assert(0);
-    }
-    else
-    {
+    } else {
         memcpy(m_data + m_cur,(char*)&packet,packet.size());
         m_cur += packet.size();
     }
@@ -233,13 +199,10 @@ BufferPacket & BufferPacket::operator << (const BufferPacket & packet)
 
 BufferPacket & BufferPacket::operator << (const char * str)
 {
-    if(m_cur + strlen(str) > m_size)
-    {
+    if(m_cur + strlen(str) > m_size) {
         m_log -> _Error("BufferPacket write char * overflow\n");
         assert(0);
-    }
-    else
-    {
+    } else {
         memcpy(m_data + m_cur, str, strlen(str));
         m_cur += strlen(str);
     }
@@ -249,13 +212,10 @@ BufferPacket & BufferPacket::operator << (const char * str)
 
 BufferPacket & BufferPacket::operator << (const Slice & slice)
 {
-    if(m_cur + slice.size() > m_size)
-    {
+    if(m_cur + slice.size() > m_size) {
         m_log -> _Error("BufferPacket write slice overflow\n");
         assert(0);
-    }
-    else
-    {
+    } else {
         memcpy(m_data + m_cur, slice.c_str(), slice.size());
         m_cur += slice.size();
     }
@@ -265,13 +225,10 @@ BufferPacket & BufferPacket::operator << (const Slice & slice)
 
 BufferPacket & BufferPacket::operator >> (Slice & slice)
 {
-    if(m_cur + slice.size() > m_size)
-    {
+    if(m_cur + slice.size() > m_size) {
         m_log -> _Error("BufferPacket >> slice overflow\n");
         assert(0);
-    }
-    else
-    {
+    } else {
         Slice rs(m_data + m_cur, slice.size());
         slice = rs;
         m_cur += slice.size();
@@ -283,8 +240,7 @@ BufferPacket & BufferPacket::operator >> (Slice & slice)
 BufferPacket & BufferPacket::operator >> (char * str)
 {
     int index = m_cur;
-    while(index < m_size)
-    {
+    while(index < m_size) {
         if(m_data[index] == 0) break;
         index++;
     }

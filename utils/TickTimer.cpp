@@ -37,15 +37,13 @@ struct timeval Timer::GetDiffTime()
 
 int Timer::SubtractTime(struct timeval *result, struct timeval *x, struct timeval *y)
 {
-    if (x->tv_usec < y->tv_usec)
-    {
+    if (x->tv_usec < y->tv_usec) {
         int nsec = (y->tv_usec - x->tv_usec) / 1000000 + 1;
         y->tv_usec -= 1000000 * nsec;
         y->tv_sec += nsec;
     }
 
-    if (x->tv_usec - y->tv_usec > 1000000)
-    {
+    if (x->tv_usec - y->tv_usec > 1000000) {
         int nsec = (x->tv_usec - y->tv_usec) / 1000000;
         y->tv_usec += 1000000 * nsec;
         y->tv_sec -= nsec;
@@ -89,8 +87,7 @@ void TimeAccumulator::StopTimer()
     m_totalTime.tv_sec  += m_difference.tv_sec;
     m_totalTime.tv_usec += m_difference.tv_usec;
 
-    if(m_totalTime.tv_usec >= 1000000)
-    {
+    if(m_totalTime.tv_usec >= 1000000) {
         m_totalTime.tv_sec++;
         m_totalTime.tv_usec -= 1000000;
     }

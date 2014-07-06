@@ -312,13 +312,11 @@ private:
         uint32_t   m_addr;
         bool       m_updated;
 
-        CacheElem() : m_page(NULL)
-        {
+        CacheElem() : m_page(NULL) {
             reset();
         }
 
-        void reset()
-        {
+        void reset() {
             if(m_page != NULL) delete m_page;
             m_page    = NULL;
             m_addr   = -1;

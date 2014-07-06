@@ -31,14 +31,12 @@ TEST(A, Test1)
         int round = (SIZE + BATCHSIZE - 1)/BATCHSIZE;
 
         total.Start();
-        for(int i = 0; i < round; i++)
-        {
+        for(int i = 0; i < round; i++) {
             part.Start();
 
             WriteBatch batch(BATCHSIZE);
 
-            for(int j = 0; j < BATCHSIZE; j++)
-            {
+            for(int j = 0; j < BATCHSIZE; j++) {
                 int k = i*BATCHSIZE + j;
                 if(k >= SIZE) break;
 
@@ -72,8 +70,7 @@ TEST(A, Test1)
 
         total.Start();
 
-        for(int i=SIZE-1; i>=0; i--)
-        {
+        for(int i=SIZE-1; i>=0; i--) {
             BufferPacket packet(sizeof(int));
             packet << i;
 

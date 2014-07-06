@@ -67,8 +67,7 @@ uint32_t MurmurHash3(const Slice & key)
 
     const uint32_t * blocks = (const uint32_t *)(data + nblocks*4);
 
-    for(i = -nblocks; i; i++)
-    {
+    for(i = -nblocks; i; i++) {
         uint32_t k1 = getblock(blocks,i);
 
         k1 *= c1;
@@ -84,8 +83,7 @@ uint32_t MurmurHash3(const Slice & key)
 
     uint32_t k1 = 0;
 
-    switch(len & 3)
-    {
+    switch(len & 3) {
     case 3:
         k1 ^= tail[2] << 16;
     case 2:

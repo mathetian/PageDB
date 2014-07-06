@@ -34,8 +34,7 @@ bool     PageDB::open(const string &filename)
     /**
     ** DB File Exist? Judge it before pre-processing
     **/
-    if(FileModule::Size(idxName) == 0)
-    {
+    if(FileModule::Size(idxName) == 0) {
         assert(FileModule::Size(datName) == 0);
 
         m_gd = 0;
@@ -50,9 +49,7 @@ bool     PageDB::open(const string &filename)
         m_datfile.Append(packet.c_str(), SPAGETABLE);
 
         m_cache -> put(page, 0);
-    }
-    else
-    {
+    } else {
         /**
         ** Exist old DB, read index information from file
         **/
@@ -62,8 +59,7 @@ bool     PageDB::open(const string &filename)
     /**
     ** If no empty block, allocate one from the end of file
     **/
-    if(m_fb == -1)
-    {
+    if(m_fb == -1) {
         m_fb = m_datfile.Size();
 
         PageEmptyBlock block;
@@ -117,8 +113,7 @@ Slice    PageDB::get(const Slice & key)
 
     PageTable * page = m_cache -> find(addr, index);
 
-    if(page == NULL)
-    {
+    if(page == NULL) {
         page = new PageTable(this);
         m_cache -> put(page, addr);
 
@@ -139,8 +134,7 @@ bool     PageDB::remove(const Slice & key)
 
     PageTable * page = m_cache -> find(addr, index);
 
-    if(page == NULL)
-    {
+    if(page == NULL) {
         page = new PageTable(this);
         index = m_cache -> put(page, addr);
 
@@ -149,14 +143,12 @@ bool     PageDB::remove(const Slice & key)
 
     bool rb = page -> remove(key, hashVal);
 
-    if(rb == true)
-    {
+    if(rb == true) {
         BufferPacket npacket = page -> getPacket();
         m_datfile.Read(npacket.str(), addr, npacket.size());
 
         m_cache -> updated(index);
-    }
-    else
+    } else
         m_log -> _Warn("ExtendibleHash :: remove failed(maybe not exist?)");
 
     return rb;
@@ -197,11 +189,9 @@ void    PageDB::dump(ostream&os)
     os << "--------------------Basic Info--------------------" << endl;
     os << "global D" << m_gd << ", number of pages:" << m_pn << ", number of entries" << m_entries.size() << endl;
     os << "--------------------Page  Info--------------------" << endl;
-    for(int cur = 0, index = 0; cur < m_entries.size(); cur++)
-    {
+    for(int cur = 0, index = 0; cur < m_entries.size(); cur++) {
         int j;
-        for(j = 0; j < cur; j++)
-        {
+        for(j = 0; j < cur; j++) {
             if(m_entries.at(j) ==  m_entries.at(cur)) break;
         }
 
@@ -213,8 +203,7 @@ void    PageDB::dump(ostream&os)
 
         os << "Page(size:" << page -> m_curNum <<") " << index++ <<" "<< cur << " " << page -> m_d << ":";
 
-        for(j = 0; j < page -> m_curNum; j++)
-        {
+        for(j = 0; j < page -> m_curNum; j++) {
             PageElement element = page -> m_elements[j];
 
             BufferPacket packet(element.m_keySize + element.m_datSize);
@@ -248,11 +237,9 @@ void    PageDB::compact()
 
     WriteBatch * pbatch =  new WriteBatch(PAGESIZE*2);
 
-    for(int cur = 0; cur < m_entries.size(); cur++)
-    {
+    for(int cur = 0; cur < m_entries.size(); cur++) {
         int j;
-        for(j = 0; j < cur; j++)
-        {
+        for(j = 0; j < cur; j++) {
             if(m_entries.at(j) ==  m_entries.at(cur)) break;
         }
 
@@ -265,8 +252,7 @@ void    PageDB::compact()
         m_datfile.Read(packet.str(), addr, SPAGETABLE);
         page -> setByBucket(packet);
 
-        for(j = 0; j < page -> m_curNum; j++)
-        {
+        for(j = 0; j < page -> m_curNum; j++) {
             PageElement element = page -> m_elements[j];
 
             BufferPacket packet1(element.m_keySize + element.m_datSize);
@@ -283,8 +269,7 @@ void    PageDB::compact()
         BufferPacket packet1(WriteBatchInternal::ByteSize(pbatch));
         WriteBatch::Iterator iter(pbatch);
 
-        for(const Node * node = iter.first(); node != iter.end(); node = iter.next())
-        {
+        for(const Node * node = iter.first(); node != iter.end(); node = iter.next()) {
             packet1 << (node -> first) << (node -> second);
         }
 
@@ -303,17 +288,13 @@ void    PageDB::compact()
 
     uint32_t uds = 0;
     int pos1 = 0, pos2 = 0;
-    for(int cur = 0; cur < m_entries.size(); cur++)
-    {
-        if(used.at(cur) == 0)
-        {
+    for(int cur = 0; cur < m_entries.size(); cur++) {
+        if(used.at(cur) == 0) {
             vector<int> ids;
             ids.push_back(cur);
 
-            for(int j = cur + 1; j < m_entries.size(); j++)
-            {
-                if(m_entries.at(cur) == m_entries.at(j))
-                {
+            for(int j = cur + 1; j < m_entries.size(); j++) {
+                if(m_entries.at(cur) == m_entries.at(j)) {
                     used[j] = 1;
                     ids.push_back(j);
                 }
@@ -333,12 +314,10 @@ void    PageDB::compact()
             // printf("ids Size, %d, %lld\n", ids.size(), (long long)m_entries.at(cur));
             if(ids.size() != 1) assert(is2Exp(ids.size()) == true);
 
-            for(int j=0; j<ids.size(); j++)
-            {
+            for(int j=0; j<ids.size(); j++) {
                 uint64_t pageNum = ids.size();
                 uint64_t k = 0;
-                while(pageNum > 1)
-                {
+                while(pageNum > 1) {
                     k++;
                     pageNum >>= 1;
                 }
@@ -360,8 +339,7 @@ void    PageDB::compact()
             pos2 += packet1.size();
 
             int fpos = uds + packet.size();
-            for(int j=0; j<page->m_curNum; j++)
-            {
+            for(int j=0; j<page->m_curNum; j++) {
                 page->m_elements[j].m_datPos = fpos;
                 fpos += page->m_elements[j].m_keySize + page->m_elements[j].m_datSize;
             }
@@ -400,15 +378,13 @@ void    PageDB::recycle(int offset, int size)
 
     PageEmptyBlock block;
 
-    if(m_fb == -1)
-    {
+    if(m_fb == -1) {
         m_log -> _Fatal("There must be some fatal error\n");
         return;
     }
 
     m_datfile.Read((char*)&block, m_fb, SEEBLOCK);
-    if(block.m_curNum == PAGESIZE)
-    {
+    if(block.m_curNum == PAGESIZE) {
         int nn = block.m_nextBlock;
 
         PageEmptyBlock nnBlock = block.split();
@@ -460,10 +436,8 @@ int      PageDB::findSuitableOffset(int size)
     PageEmptyBlock block;
     m_datfile.Read((char*)&block, m_fb, SEEBLOCK);
 
-    if(block.m_nextBlock != -1)
-    {
-        if(block.m_curNum < PAGESIZE/2)
-        {
+    if(block.m_nextBlock != -1) {
+        if(block.m_curNum < PAGESIZE/2) {
             PageEmptyBlock nnBlock;
 
             int old = block.m_nextBlock;
@@ -475,11 +449,9 @@ int      PageDB::findSuitableOffset(int size)
 
             block.m_nextBlock = nnBlock.m_nextBlock;
 
-            for(; index < nnBlock.m_curNum; index++)
-            {
+            for(; index < nnBlock.m_curNum; index++) {
                 block.m_eles[block.m_curNum++] = nnBlock.m_eles[index];
-                if(block.m_curNum == PAGESIZE)
-                {
+                if(block.m_curNum == PAGESIZE) {
                     PageEmptyBlock nnn = block.split();
                     nnn.m_nextBlock   = block.m_nextBlock;
                     block.m_nextBlock = m_datfile.Size();
@@ -488,8 +460,7 @@ int      PageDB::findSuitableOffset(int size)
                 }
             }
 
-            if(block.m_curNum == PAGESIZE)
-            {
+            if(block.m_curNum == PAGESIZE) {
                 PageEmptyBlock nnn = block.split();
                 nnn.m_nextBlock   = block.m_nextBlock;
                 block.m_nextBlock = m_datfile.Size();
@@ -500,8 +471,7 @@ int      PageDB::findSuitableOffset(int size)
             block.m_eles[block.m_curNum++].m_size = SEEBLOCK;
         }
     }
-    if(block.find(size, pos) == true)
-    {
+    if(block.find(size, pos) == true) {
         PageEmptyBlock::PageEmptyEle ele = block.m_eles[pos];
 
         offset = ele.m_pos;
@@ -513,11 +483,8 @@ int      PageDB::findSuitableOffset(int size)
 
         if(ele.m_size == size) block.m_curNum--;
         else block.m_eles[block.m_curNum - 1] = ele;
-    }
-    else
-    {
-        if(block.m_curNum == PAGESIZE)
-        {
+    } else {
+        if(block.m_curNum == PAGESIZE) {
 
             PageEmptyBlock nnn = block.split();
             nnn.m_nextBlock   = block.m_nextBlock;
@@ -553,8 +520,7 @@ void     PageDB::fullAddLocalD(int cur, uint64_t num, uint64_t pos1, uint64_t po
     else flag = false;
     oflag = flag;
 
-    while(cur >= 0)
-    {
+    while(cur >= 0) {
         if(flag == true) m_entries[cur] = pos2;
         else m_entries[cur] = pos1;
 
@@ -565,8 +531,7 @@ void     PageDB::fullAddLocalD(int cur, uint64_t num, uint64_t pos1, uint64_t po
     cur = ocur + each;
     flag = !oflag;
 
-    while(cur < m_entries.size())
-    {
+    while(cur < m_entries.size()) {
         if(flag == true) m_entries[cur] = pos2;
         else m_entries[cur] = pos1;
 
@@ -575,8 +540,7 @@ void     PageDB::fullAddLocalD(int cur, uint64_t num, uint64_t pos1, uint64_t po
     }
 }
 
-struct PageDB::Writer
-{
+struct PageDB::Writer {
     WriteBatch* batch;
     bool sync;
     bool done;
@@ -593,8 +557,7 @@ WriteBatch * PageDB::buildBatchGroup(Writer ** last_writer)
 
     size_t max_size = 1 << 20;
 
-    if (size <= (128<<10))
-    {
+    if (size <= (128<<10)) {
         max_size = size + (128<<10);
     }
 
@@ -602,20 +565,17 @@ WriteBatch * PageDB::buildBatchGroup(Writer ** last_writer)
 
     deque<PageDB::Writer*>::iterator iter = m_writers.begin();
 
-    for (++iter; iter != m_writers.end(); ++iter)
-    {
+    for (++iter; iter != m_writers.end(); ++iter) {
         Writer* w = *iter;
         if (w->sync && !first->sync)
             break;
 
-        if (w->batch != NULL)
-        {
+        if (w->batch != NULL) {
             size += WriteBatchInternal::Count(w->batch);
             if (size > max_size)
                 break;
 
-            if (result == first->batch)
-            {
+            if (result == first->batch) {
                 result = m_tmpBatch;
                 assert(result->getCount() == 0);
                 WriteBatchInternal::Append(result, first->batch);
@@ -642,13 +602,11 @@ bool     PageDB::write(WriteBatch* pbatch)
 
     m_writers.push_back(&w);
 
-    while (!w.done && &w != m_writers.front())
-    {
+    while (!w.done && &w != m_writers.front()) {
         w.cv.wait();
     }
 
-    if (w.done)
-    {
+    if (w.done) {
         return true;
     }
 
@@ -666,13 +624,11 @@ bool     PageDB::write(WriteBatch* pbatch)
 
     if (updates == m_tmpBatch) m_tmpBatch->clear();
 
-    while (true)
-    {
+    while (true) {
         Writer* ready = m_writers.front();
         m_writers.pop_front();
 
-        if (ready != &w)
-        {
+        if (ready != &w) {
             ready->done = true;
             ready->cv.signal();
         }
@@ -680,8 +636,7 @@ bool     PageDB::write(WriteBatch* pbatch)
         if (ready == last_writer) break;
     }
 
-    if (!m_writers.empty())
-    {
+    if (!m_writers.empty()) {
         m_writers.front()->cv.signal();
     }
 
@@ -698,8 +653,7 @@ bool     PageDB::writeBatch(WriteBatch * pbatch)
     uint32_t totalSize = 0;
     WriteBatch::Iterator iterator(pbatch);
 
-    for(const Node * node = iterator.first(); node != iterator.end(); node = iterator.next())
-    {
+    for(const Node * node = iterator.first(); node != iterator.end(); node = iterator.next()) {
         Slice key   = node -> first;
         Slice value = node -> second;
 
@@ -713,8 +667,7 @@ bool     PageDB::writeBatch(WriteBatch * pbatch)
 
         PageTable * page = m_cache -> find(addr, index);
 
-        if(page == NULL)
-        {
+        if(page == NULL) {
             page  = new PageTable(this);
             index = m_cache -> put(page, addr);
 
@@ -725,13 +678,11 @@ bool     PageDB::writeBatch(WriteBatch * pbatch)
             page -> setByBucket(packet);
         }
 
-        if(page -> full() && page -> m_d == m_gd)
-        {
+        if(page -> full() && page -> m_d == m_gd) {
             m_gd++;
 
             int oldSize = m_entries.size();
-            for(int i = 0; i < oldSize; i++)
-            {
+            for(int i = 0; i < oldSize; i++) {
                 uint64_t addr    = m_entries.at(i) & MOD;
                 uint64_t pageNum = m_entries.at(i) & (~MOD);
                 pageNum >>= 56;
@@ -746,8 +697,7 @@ bool     PageDB::writeBatch(WriteBatch * pbatch)
             pageNum++;
         }
 
-        if(page -> full() && page -> m_d < m_gd)
-        {
+        if(page -> full() && page -> m_d < m_gd) {
             page -> put(key, value, hashVal, totalSize + curpos);
             phyPacket << key << value;
             totalSize += key.size() + value.size();
@@ -758,8 +708,7 @@ bool     PageDB::writeBatch(WriteBatch * pbatch)
 
             int index = 0, curNum2 = 0, curNum3 = 0;
 
-            for(index = 0; index < page -> m_curNum; index++)
-            {
+            for(index = 0; index < page -> m_curNum; index++) {
                 PageElement element = page -> m_elements[index];
 
                 int id = element.m_hashVal;
@@ -797,9 +746,7 @@ bool     PageDB::writeBatch(WriteBatch * pbatch)
 
             delete p2;
             p2 = NULL;
-        }
-        else
-        {
+        } else {
             page -> put(key, value, hashVal, totalSize + curpos);
             phyPacket << key << value;
             totalSize = totalSize + key.size() + value.size();

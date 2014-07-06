@@ -14,14 +14,12 @@ namespace cache
 class Cache
 {
 protected:
-    struct Entry_t
-    {
+    struct Entry_t {
         Slice key_, value_;
         struct Entry_t *next_;
         struct Entry_t *prev_;
 
-        Entry_t(const Slice &key, const Slice &value)
-        {
+        Entry_t(const Slice &key, const Slice &value) {
             key_ = key_;
             value_ = value;
             next_ = prev_ = NULL;
@@ -32,8 +30,7 @@ protected:
 
 public:
     Cache(int slotnum) : slotnum_(slotnum), \
-        header_(NULL), ender_(NULL)
-    {
+        header_(NULL), ender_(NULL) {
         header_ = new Entry("", "");
         ender_  = new Entry("", "");
 
@@ -43,8 +40,7 @@ public:
         assert(slotnum_ > 0);
     }
 
-    virtual ~Cache()
-    {
+    virtual ~Cache() {
         clear();
 
         delete header_;
@@ -63,12 +59,10 @@ public:
 
 public:
     /// Clear Operation
-    void    clear()
-    {
+    void    clear() {
         Entry *entry = header_ -> next_;
 
-        while(entry != ender_)
-        {
+        while(entry != ender_) {
             Entry *cur   = entry;
             entry = cur -> next_;
             delete cur;
@@ -82,8 +76,7 @@ public:
     }
 
 protected:
-    void insert(Entry *entry)
-    {
+    void insert(Entry *entry) {
         Slice key = entry -> key_;
 
         entry -> next_ = header_ -> next_;
@@ -95,8 +88,7 @@ protected:
         dict_[key]   = entry;
     }
 
-    void del(Entry *entry)
-    {
+    void del(Entry *entry) {
         Slice key = entry -> key_;
 
         entry -> prev_ -> next_ = entry -> next_;

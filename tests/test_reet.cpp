@@ -13,16 +13,14 @@ using namespace utils;
 class CA
 {
 public:
-    void A()
-    {
+    void A() {
         m_lock.lock();
         cout << "Function A " << Thread::getIDType() << endl;
         B();
         m_lock.unlock();
     }
 
-    void B()
-    {
+    void B() {
         m_lock.lock();
         cout << "Function B " << Thread::getIDType() << endl;
         sleep(10);

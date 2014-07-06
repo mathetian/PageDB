@@ -19,8 +19,7 @@ PageEmptyBlock::PageEmptyBlock() : m_curNum(0), m_nextBlock(-1)
 **/
 bool PageEmptyBlock::find(int size, int & pos)
 {
-    for(pos = m_curNum - 1; pos >= 0; pos--)
-    {
+    for(pos = m_curNum - 1; pos >= 0; pos--) {
         if(m_eles[pos].m_size > size)
             return true;
     }
@@ -37,8 +36,7 @@ PageEmptyBlock PageEmptyBlock::split()
 
     int cn1 = 0, cn2 = 0, index;
 
-    for(index = 0; index < m_curNum; index++)
-    {
+    for(index = 0; index < m_curNum; index++) {
         if(index & 1)
             newblock.m_eles[cn1++] = m_eles[index];
         else

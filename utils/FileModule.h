@@ -23,13 +23,11 @@ namespace utils
 class FileModule
 {
 public:
-    static bool Exist(const string &fileName)
-    {
+    static bool Exist(const string &fileName) {
         return (access(fileName.c_str(), F_OK ) != -1) ? true : false;
     }
 
-    static uint64_t  Size(const string &fileName)
-    {
+    static uint64_t  Size(const string &fileName) {
         if(Exist(fileName) == false) return 0;
 
         struct stat sta;
@@ -39,8 +37,7 @@ public:
         return sta.st_size;
     }
 
-    static bool Remove(const string &fileName)
-    {
+    static bool Remove(const string &fileName) {
         if(Exist(fileName) == false)
             return false;
         string cmd = "rm " + fileName;
@@ -64,16 +61,14 @@ class RandomFile : Noncopyable
 public:
     RandomFile() : openStatus_(0), fileSize_(0), fd_(-1) { }
 
-    ~RandomFile()
-    {
+    ~RandomFile() {
         Close();
     }
 
     /**
     ** Open a file. If this file doesn't exist, creating it
     **/
-    bool Open(const string &fileName)
-    {
+    bool Open(const string &fileName) {
         openStatus_ = FileModule::Exist(fileName) == true ? 1 : 2;
         fd_ = open(fileName.c_str(), O_RDWR | O_CREAT, 0644);
         assert(fd_ != -1);
@@ -83,8 +78,7 @@ public:
         return true;
     }
 
-    bool Read(char *str, uint64_t offset, size_t size)
-    {
+    bool Read(char *str, uint64_t offset, size_t size) {
         assert(offset + size <= fileSize_);
         lseek(fd_, offset, SEEK_SET);
         assert(read(fd_, str, size) == size);
@@ -97,13 +91,11 @@ public:
     **
     ** Append is to append content in end of the file
     **/
-    bool Append(const Slice &slice)
-    {
+    bool Append(const Slice &slice) {
         return Append(slice.c_str(), slice.size());
     }
 
-    bool Append(const char *str, size_t size)
-    {
+    bool Append(const char *str, size_t size) {
         lseek(fd_, 0, SEEK_END);
         assert(write(fd_, str, size) == size);
         fileSize_ = fileSize_ + size;
@@ -111,13 +103,11 @@ public:
         return true;
     }
 
-    bool Write(const Slice &slice, uint64_t offset)
-    {
+    bool Write(const Slice &slice, uint64_t offset) {
         return Write(slice.c_str(), offset, slice.size());
     }
 
-    bool Write(const char *result, uint64_t offset, size_t size)
-    {
+    bool Write(const char *result, uint64_t offset, size_t size) {
         assert(offset <= fileSize_);
         lseek(fd_, offset, SEEK_SET);
         assert(write(fd_, result, size) == size);
@@ -130,8 +120,7 @@ public:
     /**
     ** Truncate file into speical length
     **/
-    bool  Truncate(size_t size)
-    {
+    bool  Truncate(size_t size) {
         assert(size <= fileSize_);
         assert(ftruncate(fd_, size) ==0);
 
@@ -139,8 +128,7 @@ public:
         return true;
     }
 
-    bool Close()
-    {
+    bool Close() {
         if(openStatus_ != 0 && fd_ != -1)
             close(fd_);
 
@@ -148,19 +136,16 @@ public:
         fd_ = -1;
     }
 
-    bool Sync()
-    {
+    bool Sync() {
         if(openStatus_ != 0)
             fsync(fd_);
     }
 
-    uint64_t Size()
-    {
+    uint64_t Size() {
         return fileSize_;
     }
 
-    int      Status()
-    {
+    int      Status() {
         return openStatus_;
     }
 

@@ -15,8 +15,7 @@ using namespace utils;
 class A
 {
 public:
-    WriteBatch* Test()
-    {
+    WriteBatch* Test() {
         BufferPacket packet(sizeof(int)*3);
         packet << 1;
         packet << 2;
@@ -43,8 +42,7 @@ TEST(A, Test)
     WriteBatch::Iterator iterator(pbatch);
     typedef pair<Slice, Slice> Node;
 
-    for(const Node * node = iterator.first(); node != iterator.end(); node = iterator.next())
-    {
+    for(const Node * node = iterator.first(); node != iterator.end(); node = iterator.next()) {
         Slice a = node -> first;
         Slice b = node -> second;
         ASSERT_EQ(a.returnAsInt(), b.returnAsInt());

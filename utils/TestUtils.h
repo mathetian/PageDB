@@ -25,23 +25,18 @@ private:
 
 public:
     Tester(const char* f, int l)
-        : ok_(true), fname_(f), line_(l)
-    {
+        : ok_(true), fname_(f), line_(l) {
     }
 
-    ~Tester()
-    {
-        if (!ok_)
-        {
+    ~Tester() {
+        if (!ok_) {
             fprintf(stderr, "%s:%d:%s\n", fname_, line_, ss_.str().c_str());
             exit(1);
         }
     }
 
-    Tester& Is(bool b, const char* msg)
-    {
-        if (!b)
-        {
+    Tester& Is(bool b, const char* msg) {
+        if (!b) {
             ss_ << " Assertion failure " << msg;
             ok_ = false;
         }
@@ -67,8 +62,7 @@ public:
 #undef BINARY_OP
 
     template <class V>
-    Tester& operator<<(const V& value)
-    {
+    Tester& operator<<(const V& value) {
         if (!ok_)
             ss_ << " " << value;
 
