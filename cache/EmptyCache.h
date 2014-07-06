@@ -5,7 +5,7 @@
 #ifndef _EMPTY_CACHE_H
 #define _EMPTY_CACHE_H
 
-#include "BaseCache.h"
+#include "Cache.h"
 
 namespace customdb
 {
