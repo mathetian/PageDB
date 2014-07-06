@@ -56,7 +56,7 @@ int kMajorVersion = 1;
 int kMinorVersion = 1;
 
 Benchmark::Benchmark() : db_(NULL), num_(FLAGS_num), key_size_(FLAGS_key_size),
-     value_size_(FLAGS_value_size), reads_(FLAGS_num), batchsize_(FLAGS_batch_size)
+    value_size_(FLAGS_value_size), reads_(FLAGS_num), batchsize_(FLAGS_batch_size)
 {
     db_ =  new CustomDB;
     assert(db_ != NULL);
@@ -90,9 +90,9 @@ void Benchmark::Run()
     while (benchmarks != NULL)
     {
         const char* sep = strchr(benchmarks, ',');
-        
+
         Slice name;
-        
+
         if (sep == NULL)
         {
             name = TrimSpace(benchmarks);
@@ -154,13 +154,13 @@ void Benchmark::Run()
 }
 
 void Benchmark::PrintHeader()
-{    
+{
     PrintEnvironment();
-    
+
     fprintf(stdout, "Keys:       %d bytes each\n", key_size_);
     fprintf(stdout, "Values:     %d bytes each\n", value_size_);
     fprintf(stdout, "Entries:    %d\n", num_);
-    
+
     double pageSize = PAGESIZE;
 
     int pagenum  = (num_/pageSize) * 1.7 * 1.6;
@@ -169,9 +169,9 @@ void Benchmark::PrintHeader()
 
     fprintf(stdout, "RawSize:    %d MB (estimated)\n", rawsize);
     fprintf(stdout, "FileSize:   %d MB (estimated)\n", filesize );
-    
+
     PrintWarnings();
-    
+
     fprintf(stdout, "------------------------------------------------\n");
 }
 
@@ -262,7 +262,7 @@ void Benchmark::FillSync()
 
         int k = rnd.Next() & ((1<<25)-1);
         snprintf(key, sizeof(key), format, k);
-        
+
         db_->put(key, gen.Generate(FLAGS_value_size));
     }
 
@@ -296,7 +296,7 @@ void Benchmark::FillBatch()
         {
             int k = rnd.Next() & ((1<<28)-1);
             snprintf(key, sizeof(key), format, k);
-                        
+
             batch.put(key, gen.Generate(value_size_));
         }
 
@@ -399,12 +399,12 @@ void Benchmark::FillParallelBatch()
 }
 
 void Benchmark::ReadRandom()
-{    
+{
     int found = 0;
 
     Random rnd(40);
     char  key[100];
-    
+
     char format[10];
     memset(format, 0, 10);
     snprintf(format, sizeof(format), "%%0%dd\n", key_size_);

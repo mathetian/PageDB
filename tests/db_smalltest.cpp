@@ -34,7 +34,7 @@ TEST(A, Test1)
     {
         db -> open(option);
         printf("open successful for Test1 in get\n");
-        
+
         ASSERT_EQ(db -> get("hello"), Slice("world"));
         ASSERT_EQ(db -> get("hello1"), Slice("world1"));
         ASSERT_EQ(db -> get("hello12"), Slice("world123"));

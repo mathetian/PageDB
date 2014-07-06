@@ -9,8 +9,8 @@ namespace customdb
 
 PageDB::PageDB(HashFunc hashFunc) : m_HashFunc(hashFunc),  m_gd(0), m_pn(1), m_fb(-1)
 {
-   m_cache = new PageCache(this);
-   m_tmpBatch = new WriteBatch;
+    m_cache = new PageCache(this);
+    m_tmpBatch = new WriteBatch;
 }
 
 PageDB::~PageDB()
@@ -94,9 +94,9 @@ bool     PageDB::close()
     if(m_cache) delete m_cache;
     m_cache = NULL;
 
-     if(m_tmpBatch)
+    if(m_tmpBatch)
         delete m_tmpBatch;
-    
+
     return true;
 }
 
@@ -222,13 +222,13 @@ void    PageDB::dump(ostream&os)
             Slice key(element.m_keySize), value(element.m_datSize);
             packet >> key >> value;
             uint32_t hashVal = page -> m_elements[j].m_hashVal;
-        //    os << "[" << key << " " << value << " " << hashVal << "] ";
+            //    os << "[" << key << " " << value << " " << hashVal << "] ";
         }
 
         os << endl;
     }
     os << "--------------------End  Page--------------------" << endl;
-    
+
     delete page;
     page = NULL;
 }

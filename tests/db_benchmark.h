@@ -27,7 +27,7 @@ public:
             seed_ = 1;
         }
     }
-    
+
     uint32_t Next()
     {
         static const uint32_t M = 2147483647L;   // 2^31-1
@@ -106,7 +106,7 @@ private:
     void PrintHeader();
     void PrintWarnings();
     void PrintEnvironment();
-    
+
 private:
     void Open();
     void Close();

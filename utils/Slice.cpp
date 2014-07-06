@@ -31,9 +31,9 @@ Slice::Slice(const char* d, size_t n) : m_size(n)
 }
 
 Slice::Slice(const string& s)
-{    
+{
     m_size = s.size();
-    
+
     char * data =  new char[m_size];
     memset(data, 0, m_size);
     memcpy(data, s.data(), m_size);
@@ -44,7 +44,7 @@ Slice::Slice(const string& s)
 Slice::Slice(const char *d)
 {
     m_size = strlen(d);
-    
+
     char * data =  new char[m_size];
     memset(data, 0, m_size);
     memcpy(data, d, m_size);

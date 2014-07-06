@@ -201,7 +201,7 @@ private:
     ** Assert 2**n
     **/
     bool     is2Exp(uint64_t val);
-    
+
 private:
     struct Writer;
     WriteBatch* buildBatchGroup(Writer ** last_writer);

@@ -45,7 +45,7 @@ void* thrFunc(void * data)
     printf("thread %d begin\n", thrID);
 
     total.Start();
-    
+
     for(int i = 0; i < round; i++)
     {
         WriteBatch batch(ROUNDSIZE);
@@ -67,7 +67,7 @@ void* thrFunc(void * data)
     }
 
     sprintf(buf, "Thread %d has been completed, spend time :", thrID);
-    
+
     total.Stop();
     total.Print(buf);
 
@@ -80,7 +80,7 @@ TEST(A, Test1)
     option.logOption.logLevel = Log::LOG_FATAL;
 
     db = new CustomDB;
-    
+
     Timer total;
 
     {
@@ -114,7 +114,7 @@ TEST(A, Test1)
         printf("Begin Check\n");
 
         total.Start();
-        
+
         for(int i=0; i < BATCHSIZE*THRNUM; i++)
         {
             BufferPacket packet(sizeof(int));
@@ -134,7 +134,7 @@ TEST(A, Test1)
 
             ASSERT_EQ(i, num);
         }
-        
+
         total.Stop();
         total.Print("GetTime(Without Cache): ");
 
@@ -158,7 +158,7 @@ TEST(A, Test2)
 
         total.Start();
 
-       // db -> dump(cout);
+        // db -> dump(cout);
         db -> compact();
 
         total.Stop();
@@ -197,7 +197,7 @@ TEST(A, Test2)
 
         total.Stop();
         total.Print("GetTime(Without Cache): ");
-        
+
         db -> close();
         db -> destoryDB("demo");
     }

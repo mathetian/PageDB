@@ -50,16 +50,16 @@ TEST(A, Test1)
             }
 
             db -> put(&batch);
-            
+
             batch.clear();
             sprintf(str, "In round %d, PutTime: ", i);
-            
+
             part.Stop();
             part.Print(str);
         }
-        
+
         sprintf(str, "Total PutTime: ");
-        
+
         total.Stop();
         total.Print(str);
 
@@ -71,7 +71,7 @@ TEST(A, Test1)
         printf("open successful\n");
 
         total.Start();
-        
+
         for(int i=SIZE-1; i>=0; i--)
         {
             BufferPacket packet(sizeof(int));
@@ -91,7 +91,7 @@ TEST(A, Test1)
 
             ASSERT_EQ(i, num);
         }
-        
+
         total.Stop();
         total.Print("GetTime(Without Cache): ");
 

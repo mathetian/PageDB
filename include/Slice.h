@@ -39,7 +39,7 @@ public:
     Slice(const string& s);
 
     /**
-    ** 
+    **
     **/
     Slice(const char*d);
     /**
