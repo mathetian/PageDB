@@ -13,12 +13,29 @@ namespace cache
 
 class Cache
 {
+protected:
+    struct Entry_t
+    {
+        Slice key_, value_;
+        struct Entry_t *next_;
+        struct Entry_t *prev_;
+
+        Entry_t(const Slice &key, const Slice &value)
+        {
+            key_ = key_;
+            value_ = value;
+            next_ = prev_ = NULL;
+        }
+    };
+
+    typedef struct Entry_t Entry;
+
 public:
     Cache(int slotnum) : slotnum_(slotnum), \
         header_(NULL), ender_(NULL)
     {
-        header_ = new Entry;
-        ender_  = new Entry;
+        header_ = new Entry("", "");
+        ender_  = new Entry("", "");
 
         header_ -> next_ = ender_;
         ender_  -> prev_ = header_;
@@ -64,56 +81,38 @@ public:
         dict_.clear();
     }
 
-private:
+protected:
     void insert(Entry *entry)
     {
         Slice key = entry -> key_;
 
-        entry_ -> next_ = header_ -> next_;
-        entry_ -> prev_ = header_;
+        entry -> next_ = header_ -> next_;
+        entry -> prev_ = header_;
 
-        header_ -> next_ -> prev_ = entry_;
-        header_ -> next_ = entry_;
+        header_ -> next_ -> prev_ = entry;
+        header_ -> next_ = entry;
 
         dict_[key]   = entry;
-        slotnum_++;
     }
 
-    void remove(Entry *entry)
+    void del(Entry *entry)
     {
         Slice key = entry -> key_;
 
         entry -> prev_ -> next_ = entry -> next_;
-        entry -> next_ -> prev  = entry -> prev_;
+        entry -> next_ -> prev_ = entry -> prev_;
 
         delete entry;
-        entry_ = NULL;
+        entry = NULL;
 
         dict_.erase(key);
-        slotnum_--;
     }
-
-protected:
-    struct Entry_t
-    {
-        Slice key_, value_;
-        struct Entry_t *next_;
-        struct Entry_t *prev_;
-
-        Entry_t(const Slice &key, const Slice &value)
-        {
-            key_ = key_;
-            value_ = value;
-            next_ = prev_ = NULL;
-        }
-    };
-    typedef struct Entry_t Entry;
 
 protected:
     const int          slotnum_;
     map<Slice, Entry*> dict_;
     Entry             *header_;
-    Entry_t           *ender_;
+    Entry             *ender_;
 };
 
 };

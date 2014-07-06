@@ -72,7 +72,7 @@ public:
 private:
     Options   	m_option;
     DBInternal *m_dbimpl;
-    BaseCache  *m_cache;
+    Cache      *m_cache;
     Log        *m_log;
     /**
     ** Only record the lastest status

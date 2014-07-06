@@ -5,10 +5,12 @@
 #ifndef _FIFO_CACHE_H
 #define _FIFO_CACHE_H
 
+#include "Cache.h"
+
 namespace cache
 {
 
-class FIFOCache
+class FIFOCache : public Cache
 {
 public:
     FIFOCache(int slotnum) : Cache(slotnum)
@@ -28,7 +30,7 @@ public:
             if(dict_.size() == slotnum_)
             {
                 /// Remove the oldest one
-                remove(ender_ -> prev_);
+                del(ender_ -> prev_);
             }
 
             insert(new Entry(key, value));
@@ -54,7 +56,7 @@ public:
         if(dict_.find(key) == dict_.end())
             return false;
 
-        remove(dict_[key]);
+        del(dict_[key]);
         return true;
     }
 };

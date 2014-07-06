@@ -31,7 +31,7 @@ public:
             if(dict_.size() == slotnum_)
             {
                 /// Remove the oldest one
-                remove(ender_ -> prev);
+                del(ender_ -> prev_);
             }
 
             insert(new Entry(key, value));
@@ -39,7 +39,7 @@ public:
         else
         {
             /// Replace
-            remove(dict_[key]);
+            del(dict_[key]);
             insert(new Entry(key, value));
         }
     }
@@ -49,9 +49,9 @@ public:
         if(dict_.find(key) == dict_.end())
             return "";
 
-        Slice value = dict_[key].value_;
+        Slice value = dict_[key] -> value_;
 
-        remove(dict_[key]);
+        del(dict_[key]);
         insert(new Entry(key, value));
     }
 
@@ -60,7 +60,7 @@ public:
         if(dict_.find(key) == dict_.end())
             return false;
 
-        remove(dict_[key]);
+        del(dict_[key]);
 
         return true;
     }
