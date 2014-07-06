@@ -18,7 +18,7 @@ lib:compile
 	rm *.o
 
 compile:
-	${CXX} -g -O0 ${HEADER} -lpthread -c ${SOURCES} 
+	${CXX} ${CXXFLAGS} ${HEADER} -lpthread -c ${SOURCES} 
 
 dbtests: $(dbtests)
 	
