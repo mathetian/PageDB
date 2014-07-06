@@ -2,9 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "Log.h"
+#ifndef _CACHE_H
+#define _CACHE_H
+
 #include "Slice.h"
-#include "Multithreading.h"
 using namespace utils;
 
 namespace cache
@@ -116,3 +117,5 @@ protected:
 };
 
 };
+
+#endif

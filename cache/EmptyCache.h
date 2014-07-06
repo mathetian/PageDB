@@ -2,36 +2,40 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#ifndef _EMPTY_CACHE_H
-#define _EMPTY_CACHE_H
+#ifndef _EMP_CACHE_H
+#define _EMP_CACHE_H
 
 #include "Cache.h"
 
-namespace customdb
+namespace cache
 {
 
-class EmptyCache : public BaseCache
+class EmptyCache : public Cache
 {
 public:
-    EmptyCache() { }
+    EmptyCache() : Cache(1)
+    {
+    }
+
+    virtual ~EmptyCache()
+    {
+    }
 
 public:
-    bool    put(const Slice & key, const Slice & value)
+    virtual bool    put(const Slice & key, const Slice & value)
     {
         return true;
     }
 
-    Slice  	get(const Slice & key)
+    virtual Slice  	get(const Slice & key)
     {
-        return BaseCache::get(key);
+        return "";
     }
 
-    bool    remove(const Slice & key)
+    virtual bool    remove(const Slice & key)
     {
         return true;
     }
-
-    void    clear() { }
 };
 
 };
