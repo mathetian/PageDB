@@ -8,7 +8,7 @@ Factory
 FactoryImpl
 Log
 Option
-CustomDB
+PageDB
 db_bench
 *idx
 *log

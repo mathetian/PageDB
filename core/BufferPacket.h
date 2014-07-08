@@ -1,4 +1,4 @@
-// Copyright (c) 2014 The CustomDB Authors. All rights reserved.
+// Copyright (c) 2014 The PageDB Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
@@ -21,7 +21,7 @@ using namespace utils;
 ** BufferPacket is based on reference count,
 ** which means we don't need to care about the allocation and de-allocation.
 **/
-namespace customdb
+namespace pagedb
 {
 
 class BufferPacket

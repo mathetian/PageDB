@@ -1,11 +1,11 @@
-// Copyright (c) 2014 The CustomDB Authors. All rights reserved.
+// Copyright (c) 2014 The PageDB Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "Option.h"
-#include "CustomDB.h"
+#include "PageDB.h"
 #include "BufferPacket.h"
-using namespace customdb;
+using namespace pagedb;
 
 #include "TickTimer.h"
 #include "TestUtils.h"
@@ -20,7 +20,7 @@ TEST(A, Test1)
 {
     Options option;
     char str[256];
-    CustomDB * db = new CustomDB;
+    PageDB * db = new PageDB;
 
     Timer total, part;
 

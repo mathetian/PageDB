@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-// Copyright (c) 2014 The CustomDB Authors. All rights reserved.
+// Copyright (c) 2014 The PageDB Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "Batch.h"
 #include "Option.h"
-#include "CustomDB.h"
-using namespace customdb;
+#include "PageDB.h"
+using namespace pagedb;
 
 #include "TickTimer.h"
 using namespace utils;
@@ -56,7 +56,7 @@ int kMinorVersion = 1;
 Benchmark::Benchmark() : db_(NULL), num_(FLAGS_num), key_size_(FLAGS_key_size),
     value_size_(FLAGS_value_size), reads_(FLAGS_num), batchsize_(FLAGS_batch_size)
 {
-    db_ =  new CustomDB;
+    db_ =  new PageDB;
     assert(db_ != NULL);
 
     if(FLAGS_db)  option_.fileOption.fileName = FLAGS_db;
@@ -164,7 +164,7 @@ void Benchmark::PrintWarnings()
 
 void Benchmark::PrintEnvironment()
 {
-    fprintf(stderr, "CustomDB:    version %d.%d\n", kMajorVersion, kMinorVersion);
+    fprintf(stderr, "PageDB:    version %d.%d\n", kMajorVersion, kMinorVersion);
 
     time_t now = time(NULL);
     fprintf(stderr, "Date:       %s", ctime(&now));  // ctime() adds newline

@@ -1,10 +1,10 @@
-// Copyright (c) 2014 The CustomDB Authors. All rights reserved.
+// Copyright (c) 2014 The PageDB Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "PageDBImpl.h"
 
-namespace customdb
+namespace pagedb
 {
 
 PageDB::PageDB(HashFunc hashFunc) : m_HashFunc(hashFunc),  m_gd(0), m_pn(1), m_fb(-1)

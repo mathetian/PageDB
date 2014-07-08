@@ -4,7 +4,7 @@
 #include "Log.h"
 using namespace utils;
 
-namespace customdb
+namespace pagedb
 {
 
 /******************************/

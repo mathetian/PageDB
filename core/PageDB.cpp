@@ -1,8 +1,8 @@
-// Copyright (c) 2014 The CustomDB Authors. All rights reserved.
+// Copyright (c) 2014 The PageDB Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "CustomDB.h"
+#include "PageDB.h"
 
 #include "FileModule.h"
 using namespace utils;
@@ -17,12 +17,12 @@ using namespace cache;
 
 #include "PageDBImpl.h"
 
-namespace customdb
+namespace pagedb
 {
 
-CustomDB::CustomDB() : m_dbimpl(NULL), m_cache(NULL), m_log(NULL) { }
+PageDB::PageDB() : m_dbimpl(NULL), m_cache(NULL), m_log(NULL) { }
 
-CustomDB::~CustomDB()
+PageDB::~PageDB()
 {
     close();
 }
@@ -31,7 +31,7 @@ CustomDB::~CustomDB()
 ** level 1, Basic operations
 **/
 
-bool  CustomDB::open(const Options & option)
+bool  PageDB::open(const Options & option)
 {
     m_option = option;
 
@@ -52,12 +52,12 @@ bool  CustomDB::open(const Options & option)
             m_cache = new EmptyCache();
             break;
         default:
-            m_log -> _Fatal("CustomDB::open::cacheType error\n");
+            m_log -> _Fatal("PageDB::open::cacheType error\n");
             break;
         }
 
     if(m_cache == NULL)
-        m_log -> _Fatal("CustomDB::open::new cache error\n");
+        m_log -> _Fatal("PageDB::open::new cache error\n");
 
     switch(option.factoryOption.factoryType) {
     case EHASH:
@@ -66,20 +66,20 @@ bool  CustomDB::open(const Options & option)
     case CHASH:
         break;
     default:
-        m_log -> _Fatal("CustomDB::open::dbimpl error\n");
+        m_log -> _Fatal("PageDB::open::dbimpl error\n");
     }
 
     if(m_dbimpl == NULL)
-        m_log -> _Fatal("CustomDB::open::new dbimpl error\n");
+        m_log -> _Fatal("PageDB::open::new dbimpl error\n");
 
     if(m_dbimpl -> open(option.fileOption.fileName) == false)
-        m_log -> _Fatal("CustomDB::open::init dbimpl error\n");
+        m_log -> _Fatal("PageDB::open::init dbimpl error\n");
 
-    m_log -> _Trace("CustomDB::open initialization successfully\n");
+    m_log -> _Trace("PageDB::open initialization successfully\n");
     return true;
 }
 
-void   CustomDB::close()
+void   PageDB::close()
 {
     if(m_dbimpl)  m_dbimpl -> sync();
 
@@ -90,7 +90,7 @@ void   CustomDB::close()
     m_cache  = NULL;
 }
 
-bool CustomDB::put(const Slice & key,const Slice & value)
+bool PageDB::put(const Slice & key,const Slice & value)
 {
     assert(value.size() != 0 && key.size() != 0);
 
@@ -99,14 +99,14 @@ bool CustomDB::put(const Slice & key,const Slice & value)
     Slice cacheValue = m_cache -> get(key);
 
     if(cacheValue.size() != 0 && cacheValue == value)
-        m_log -> _Warn("CustomDB::put::exist in cache\n");
+        m_log -> _Warn("PageDB::put::exist in cache\n");
     else {
-        m_log -> _Debug("CustomDB::put::not exist in cache\n");
+        m_log -> _Debug("PageDB::put::not exist in cache\n");
 
         if(m_dbimpl -> put(key, value) == false)
-            m_log -> _Warn("CustomDB::put::dbimpl put error\n");
+            m_log -> _Warn("PageDB::put::dbimpl put error\n");
         else {
-            m_log -> _Debug("CustomDB::put::dbimpl put successfully\n");
+            m_log -> _Debug("PageDB::put::dbimpl put successfully\n");
 
             m_cache -> put(key,value);
             m_lastStatus = SUCCE;
@@ -116,7 +116,7 @@ bool CustomDB::put(const Slice & key,const Slice & value)
     return m_lastStatus;
 }
 
-Slice CustomDB::get(const Slice & key)
+Slice PageDB::get(const Slice & key)
 {
     m_lastStatus = ERROR;
 
@@ -125,12 +125,12 @@ Slice CustomDB::get(const Slice & key)
     if(cacheValue.size() != 0)
         m_lastStatus = SUCCE;
     else {
-        m_log -> _Debug("CustomDB::get::dbimpl not in cache\n");
+        m_log -> _Debug("PageDB::get::dbimpl not in cache\n");
         cacheValue = m_dbimpl -> get(key);
         if(cacheValue.size() == 0)
-            m_log -> _Warn("CustomDB::get::dbimpl get warning\n");
+            m_log -> _Warn("PageDB::get::dbimpl get warning\n");
         else {
-            m_log -> _Debug("CustomDB::get::dbimpl get successfully\n");
+            m_log -> _Debug("PageDB::get::dbimpl get successfully\n");
 
             m_cache -> put(key, cacheValue);
             m_lastStatus = SUCCE;
@@ -140,7 +140,7 @@ Slice CustomDB::get(const Slice & key)
     return cacheValue;
 }
 
-bool CustomDB::remove(const Slice & key)
+bool PageDB::remove(const Slice & key)
 {
     m_lastStatus = ERROR;
 
@@ -148,13 +148,13 @@ bool CustomDB::remove(const Slice & key)
 
     if(cacheValue.size() != 0) {
         if((m_cache -> remove(key)) == 0) {
-            m_log -> _Error("CustomDB::remove::cache remove error\n");
+            m_log -> _Error("PageDB::remove::cache remove error\n");
             return m_lastStatus;
-        } else m_log -> _Trace("CustomDB::remove::cache remove successfully\n");
+        } else m_log -> _Trace("PageDB::remove::cache remove successfully\n");
     }
 
     if((m_dbimpl -> remove(key)) == 0)
-        m_log -> _Error("CustomDB::remove::dbimpl remove error\n");
+        m_log -> _Error("PageDB::remove::dbimpl remove error\n");
 
     m_lastStatus = SUCCE;
     return m_lastStatus;
@@ -164,7 +164,7 @@ bool CustomDB::remove(const Slice & key)
 ** level 2, Improved operations
 **/
 
-bool CustomDB::put(WriteBatch * pbatch)
+bool PageDB::put(WriteBatch * pbatch)
 {
     return m_dbimpl -> put(pbatch);
 }
@@ -173,22 +173,22 @@ bool CustomDB::put(WriteBatch * pbatch)
 ** level 3, Other operations
 **/
 
-void CustomDB::sync()
+void PageDB::sync()
 {
     m_dbimpl -> sync();
 }
 
-void   CustomDB::dump(ostream&os)
+void   PageDB::dump(ostream&os)
 {
     m_dbimpl -> dump(os);
 }
 
-void  CustomDB::compact()
+void  PageDB::compact()
 {
     m_dbimpl -> compact();
 }
 
-void   CustomDB::destoryDB(const char * filename)
+void   PageDB::destoryDB(const char * filename)
 {
     string s_filename(filename,
                       filename + strlen(filename));
@@ -200,7 +200,7 @@ void   CustomDB::destoryDB(const char * filename)
     FileModule::Remove(datName);
 }
 
-int CustomDB::checkStatus()
+int PageDB::checkStatus()
 {
     return m_lastStatus;
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2014 The CustomDB Authors. All rights reserved.
+// Copyright (c) 2014 The PageDB Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
@@ -7,8 +7,8 @@ using namespace utils;
 
 #include "Batch.h"
 #include "Option.h"
-#include "CustomDB.h"
-using namespace customdb;
+#include "PageDB.h"
+using namespace pagedb;
 
 /**
 ** db_smallbatch: put(2)/get
@@ -20,7 +20,7 @@ TEST(A, Test1)
 {
     Options option;
 
-    CustomDB * db = new CustomDB;
+    PageDB * db = new PageDB;
 
     {
         db -> open(option);

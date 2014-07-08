@@ -1,8 +1,8 @@
-# CustomDB
+# PageDB
 
 ------
 
-`CustomDB` is a key-value storage library and it uses [Extendible_hashing](http://en.wikipedia.org/wiki/Extendible_hashing) as internal structure. Also, I have implemented LRU-Cache and FIFO-Cache in its external Cache-System. Anyone, who has interest in it, can add self-customed structure or Cache-Schedule Algorithm to enhance its ability. That is the reason I renamed it as `CustomDB`.
+`PageDB` is a key-value storage library and it uses [Extendible_hashing](http://en.wikipedia.org/wiki/Extendible_hashing) as internal structure. Also, I have implemented LRU-Cache and FIFO-Cache in its external Cache-System. Anyone, who has interest in it, can add self-customed structure or Cache-Schedule Algorithm to enhance its ability. That is the reason I renamed it as `PageDB`.
 
 Our work is mainly inspired by [APUE](www.apuebook.com), [GDBM](www.gnu.org/s/gdbm/), [leveldb](https://code.google.com/p/leveldb/) and [yodb](https://github.com/kedebug/yodb). Thanks again for open-source group.
 
@@ -31,7 +31,7 @@ Here is a performance report (with explanations) from the run of `db_benchmark.c
 We tried our database with a million entries. Each entry has a 16 byte key, and a 100 byte value. Too get maximum performance, we turned off log and cache(As the space of the key is far larger than we put, the cache has little performance balance.)
 
 ```
-CustomDB:   version 1.1
+PageDB:   version 1.1
 Date:       Tue Jun 17 12:58:54 2014
 CPU:        4 * Intel(R) Core(TM) i5-3317U CPU @ 1.70GHz
 CPUCache:   3072 KB
@@ -61,7 +61,7 @@ readrandom      :       3.0 micros/op;   36.00 MB/s
 ```
 
 ### 4. Compression Ration
-CustomDB provide compact feature to compression raw database. However, it only can compress fillsync, which is the most application situation. That can be called time-memory trade-off technology.
+PageDB provide compact feature to compression raw database. However, it only can compress fillsync, which is the most application situation. That can be called time-memory trade-off technology.
 ```
             Before Compression  |  After Compression
 Raw Size:   230 MB                   131 MB
@@ -71,7 +71,7 @@ Raw Size:   230 MB                   131 MB
 I test our `CustomdDB` it on Ubuntu 13.10, so if you have any problem, please feel free to send email to me.
 
 ### 1. Compile and Installation
-`CustomDB` use GNU Make to handle compilation, you can find detail information from [this url](www.gnu.com/Make/).
+`PageDB` use GNU Make to handle compilation, you can find detail information from [this url](www.gnu.com/Make/).
 ```
 $ make
 $ make tests
@@ -90,11 +90,11 @@ Slice slice("hello world", 11);
 ...
 ```
 
-#### 2.1 Open & Close `CustomDB`
+#### 2.1 Open & Close `PageDB`
 
 ```c++
    Option option;
-   CustomDB db = new CustomDB;
+   PageDB db = new PageDB;
    db -> open(option);  
    db -> close();
    delete db;
@@ -105,7 +105,7 @@ Stream can either be terminal or file stream
 
 ```c++
    Option option;
-   CustomDB db = new CustomDB;
+   PageDB db = new PageDB;
    db -> open(option);  
    db -> dump(std::cout);
    db -> close();
@@ -147,7 +147,7 @@ Put is equal to replace. In a nutshell, put will replace the value existed in th
 ```
 
 #### 2.7 Multiple_Threading Write
-`CustomDB` supports multiple-threading and it support write/get in different threads at the same time. To find the detail information, seeking the example in `tests\db_parallelbatch.cpp`.
+`PageDB` supports multiple-threading and it support write/get in different threads at the same time. To find the detail information, seeking the example in `tests\db_parallelbatch.cpp`.
 
 ### 3. Other Feature
 #### 3.1 Unit Test Module
@@ -177,7 +177,7 @@ Put is equal to replace. In a nutshell, put will replace the value existed in th
     file.Write(buff, offset, size)
 ```
 
-![CustomDB UML Graph](https://raw.githubusercontent.com/mathewes/blog-dot-file/master/CustomDB.png)
+![PageDB UML Graph](https://raw.githubusercontent.com/mathewes/blog-dot-file/master/PageDB.png)
 
 ## Todo List
 > * Parallel Map(like concurrentmap)
