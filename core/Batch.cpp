@@ -8,13 +8,15 @@ namespace pagedb
 {
 
 WriteBatch::WriteBatch(int size) : \
-    m_size(size), m_num(0), m_msize(0) \ {
+    m_size(size), m_num(0), m_msize(0) \ 
+{
     m_ssvec = vector<Node>(m_size);
 }
 
 void WriteBatch::put(const Slice& key, const Slice& value)
 {
-    if(m_num == m_size) {
+    if(m_num == m_size)
+    {
         m_size *= 2;
         m_ssvec.resize(m_size);
     }

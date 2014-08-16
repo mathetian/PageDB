@@ -30,7 +30,8 @@ TEST(A, Test1)
 
         ts.Start();
 
-        for(int i=1; i<=SIZE; i++) {
+        for(int i=1; i<=SIZE; i++)
+        {
             BufferPacket packet(sizeof(int));
             packet << i;
 
@@ -52,7 +53,8 @@ TEST(A, Test1)
 
         ts.Start();
 
-        for(int i=1; i<=SIZE; i++) {
+        for(int i=1; i<=SIZE; i++)
+        {
             BufferPacket packet(sizeof(int));
             packet << i;
 
@@ -103,7 +105,8 @@ TEST(A, Test2)
 
         ts.Start();
 
-        for(int i=1; i<=SIZE; i++) {
+        for(int i=1; i<=SIZE; i++)
+        {
             BufferPacket packet(sizeof(int));
             packet << i;
 

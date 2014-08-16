@@ -25,7 +25,8 @@ class Thread : Noncopyable
 {
 public:
     Thread(Task task, void * args = NULL)
-        : m_task(task), m_args(args), m_tid(-1) {
+        : m_task(task), m_args(args), m_tid(-1)
+    {
 
     }
 
@@ -33,7 +34,8 @@ public:
     /**
     ** Forbid being called more than once
     **/
-    id_type  run() {
+    id_type  run()
+    {
         assert(m_tid == -1);
         pthread_create(&m_tid, NULL, m_task, m_args);
         return m_tid;
@@ -41,7 +43,8 @@ public:
     /**
     ** Only can be called after `run`
     **/
-    void     join() {
+    void     join()
+    {
 
         assert(m_tid != -1);
         pthread_join(m_tid, NULL);
@@ -49,12 +52,14 @@ public:
     /**
     ** Only can be called after `run`
     **/
-    void     cancel() {
+    void     cancel()
+    {
         assert(m_tid != -1);
         pthread_cancel(m_tid);
     }
 
-    static id_type getIDType() {
+    static id_type getIDType()
+    {
         return pthread_self();
     }
 
@@ -67,29 +72,35 @@ private:
 class Mutex : Noncopyable
 {
 public:
-    Mutex() {
+    Mutex()
+    {
         pthread_mutex_init(&m_mutex, 0);
     }
 
-    ~Mutex() {
+    ~Mutex()
+    {
         pthread_mutex_destroy(&m_mutex);
     }
 
 public:
-    void lock() {
+    void lock()
+    {
         pthread_mutex_lock(&m_mutex);
     }
 
-    void unlock() {
+    void unlock()
+    {
         pthread_mutex_unlock(&m_mutex);
     }
 
-    bool  trylock() {
+    bool  trylock()
+    {
         return pthread_mutex_trylock(&m_mutex);
     }
 
 public:
-    mutex_type& getMutex() {
+    mutex_type& getMutex()
+    {
         return m_mutex;
     }
 
@@ -100,24 +111,29 @@ private:
 class CondVar : Noncopyable
 {
 public:
-    CondVar(Mutex* mutex = NULL): m_mutex(mutex) {
+    CondVar(Mutex* mutex = NULL): m_mutex(mutex)
+    {
         pthread_cond_init(&m_cond, NULL);
     }
 
-    ~CondVar() {
+    ~CondVar()
+    {
         pthread_cond_destroy(&m_cond);
     }
 
 public:
-    void wait() {
+    void wait()
+    {
         pthread_cond_wait(&m_cond, &m_mutex->getMutex());
     }
 
-    void signal() {
+    void signal()
+    {
         pthread_cond_signal(&m_cond);
     }
 
-    void signalAll() {
+    void signalAll()
+    {
         pthread_cond_broadcast(&m_cond);
     }
 
@@ -159,12 +175,14 @@ private:
 class SingletonMutex : Noncopyable
 {
 public:
-    static SingletonMutex& getInstance() {
+    static SingletonMutex& getInstance()
+    {
         static SingletonMutex instance;
         return instance;
     }
 
-    Mutex * RMutex() {
+    Mutex * RMutex()
+    {
         return &m_mutex;
     }
 
@@ -180,11 +198,13 @@ class ScopeMutex : Noncopyable
 {
 public:
     ScopeMutex(Mutex * pmutex)
-        : m_pmutex(pmutex) {
+        : m_pmutex(pmutex)
+    {
         m_pmutex -> lock();
     }
 
-    ~ScopeMutex() {
+    ~ScopeMutex()
+    {
         m_pmutex -> unlock();
     }
 
@@ -201,13 +221,16 @@ class RWLock : Noncopyable
 {
 public:
     RWLock(): m_condRead(&m_mutex), m_condWrite(&m_mutex),
-        m_nReader(0), m_nWriter(0), m_wReader(0), m_wWriter(0) {
+        m_nReader(0), m_nWriter(0), m_wReader(0), m_wWriter(0)
+    {
     }
 
 public:
-    void readLock() {
+    void readLock()
+    {
         ScopeMutex scope(&m_mutex);
-        if(m_nWriter || m_wWriter) {
+        if(m_nWriter || m_wWriter)
+        {
             m_wReader++;
             while(m_nWriter || m_wWriter)
                 m_condRead.wait();
@@ -216,7 +239,8 @@ public:
         m_nReader++;
     }
 
-    void readUnlock() {
+    void readUnlock()
+    {
         ScopeMutex scope(&m_mutex);
         m_nReader--;
 
@@ -226,9 +250,11 @@ public:
             m_condRead.signal();
     }
 
-    void writeLock() {
+    void writeLock()
+    {
         ScopeMutex scope(&m_mutex);
-        if(m_nReader || m_nWriter) {
+        if(m_nReader || m_nWriter)
+        {
             m_wWriter++;
             while(m_nReader || m_nWriter)
                 m_condWrite.wait();
@@ -237,7 +263,8 @@ public:
         m_nWriter++;
     }
 
-    void writeUnlock() {
+    void writeUnlock()
+    {
         ScopeMutex scope(&m_mutex);
         m_nWriter--;
 
@@ -266,20 +293,25 @@ class ReentrantLock : Noncopyable
 {
 public:
     ReentrantLock()
-        : m_id(-1), m_cond(&m_tmplock), m_time(0) {
+        : m_id(-1), m_cond(&m_tmplock), m_time(0)
+    {
 
     }
 
-    void  lock() {
+    void  lock()
+    {
         m_tmplock.lock();
 
-        if(m_id == -1) {
+        if(m_id == -1)
+        {
             assert(m_lock.trylock() == 0);
             m_id = pthread_self();
             m_tmplock.unlock();
             m_time = 1;
             return;
-        } else if(m_id == pthread_self()) {
+        }
+        else if(m_id == pthread_self())
+        {
             m_tmplock.unlock();
             m_time++;
             return;
@@ -291,25 +323,32 @@ public:
         m_tmplock.unlock();
     }
 
-    void  unlock() {
+    void  unlock()
+    {
         m_tmplock.lock();
 
         m_time--;
-        if(m_time == 0) {
+        if(m_time == 0)
+        {
             m_lock.unlock();
             m_id = -1;
             m_tmplock.unlock();
             m_cond.signal();
-        } else
+        }
+        else
             m_tmplock.unlock();
     }
 
-    bool  trylock() {
+    bool  trylock()
+    {
         m_tmplock.lock();
-        if(m_id != -1) {
+        if(m_id != -1)
+        {
             m_tmplock.unlock();
             return false;
-        } else {
+        }
+        else
+        {
             assert(m_lock.trylock() == 0);
             m_id = pthread_self();
             m_tmplock.unlock();

@@ -15,27 +15,31 @@ class A
 public:
     A() : m_mutex(SingletonMutex::getInstance()) { }
 
-    void a() {
+    void a()
+    {
         sleep(1);
         cout << "Expect 2" << endl;
         sleep(1);
         cout << "Expect 4" << endl;
     }
 
-    void b() {
+    void b()
+    {
         cout << "Expect 1" << endl;
         sleep(1);
         cout << "Expect 3" << endl;
     }
 
-    void c() {
+    void c()
+    {
         ScopeMutex scope(m_mutex.RMutex());
         cout << "Expect 1" << endl;
         sleep(2);
         cout << "Expect 2" << endl;
     }
 
-    void d() {
+    void d()
+    {
         ScopeMutex scope(m_mutex.RMutex());
         cout << "Expect 3" << endl;
         sleep(2);

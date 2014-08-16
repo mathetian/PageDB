@@ -12,7 +12,8 @@ namespace pagedb
 #define CUSTOMDB_R  1
 #define CUSTOMDB_C  3
 
-struct FileOption_t {
+struct FileOption_t
+{
     unsigned int read_write : 2;
     unsigned int creat      : 1;
     const char * fileName;
@@ -26,12 +27,14 @@ struct FileOption_t {
 #define EMPTY 2
 #define SLOTNUM 1000
 
-struct CacheOption_t {
+struct CacheOption_t
+{
     int  cacheType;
     bool disabled;
     int  slotNum;
 
-    CacheOption_t() {
+    CacheOption_t()
+    {
         slotNum        = SLOTNUM;
         cacheType      = FIFO;
         disabled       = false;
@@ -42,19 +45,23 @@ struct CacheOption_t {
 #define EHASH 0
 #define CHASH 1
 
-struct FactoryOption_t {
+struct FactoryOption_t
+{
     int factoryType;
-    FactoryOption_t() {
+    FactoryOption_t()
+    {
         factoryType = EHASH;
     }
 };
 
 /******************************/
-struct LogOption_t {
+struct LogOption_t
+{
     Log::LOG_TYPE     logLevel;
     const char * logPrefix;
     bool         disabled;
-    LogOption_t() {
+    LogOption_t()
+    {
         logLevel  = Log::LOG_WARN;
         logPrefix = "demo";
         disabled  = false;
@@ -70,7 +77,8 @@ typedef struct LogOption_t     LogOption;
 
 /*******************************/
 
-struct Options_t {
+struct Options_t
+{
     CacheOption   cacheOption;
     FactoryOption factoryOption;
     LogOption     logOption;

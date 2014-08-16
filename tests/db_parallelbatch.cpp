@@ -46,10 +46,12 @@ void* thrFunc(void * data)
 
     total.Start();
 
-    for(int i = 0; i < round; i++) {
+    for(int i = 0; i < round; i++)
+    {
         WriteBatch batch(ROUNDSIZE);
 
-        for(int j = 0; j < ROUNDSIZE; j++) {
+        for(int j = 0; j < ROUNDSIZE; j++)
+        {
             int k = beg + i*ROUNDSIZE + j;
 
             BufferPacket packet(sizeof(int));
@@ -90,7 +92,8 @@ TEST(A, Test1)
 
         total.Start();
 
-        for(int i = 0; i < THRNUM; i++) {
+        for(int i = 0; i < THRNUM; i++)
+        {
             thrIDS[i]  = i;
             thrEDS[i] = new Thread(thrFunc, &thrIDS[i]);
             thrEDS[i] -> run();
@@ -112,7 +115,8 @@ TEST(A, Test1)
 
         total.Start();
 
-        for(int i=0; i < BATCHSIZE*THRNUM; i++) {
+        for(int i=0; i < BATCHSIZE*THRNUM; i++)
+        {
             BufferPacket packet(sizeof(int));
             packet << i;
 
@@ -171,7 +175,8 @@ TEST(A, Test2)
 
         total.Start();
 
-        for(int i=0; i < BATCHSIZE*THRNUM; i++) {
+        for(int i=0; i < BATCHSIZE*THRNUM; i++)
+        {
             BufferPacket packet(sizeof(int));
             packet << i;
 

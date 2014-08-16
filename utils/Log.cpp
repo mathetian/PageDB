@@ -26,10 +26,12 @@ bool     Log::m_disabled;
 const char * getStrFromType(const Log::LOG_TYPE & value)
 {
 #define MAPENTRY(p) {p, #p}
-    const struct MapEntry {
+    const struct MapEntry
+    {
         Log::LOG_TYPE value;
         const char* str;
-    } entries[] = {
+    } entries[] =
+    {
         MAPENTRY(Log::LOG_DEBUG),
         MAPENTRY(Log::LOG_TRACE),
         MAPENTRY(Log::LOG_WARN),
@@ -39,8 +41,10 @@ const char * getStrFromType(const Log::LOG_TYPE & value)
     };
 #undef MAPENTRY
     const char* s = 0;
-    for (const MapEntry* i = entries; i->str; i++) {
-        if (i->value == value) {
+    for (const MapEntry* i = entries; i->str; i++)
+    {
+        if (i->value == value)
+        {
             s = i->str;
             break;
         }
@@ -85,8 +89,10 @@ void Log::GetCurrentTm(int tag, size_t size, char * buf)
     struct tm *ptime = NULL;
     ptime = localtime(&now);
 
-    if(ptime != NULL) {
-        switch(tag) {
+    if(ptime != NULL)
+    {
+        switch(tag)
+        {
         case TIME_FULL :
             sprintf(buf,TM_FORMAT_FULL,(ptime->tm_year + 1900),(ptime->tm_mon + 1),ptime->tm_mday
                     ,ptime->tm_hour,ptime->tm_min,ptime->tm_sec);
@@ -107,7 +113,8 @@ void Log::GetCurrentTm(int tag, size_t size, char * buf)
 void Log::WriteLog(LOG_TYPE outLevel,const char* format,va_list args)
 {
 
-    if(m_disabled == true) {
+    if(m_disabled == true)
+    {
         if(m_logLevel > outLevel)
             return;
     }
@@ -124,7 +131,8 @@ void Log::WriteLog(LOG_TYPE outLevel,const char* format,va_list args)
     va_list old;
     va_copy(old,args);
 
-    if(m_disabled == true) {
+    if(m_disabled == true)
+    {
         m_mutex.lock();
         vfprintf(m_pfile,fformat,args);
         fprintf(m_pfile,"\n");

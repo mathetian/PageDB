@@ -34,47 +34,57 @@ public:
     Atomic(int val = 0) : val(val) { }
 
     /**CAS: compare and swap**/
-    int exchange_and_add(int addend) {
+    int exchange_and_add(int addend)
+    {
         return __exchange_and_add(&val, addend);
     }
 
-    void add(int addend) {
+    void add(int addend)
+    {
         __sync_add_and_fetch(&val, addend);
     }
 
-    int addAndGet(int addend) {
+    int addAndGet(int addend)
+    {
         return __sync_add_and_fetch(&val, addend);
     }
 
-    void operator += (int addend) {
+    void operator += (int addend)
+    {
         add(addend);
     }
 
-    void operator -= (int addend) {
+    void operator -= (int addend)
+    {
         add(-addend);
     }
 
     /**Prefix add one**/
-    void operator ++ () {
+    void operator ++ ()
+    {
         add(1);
     }
 
     /**Prefix minus one**/
-    void operator -- () {
+    void operator -- ()
+    {
         add(-1);
     }
 
     /**Posix add one**/
-    int operator ++ (int) {
+    int operator ++ (int)
+    {
         return exchange_and_add(1);
     }
 
     /**Posix minus one**/
-    int operator -- (int) {
+    int operator -- (int)
+    {
         return exchange_and_add(-1);
     }
 
-    operator int() const {
+    operator int() const
+    {
         return val;
     }
 };

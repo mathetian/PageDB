@@ -57,34 +57,40 @@ public:
     /**
     ** c_str: return const char*, mostly used by write
     **/
-    const char * c_str() const {
+    const char * c_str() const
+    {
         return m_data;
     }
     /**
     ** str: return char*, mostly used by read
     **/
-    char * str() const {
+    char * str() const
+    {
         return m_data;
     }
 
-    int    size() const {
+    int    size() const
+    {
         return m_size;
     }
 
-    int    getCursize() {
+    int    getCursize()
+    {
         return m_cur;
     }
     /**
     ** Sometime, we want to overwrite the content in the container
     ** In such time, we should set the position manually.
     **/
-    void   reset() {
+    void   reset()
+    {
         m_cur = 0;
     }
     /**
     ** After we read something using str(), we need set cur position manually.
     **/
-    void   setCurSize(int size) {
+    void   setCurSize(int size)
+    {
         assert(size <= m_size);
         m_cur = size;
     }

@@ -41,7 +41,8 @@ bool  PageDB::open(const Options & option)
     if(option.cacheOption.disabled == true)
         m_cache = new EmptyCache();
     else
-        switch(option.cacheOption.cacheType) {
+        switch(option.cacheOption.cacheType)
+        {
         case FIFO:
             m_cache = new FIFOCache(option.cacheOption.slotNum);
             break;
@@ -59,7 +60,8 @@ bool  PageDB::open(const Options & option)
     if(m_cache == NULL)
         m_log -> _Fatal("PageDB::open::new cache error\n");
 
-    switch(option.factoryOption.factoryType) {
+    switch(option.factoryOption.factoryType)
+    {
     case EHASH:
         m_dbimpl = new PageDB();
         break;
@@ -100,12 +102,14 @@ bool PageDB::put(const Slice & key,const Slice & value)
 
     if(cacheValue.size() != 0 && cacheValue == value)
         m_log -> _Warn("PageDB::put::exist in cache\n");
-    else {
+    else
+    {
         m_log -> _Debug("PageDB::put::not exist in cache\n");
 
         if(m_dbimpl -> put(key, value) == false)
             m_log -> _Warn("PageDB::put::dbimpl put error\n");
-        else {
+        else
+        {
             m_log -> _Debug("PageDB::put::dbimpl put successfully\n");
 
             m_cache -> put(key,value);
@@ -124,12 +128,14 @@ Slice PageDB::get(const Slice & key)
 
     if(cacheValue.size() != 0)
         m_lastStatus = SUCCE;
-    else {
+    else
+    {
         m_log -> _Debug("PageDB::get::dbimpl not in cache\n");
         cacheValue = m_dbimpl -> get(key);
         if(cacheValue.size() == 0)
             m_log -> _Warn("PageDB::get::dbimpl get warning\n");
-        else {
+        else
+        {
             m_log -> _Debug("PageDB::get::dbimpl get successfully\n");
 
             m_cache -> put(key, cacheValue);
@@ -146,11 +152,14 @@ bool PageDB::remove(const Slice & key)
 
     Slice cacheValue = m_cache -> get(key);
 
-    if(cacheValue.size() != 0) {
-        if((m_cache -> remove(key)) == 0) {
+    if(cacheValue.size() != 0)
+    {
+        if((m_cache -> remove(key)) == 0)
+        {
             m_log -> _Error("PageDB::remove::cache remove error\n");
             return m_lastStatus;
-        } else m_log -> _Trace("PageDB::remove::cache remove successfully\n");
+        }
+        else m_log -> _Trace("PageDB::remove::cache remove successfully\n");
     }
 
     if((m_dbimpl -> remove(key)) == 0)

@@ -13,7 +13,8 @@ Slice::Slice(size_t n) : m_size(n)
 {
     if(n == 0)
         m_data = NULL;
-    else {
+    else
+    {
         char * data = new char[m_size];
         memset(data, 0, m_size);
         m_data = data;
@@ -53,7 +54,8 @@ Slice::Slice(const char *d)
 
 Slice::Slice(const Slice & s1) : m_size(s1.m_size), m_data(NULL)
 {
-    if(m_size != 0) {
+    if(m_size != 0)
+    {
         char * data = new char[m_size];
         memcpy(data, s1.m_data, m_size);
 
@@ -63,17 +65,21 @@ Slice::Slice(const Slice & s1) : m_size(s1.m_size), m_data(NULL)
 
 Slice & Slice::operator=(const Slice & s1)
 {
-    if(m_data != NULL && s1.m_data != m_data) {
+    if(m_data != NULL && s1.m_data != m_data)
+    {
         delete [] m_data;
         m_data = NULL;
         m_size = 0;
-    } else if(s1.m_data == m_data) {
+    }
+    else if(s1.m_data == m_data)
+    {
         return *this;
     }
 
     m_size = s1.m_size;
 
-    if(m_size != 0) {
+    if(m_size != 0)
+    {
         char * data = new char[m_size];
         memcpy(data, s1.m_data, m_size);
 
@@ -108,10 +114,12 @@ string Slice::to_str() const
 int  Slice::returnAsInt() const
 {
     int r = 0;
-    for(unsigned int i = 0; i < m_size; i++) {
+    for(unsigned int i = 0; i < m_size; i++)
+    {
         int a = m_data[i];
 
-        for(unsigned int j = 0; j < 8; j++) {
+        for(unsigned int j = 0; j < 8; j++)
+        {
             int flag = ((a & (1 << j)) >> j);
             r += (flag << (i*8 + j));
         }
