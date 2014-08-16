@@ -3,6 +3,7 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "PageDB.h"
+#include "PageDBImpl.h"
 
 #include "FileModule.h"
 using namespace utils;
@@ -14,8 +15,6 @@ using namespace utils;
 #include "LRUCache.h"
 #include "EmptyCache.h"
 using namespace cache;
-
-#include "PageDBImpl.h"
 
 namespace pagedb
 {
@@ -63,7 +62,7 @@ bool  PageDB::open(const Options & option)
     switch(option.factoryOption.factoryType)
     {
     case EHASH:
-        m_dbimpl = new PageDB();
+        m_dbimpl = new PageDB1();
         break;
     case CHASH:
         break;

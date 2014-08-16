@@ -1,4 +1,4 @@
-// Copyright (c) 2014 The PageDB Authors. All rights reserved.
+// Copyright (c) 2014 The PageDB1 Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
@@ -7,13 +7,13 @@
 namespace pagedb
 {
 
-PageDB::PageDB(HashFunc hashFunc) : m_HashFunc(hashFunc),  m_gd(0), m_pn(1), m_fb(-1)
+PageDB1::PageDB1(HashFunc hashFunc) : m_HashFunc(hashFunc),  m_gd(0), m_pn(1), m_fb(-1)
 {
     m_cache = new PageCache(this);
     m_tmpBatch = new WriteBatch;
 }
 
-PageDB::~PageDB()
+PageDB1::~PageDB1()
 {
     close();
 }
@@ -21,7 +21,7 @@ PageDB::~PageDB()
 /**
 ** Layer 1
 **/
-bool     PageDB::open(const string &filename)
+bool     PageDB1::open(const string &filename)
 {
     m_prefix = filename;
 
@@ -84,7 +84,7 @@ bool     PageDB::open(const string &filename)
 /**
 ** Close DB: Write buffer into files and delete cache buffer
 **/
-bool     PageDB::close()
+bool     PageDB1::close()
 {
     sync();
 
@@ -100,7 +100,7 @@ bool     PageDB::close()
     return true;
 }
 
-bool     PageDB::put(const Slice & key,const Slice & value)
+bool     PageDB1::put(const Slice & key,const Slice & value)
 {
     WriteBatch batch(1);
     batch.put(key, value);
@@ -108,7 +108,7 @@ bool     PageDB::put(const Slice & key,const Slice & value)
     return write(&batch);
 }
 
-Slice    PageDB::get(const Slice & key)
+Slice    PageDB1::get(const Slice & key)
 {
     uint32_t hashVal = m_HashFunc(key);
     uint32_t cur     = hashVal & ((1 << m_gd) -1);
@@ -130,7 +130,7 @@ Slice    PageDB::get(const Slice & key)
     return rs;
 }
 
-bool     PageDB::remove(const Slice & key)
+bool     PageDB1::remove(const Slice & key)
 {
     uint32_t hashVal = m_HashFunc(key);
     uint32_t cur     = hashVal & ((1 << m_gd) -1);
@@ -165,7 +165,7 @@ bool     PageDB::remove(const Slice & key)
 /**
 ** Layer 2
 **/
-bool    PageDB::put(WriteBatch * pbatch)
+bool    PageDB1::put(WriteBatch * pbatch)
 {
     return write(pbatch);
 }
@@ -177,7 +177,7 @@ bool    PageDB::put(WriteBatch * pbatch)
 /**
 ** Force write to file?
 **/
-void    PageDB::sync()
+void    PageDB1::sync()
 {
     m_cache -> free();
     writeToIdxFile();
@@ -188,7 +188,7 @@ void    PageDB::sync()
 /**
 ** Should dump to stream, Updated it
 **/
-void    PageDB::dump(ostream&os)
+void    PageDB1::dump(ostream&os)
 {
     sync();
 
@@ -233,7 +233,7 @@ void    PageDB::dump(ostream&os)
     page = NULL;
 }
 
-void    PageDB::compact()
+void    PageDB1::compact()
 {
     sync();
 
@@ -394,7 +394,7 @@ void    PageDB::compact()
 /**
 ** Internal functions
 **/
-void    PageDB::recycle(int offset, int size)
+void    PageDB1::recycle(int offset, int size)
 {
     ScopeMutex scope(&(m_datLock));
 
@@ -424,7 +424,7 @@ void    PageDB::recycle(int offset, int size)
     m_datfile.Write((char*)&block, m_fb, SEEBLOCK);
 }
 
-void     PageDB::writeToIdxFile()
+void     PageDB1::writeToIdxFile()
 {
     BufferPacket packet(SINT * 3 + m_entries.size()*SINT64);
 
@@ -434,7 +434,7 @@ void     PageDB::writeToIdxFile()
     m_idxfile.Write(packet.c_str(), 0, packet.size());
 }
 
-void     PageDB::readFromIdxFile()
+void     PageDB1::readFromIdxFile()
 {
     BufferPacket packet(SINT * 3);
     m_idxfile.Read(packet.str(), 0, packet.size());
@@ -451,7 +451,7 @@ void     PageDB::readFromIdxFile()
     m_idxfile.Read((char*)&m_entries[0], SINT * 3, m_entries.size()*SINT64);
 }
 
-int      PageDB::findSuitableOffset(int size)
+int      PageDB1::findSuitableOffset(int size)
 {
     assert(m_fb != -1);
 
@@ -540,7 +540,7 @@ int      PageDB::findSuitableOffset(int size)
     return offset;
 }
 
-void     PageDB::fullAddLocalD(int cur, uint64_t num, uint64_t pos1, uint64_t pos2, uint64_t od)
+void     PageDB1::fullAddLocalD(int cur, uint64_t num, uint64_t pos1, uint64_t pos2, uint64_t od)
 {
     assert(m_entries.size() % num == 0);
 
@@ -575,7 +575,7 @@ void     PageDB::fullAddLocalD(int cur, uint64_t num, uint64_t pos1, uint64_t po
     }
 }
 
-struct PageDB::Writer
+struct PageDB1::Writer
 {
     WriteBatch* batch;
     bool sync;
@@ -584,7 +584,7 @@ struct PageDB::Writer
     explicit Writer(Mutex* mu) : cv(mu) { }
 };
 
-WriteBatch * PageDB::buildBatchGroup(Writer ** last_writer)
+WriteBatch * PageDB1::buildBatchGroup(Writer ** last_writer)
 {
     Writer* first      = m_writers.front();
     WriteBatch* result = first->batch;
@@ -600,7 +600,7 @@ WriteBatch * PageDB::buildBatchGroup(Writer ** last_writer)
 
     *last_writer = first;
 
-    deque<PageDB::Writer*>::iterator iter = m_writers.begin();
+    deque<PageDB1::Writer*>::iterator iter = m_writers.begin();
 
     for (++iter; iter != m_writers.end(); ++iter)
     {
@@ -628,7 +628,7 @@ WriteBatch * PageDB::buildBatchGroup(Writer ** last_writer)
     return result;
 }
 
-bool     PageDB::write(WriteBatch* pbatch)
+bool     PageDB1::write(WriteBatch* pbatch)
 {
     if(pbatch == NULL) return false;
 
@@ -688,7 +688,7 @@ bool     PageDB::write(WriteBatch* pbatch)
     return true;
 }
 
-bool     PageDB::writeBatch(WriteBatch * pbatch)
+bool     PageDB1::writeBatch(WriteBatch * pbatch)
 {
     uint32_t curpos = m_datfile.Size();
 
@@ -816,14 +816,14 @@ bool     PageDB::writeBatch(WriteBatch * pbatch)
     return true;
 }
 
-void PageDB::readAndSetPage(PageTable *page, uint64_t addr)
+void PageDB1::readAndSetPage(PageTable *page, uint64_t addr)
 {
     BufferPacket packet(SPAGETABLE);
     m_datfile.Read(packet.str(), addr, SPAGETABLE);
     page -> setByBucket(packet);
 }
 
-bool PageDB::is2Exp(uint64_t val)
+bool PageDB1::is2Exp(uint64_t val)
 {
     return ((val != 0) && (val & (val - 1)) == 0);
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2014 The PageDB Authors. All rights reserved.
+// Copyright (c) 2014 The PageDB1 Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
@@ -24,23 +24,23 @@ using namespace utils;
 #define SEEBLOCK    sizeof(PageEmptyBlock)
 #define MOD         ((1ull << 56) - 1)
 /**
-** PageDBImpl inherits from DBInternal and include many classes
+** PageDB1Impl inherits from DBInternal and include many classes
 **/
 namespace pagedb
 {
 /**
-** There are several sub-classes in PageDB
+** There are several sub-classes in PageDB1
 **
 ** PageEmptyBlock is responsibly for EmptyBlock
 ** PageElement store the address of key/value
 ** PageTable is the archive of PageElement
-** PageDB is constructed by PageTable
+** PageDB1 is constructed by PageTable
 ** PageCache stores the Page visited recently.
 **/
 class PageEmptyBlock;
 class PageElement;
 class PageTable;
-class PageDB;
+class PageDB1;
 class PageCache;
 
 /**
@@ -71,11 +71,12 @@ private:
         PageEmptyEle(): m_pos(-1), m_size(-1) { }
         int  m_pos, m_size;
     };
+
 private:
     int            m_curNum;
     int            m_nextBlock;
     PageEmptyEle   m_eles[PAGESIZE];
-    friend class   PageDB;
+    friend class   PageDB1;
 };
 
 /**
@@ -99,18 +100,18 @@ private:
 
 private:
     friend class PageTable;
-    friend class PageDB;
+    friend class PageDB1;
     friend ostream & operator << (ostream & os, PageElement & e);
 };
 
 /**
-** PageTable means the page index of PageDB
+** PageTable means the page index of PageDB1
 ** Size of PageTable is approx equal to 100*10 bytes
 **/
 class PageTable : public Noncopyable
 {
 public:
-    PageTable(PageDB * db);
+    PageTable(PageDB1 * db);
 
 public:
     /**
@@ -141,23 +142,24 @@ private:
     ** find the index of approxate key
     **/
     bool   find(const Slice & key, uint32_t hashVal, int &index);
+
 private:
     int m_d, m_curNum;
     PageElement m_elements[PAGESIZE + 5];
 
-    PageDB * m_db;
+    PageDB1 * m_db;
 
-    friend class PageDB;
+    friend class PageDB1;
 };
 
-class PageDB : public DBInternal
+class PageDB1 : public DBInternal
 {
 private:
     typedef pair<Slice, Slice> Node;
 
 public:
-    PageDB(HashFunc hashFunc = MurmurHash3);
-    ~PageDB();
+    PageDB1(HashFunc hashFunc = MurmurHash3);
+    ~PageDB1();
 
 public:
     /**
@@ -213,7 +215,7 @@ private:
 private:
     HashFunc    m_HashFunc;
     /**
-    ** In PageDB, there are four kinds of files
+    ** In PageDB1, there are four kinds of files
     **
     ** m_idxfile.idx: index file (first layer)
     ** m_datfile.dat: data file (include datafile)
@@ -229,7 +231,7 @@ private:
     PageCache   *m_cache;
 
     /**
-    ** We need three locks to sync operations in `PageDB`
+    ** We need three locks to sync operations in `PageDB1`
     ** m_datLock, operation on datfile
     ** m_cacheLock, operation on cache
     ** m_globalLock, Read-Write lock
@@ -274,7 +276,7 @@ private:
 class PageCache : public Noncopyable
 {
 public:
-    PageCache(PageDB * db);
+    PageCache(PageDB1 * db);
     ~PageCache();
 
 private:
@@ -326,12 +328,12 @@ private:
         }
     };
 
-
 private:
-    PageDB *  m_db;
+    PageDB1 *  m_db;
     CacheElem m_eles[CACHESIZE];
     int       m_cur;
-    friend class PageDB;
+    friend class PageDB1;
+
 };
 
 };

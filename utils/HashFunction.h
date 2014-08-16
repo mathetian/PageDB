@@ -8,7 +8,7 @@
 #ifndef _HASH_FUNCTION_H
 #define _HASH_FUNCTION_H
 
-#include "../include/Slice.h"
+#include "Slice.h"
 
 /**
 ** There are many hash-functions can be used in producation environment

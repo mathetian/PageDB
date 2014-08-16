@@ -1,4 +1,4 @@
-// Copyright (c) 2014 The PageDB Authors. All rights reserved.
+// Copyright (c) 2014 The PageDB1 Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
@@ -8,7 +8,7 @@ namespace pagedb
 {
 
 WriteBatch::WriteBatch(int size) : \
-    m_size(size), m_num(0), m_msize(0) \ 
+    m_size(size), m_num(0), m_msize(0) 
 {
     m_ssvec = vector<Node>(m_size);
 }

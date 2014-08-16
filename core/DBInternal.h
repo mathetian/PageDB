@@ -1,4 +1,4 @@
-// Copyright (c) 2014 The PageDB Authors. All rights reserved.
+// Copyright (c) 2014 The PageDB1 Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
@@ -20,7 +20,7 @@ using namespace utils;
 
 /**
 ** DBInternal is the second layer of db.
-** DBInternal is the base class of PageDB
+** DBInternal is the base class of PageDB1
 **/
 namespace pagedb
 {

@@ -1,4 +1,4 @@
-// Copyright (c) 2014 The PageDB Authors. All rights reserved.
+// Copyright (c) 2014 The PageDB1 Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
@@ -7,7 +7,7 @@
 namespace pagedb
 {
 
-PageTable::PageTable(PageDB * db) : m_d(0), m_curNum(0), m_db(db)
+PageTable::PageTable(PageDB1 * db) : m_d(0), m_curNum(0), m_db(db)
 {
 
 }
