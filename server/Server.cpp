@@ -27,15 +27,24 @@ public:
         doParse(buff);
     }
 
-    bool   status() const { return status_; }
-    string type()   const { return type_;   }
+    bool   status() const
+    {
+        return status_;
+    }
+    string type()   const
+    {
+        return type_;
+    }
 
-    map<string, string> values() const { return values_; }
+    map<string, string> values() const
+    {
+        return values_;
+    }
 
 private:
     void doParse(const string &str)
     {
-        if(str.size() <= 2) 
+        if(str.size() <= 2)
         {
             status_ = false;
             return;
@@ -76,12 +85,12 @@ class DBServer : public eventserver::MSGHandler
 {
 public:
     DBServer(eventserver::EventLoop *loop, eventserver::Socket sock) :\
-        eventserver::MSGHandler(loop, sock, 1) 
-    { 
+        eventserver::MSGHandler(loop, sock, 1)
+    {
     }
 private:
     void received(eventserver::STATUS status, eventserver::Buffer &buff)
-    {  
+    {
         Parser parser(buff);
         assert(buff.status() == true);
         string type = parser.type();
@@ -115,7 +124,7 @@ private:
                 {
                     string str = "{\"status\" : \"successful\"";
                     str += ", \"value\" : \"" + value + "\"}";
-                    write(str); 
+                    write(str);
                 }
             }
             else
@@ -130,7 +139,10 @@ private:
     }
 };
 
-void signalStop(int) { pool.stop(); }
+void signalStop(int)
+{
+    pool.stop();
+}
 
 int setlimit(int num_pipes)
 {
@@ -145,8 +157,8 @@ int setlimit(int num_pipes)
 
 void init_config()
 {
-	setlimit(100000);
-	errno = 0;
+    setlimit(100000);
+    errno = 0;
 }
 
 void init_db()
@@ -156,29 +168,29 @@ void init_db()
     option.logOption.logLevel = Log::LOG_FATAL;
 
     db = new PageDB();
-    
+
     db -> open(option);
 }
 
 void init_server()
 {
-	Log::setLevel(Log::warn);
-	
-	vector<TCPAcceptor<DBServer>*> acceptors(PORT_NUM, NULL);
-	
-	for(int i = 0; i < PORT_NUM; i++)
+    Log::setLevel(Log::warn);
+
+    vector<TCPAcceptor<DBServer>*> acceptors(PORT_NUM, NULL);
+
+    for(int i = 0; i < PORT_NUM; i++)
         acceptors[i] = new TCPAcceptor<DBServer>(server.loop(), BASE_PORT + i);
-   	
-   	server.attach(SIGINT, signalStop);
+
+    server.attach(SIGINT, signalStop);
 
     server.run();
 }
 
 int main()
 {
-	init_config();
-	init_db();
-	init_server();
+    init_config();
+    init_db();
+    init_server();
 
     return 0;
 }

@@ -8,7 +8,7 @@ namespace pagedb
 {
 
 WriteBatch::WriteBatch(int size) : \
-    m_size(size), m_num(0), m_msize(0) 
+    m_size(size), m_num(0), m_msize(0)
 {
     m_ssvec = vector<Node>(m_size);
 }
